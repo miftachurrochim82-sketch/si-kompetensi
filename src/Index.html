@@ -41,36 +41,29 @@
 </head>
 <body>
   <div id="app" v-cloak>
-    <!-- ===== 1. ANIMATED SSO SPLASH TRANSITION SCREEN (Tampil otomatis saat tiket SSO masuk) ===== -->
+    <!-- ===== 1. ANIMATED SSO SPLASH TRANSITION SCREEN ===== -->
     <div v-if="!token && (isProcessing || isSsoLoading || hasSsoTicket)"
          class="fixed inset-0 z-50 flex flex-col items-center justify-center p-6 bg-slate-950 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-emerald-950/70 via-slate-950 to-black text-white selection:bg-emerald-500 selection:text-white">
       
-      <!-- Glowing background orbs -->
       <div class="absolute w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none animate-pulse"></div>
       <div class="absolute -bottom-20 -right-20 w-80 h-80 bg-teal-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
-      <!-- Main Animated Card -->
       <div class="relative z-10 w-full max-w-md bg-slate-900/80 backdrop-blur-2xl p-8 rounded-3xl border border-emerald-500/20 shadow-2xl shadow-emerald-950/50 text-center flex flex-col items-center">
-        
-        <!-- Animated Logo with Glowing Rings -->
         <div class="relative mb-6">
           <div class="absolute -inset-2 bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-600 rounded-3xl blur-md opacity-40 animate-pulse"></div>
           <div class="relative w-24 h-24 rounded-3xl bg-gradient-to-tr from-slate-900 via-emerald-950 to-slate-900 border border-emerald-500/30 flex items-center justify-center text-4xl shadow-2xl">
             <img v-if="brand && brand.logoSvg" :src="brand.logoSvg" class="w-16 h-16 object-contain drop-shadow-md transform transition-transform duration-500 hover:scale-110">
             <i v-else class="fa-solid fa-graduation-cap text-emerald-400 text-3xl"></i>
           </div>
-          <!-- Orbiting Spinner Ring -->
           <div class="absolute -inset-3.5 border-2 border-emerald-500/20 border-t-emerald-400 rounded-full animate-spin"></div>
         </div>
 
-        <!-- App Identity -->
         <h1 class="text-2xl font-black tracking-tight text-white flex items-center gap-2 justify-center">
           <span>SI-KOMPETENSI</span>
           <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30">SSO</span>
         </h1>
         <p class="text-xs font-semibold text-emerald-400 uppercase tracking-widest mt-1">Pemerintah Kabupaten Trenggalek</p>
 
-        <!-- Dynamic Status Steps -->
         <div class="mt-8 w-full space-y-3">
           <div class="p-3.5 rounded-2xl bg-slate-950/60 border border-slate-800 flex items-center gap-3 text-left">
             <div class="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
@@ -82,13 +75,11 @@
             </div>
           </div>
 
-          <!-- Animated Progress Bar -->
           <div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden p-0.5">
             <div class="bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-300 h-full rounded-full animate-pulse w-full origin-left"></div>
           </div>
         </div>
 
-        <!-- Error State Fallback if Ticket Fails -->
         <div v-if="errorMessage" class="mt-6 p-4 rounded-2xl bg-rose-950/60 border border-rose-500/30 text-rose-300 text-xs w-full text-left">
           <div class="flex items-center gap-2 font-bold text-rose-200 mb-1">
             <i class="fa-solid fa-triangle-exclamation text-rose-400"></i>
@@ -104,11 +95,10 @@
           <i class="fa-solid fa-shield-halved text-emerald-400"></i>
           <span>Autentikasi Terenkripsi Terpadu ASN Trenggalek</span>
         </p>
-
       </div>
     </div>
 
-    <!-- ===== 2. LAYAR LOGIN MANDIRI (Hanya jika dibuka langsung tanpa tiket SSO) ===== -->
+    <!-- ===== 2. LAYAR LOGIN MANDIRI ===== -->
     <app-login v-else-if="!token && !isProcessing && !isSsoLoading && !hasSsoTicket"
                :is-processing="isProcessing"
                :error-message="errorMessage"
@@ -152,7 +142,6 @@
 
         <!-- Konten Halaman Modular -->
         <main class="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-6">
-
           <!-- Partial Halaman A4: Dashboard -->
           <?!= include('A4_Dashboard'); ?>
 
@@ -170,7 +159,6 @@
 
           <!-- Modul Mandiri CDN: Pengaturan Sistem (Admin) -->
           <app-settings v-if="currentPage === 'pengaturan' && isAdmin"></app-settings>
-
         </main>
       </div>
     </div>
@@ -190,13 +178,9 @@
 
   <!-- Inisialisasi SI-KOMPETENSI via AppCore -->
   <script>
-    /* =========================================================
-       Mixin khas SI-KOMPETENSI: data & method halaman lokal.
-       ========================================================= */
     const SIKompetensiMixin = {
       data() {
         return {
-          // SSO Transition State
           isSsoLoading: false,
           ssoStatusMessage: '',
 
@@ -217,7 +201,7 @@
           riwayatLoading: false,
           riwayatSearch: '',
           riwayatFilterStatus: '',
-          riwayatModalOpen: false,
+          showRiwayatForm: false,
           riwayatSaving: false,
           riwayatForm: {
             id: '',
@@ -235,13 +219,14 @@
           },
 
           // State Master Data Kompetensi (A8)
+          activeMasterTab: 'kompetensi',
           kompetensiList: [],
           kompetensiTotal: 0,
           kompetensiPage: 1,
           kompetensiLimit: 10,
           kompetensiLoading: false,
           kompetensiSearch: '',
-          kompetensiModalOpen: false,
+          showKompetensiForm: false,
           kompetensiSaving: false,
           kompetensiForm: {
             id: '',
@@ -271,15 +256,7 @@
           analisaTahun: new Date().getFullYear(),
           analisaBulan: '',
           tahunList: [],
-          bulanList: [],
-
-          // Master Referensi SIMPEG (B15 Bridge)
-          refPegawai: [],
-          refUnit: [],
-          refJabatan: [],
-
-          // Filter Tab di Master Data (A8)
-          masterActiveTab: 'kompetensi'
+          bulanList: []
         };
       },
 
@@ -307,7 +284,6 @@
       },
 
       methods: {
-        // --- Helper Tanggal & Format ---
         formatDate(isoStr) {
           if (!isoStr) return '-';
           try {
@@ -325,23 +301,22 @@
 
         getNamaPegawai(id) {
           if (!id) return '-';
-          const p = this.refPegawai.find(x => String(x.id) === String(id));
+          const p = (this.pegawaiList || []).find(x => String(x.id) === String(id));
           return p ? (p.nama || p.display_name || p.nama_lengkap || id) : id;
         },
 
         getNipPegawai(id) {
           if (!id) return '-';
-          const p = this.refPegawai.find(x => String(x.id) === String(id));
+          const p = (this.pegawaiList || []).find(x => String(x.id) === String(id));
           return p ? (p.nip || '-') : '-';
         },
 
         getNamaUnit(id) {
           if (!id) return '-';
-          const u = this.refUnit.find(x => String(x.id) === String(id));
+          const u = (this.unitList || []).find(x => String(x.id) === String(id));
           return u ? (u.nama || u.nama_unit || id) : id;
         },
 
-        // --- Auth & Redirection ---
         goToPlatform() {
           const platformUrl = this.platformUrl || 'https://script.google.com/macros/s/AKfycbwh_OUVqmxLcuF81FHmPZtT33Wrm8Ce9Da1SQ3hfkSr7gM5P8ofyAlHSgW40mq3eo-PoQ/exec';
           if (window.top && window.top !== window) {
@@ -351,35 +326,30 @@
           }
         },
 
-        // --- Data Loaders ---
-        async loadDashboard() {
+        async loadReferensi(force = false) {
           try {
-            const res = await this.callApi('get_dashboard_kompetensi', {});
-            if (res.success && res.data) {
+            await this.loadMasterSIMPEG(force);
+          } catch (e) {
+            console.error('[loadReferensi] Error:', e);
+          }
+        },
+
+        async loadDashboard() {
+          this.loading = true;
+          try {
+            const res = await this.callServer('dashboard');
+            if (res && res.success) {
               this.dashboardData = Object.assign({
                 total_kompetensi: 0,
                 jenis_count: {},
                 terbaru: [],
                 divisi_distribution: {}
-              }, res.data);
+              }, res.data || {});
             }
           } catch (e) {
             console.error('Gagal load dashboard:', e);
-          }
-        },
-
-        async loadReferensi() {
-          try {
-            const [resPegawai, resUnit, resJabatan] = await Promise.all([
-              this.callApi('get_ref_pegawai', {}),
-              this.callApi('get_ref_unit', {}),
-              this.callApi('get_ref_jabatan', {})
-            ]);
-            if (resPegawai.success) this.refPegawai = resPegawai.data || [];
-            if (resUnit.success) this.refUnit = resUnit.data || [];
-            if (resJabatan.success) this.refJabatan = resJabatan.data || [];
-          } catch (e) {
-            console.error('Gagal load referensi SIMPEG:', e);
+          } finally {
+            this.loading = false;
           }
         },
 
@@ -387,20 +357,22 @@
           this.riwayatLoading = true;
           this.riwayatPage = page;
           try {
-            const res = await this.callApi('get_riwayat_list', {
+            const res = await this.callServer('get_riwayat_list', {
               page: this.riwayatPage,
               limit: this.riwayatLimit,
               search: this.riwayatSearch,
-              status: this.riwayatFilterStatus
+              filters: {
+                status: this.riwayatFilterStatus
+              }
             });
-            if (res.success) {
+            if (res && res.success) {
               this.riwayatList = res.data || [];
               this.riwayatTotal = (res.meta && res.meta.total) || this.riwayatList.length;
             } else {
-              this.showToast(res.error || 'Gagal memuat riwayat laporan', 'error');
+              this.showToast((res && res.error) || 'Gagal memuat riwayat laporan', 'error');
             }
           } catch (e) {
-            this.showToast('Gagal memuat data riwayat laporan', 'error');
+            this.showToast('Gagal memuat data riwayat laporan: ' + e.message, 'error');
           } finally {
             this.riwayatLoading = false;
           }
@@ -410,19 +382,19 @@
           this.kompetensiLoading = true;
           this.kompetensiPage = page;
           try {
-            const res = await this.callApi('get_kompetensi_list', {
+            const res = await this.callServer('get_kompetensi_list', {
               page: this.kompetensiPage,
               limit: this.kompetensiLimit,
               search: this.kompetensiSearch
             });
-            if (res.success) {
+            if (res && res.success) {
               this.kompetensiList = res.data || [];
               this.kompetensiTotal = (res.meta && res.meta.total) || this.kompetensiList.length;
             } else {
-              this.showToast(res.error || 'Gagal memuat master kompetensi', 'error');
+              this.showToast((res && res.error) || 'Gagal memuat master kompetensi', 'error');
             }
           } catch (e) {
-            this.showToast('Gagal memuat data master kompetensi', 'error');
+            this.showToast('Gagal memuat data master kompetensi: ' + e.message, 'error');
           } finally {
             this.kompetensiLoading = false;
           }
@@ -431,11 +403,11 @@
         async loadAnalisa() {
           this.analisaLoading = true;
           try {
-            const res = await this.callApi('get_analytics', {
+            const res = await this.callServer('analytics', {
               tahun: this.analisaTahun,
               bulan: this.analisaBulan
             });
-            if (res.success && res.data) {
+            if (res && res.success) {
               this.analisaData = Object.assign({
                 total_data: 0,
                 ringkasan: '',
@@ -444,16 +416,15 @@
                 by_bulan: {},
                 temuan: [],
                 rekomendasi: []
-              }, res.data);
+              }, res.data || {});
             }
           } catch (e) {
-            this.showToast('Gagal memuat analisa kompetensi', 'error');
+            this.showToast('Gagal memuat analisa kompetensi: ' + e.message, 'error');
           } finally {
             this.analisaLoading = false;
           }
         },
 
-        // --- Render Chart Eselon III 6 Divisi ---
         renderDashboardCharts() {
           this.$nextTick(() => {
             const ctx = document.getElementById('chartKompetensiDivisi');
@@ -522,14 +493,13 @@
           });
         },
 
-        // --- CRUD Modal & Action Handlers ---
-        openRiwayatModal(item = null) {
+        openRiwayatForm(item = null) {
           if (item) {
             this.riwayatForm = Object.assign({}, item);
           } else {
             this.riwayatForm = {
               id: '',
-              pegawai_id: (this.currentUser && this.currentUser.id) || '',
+              pegawai_id: (this.currentUser && this.currentUser.pegawai_id) || (this.currentUser && this.currentUser.id) || '',
               judul: '',
               jenis: 'Pelatihan Struktural Kepemimpinan',
               institusi: '',
@@ -542,27 +512,23 @@
               status: 'draft'
             };
           }
-          this.riwayatModalOpen = true;
-        },
-
-        closeRiwayatModal() {
-          this.riwayatModalOpen = false;
+          this.showRiwayatForm = true;
         },
 
         async saveRiwayat() {
           this.riwayatSaving = true;
           try {
-            const res = await this.callApi('save_riwayat', this.riwayatForm);
-            if (res.success) {
+            const res = await this.callServer('save_riwayat', { record: this.riwayatForm });
+            if (res && res.success) {
               this.showToast('Laporan kompetensi berhasil disimpan', 'success');
-              this.closeRiwayatModal();
+              this.showRiwayatForm = false;
               await this.loadRiwayat(this.riwayatPage);
               this.loadDashboard();
             } else {
-              this.showToast(res.error || 'Gagal menyimpan laporan', 'error');
+              this.showToast((res && res.error) || 'Gagal menyimpan laporan', 'error');
             }
           } catch (e) {
-            this.showToast('Terjadi kesalahan saat menyimpan laporan', 'error');
+            this.showToast('Terjadi kesalahan saat menyimpan laporan: ' + e.message, 'error');
           } finally {
             this.riwayatSaving = false;
           }
@@ -571,44 +537,44 @@
         async deleteRiwayat(item) {
           if (!confirm(`Hapus laporan "${item.judul || item.id}"?`)) return;
           try {
-            const res = await this.callApi('delete_riwayat', { id: item.id });
-            if (res.success) {
+            const res = await this.callServer('delete_riwayat', { id: item.id });
+            if (res && res.success) {
               this.showToast('Laporan berhasil dihapus', 'success');
-              this.loadRiwayat(this.riwayatPage);
+              await this.loadRiwayat(this.riwayatPage);
               this.loadDashboard();
             } else {
-              this.showToast(res.error || 'Gagal menghapus laporan', 'error');
+              this.showToast((res && res.error) || 'Gagal menghapus laporan', 'error');
             }
           } catch (e) {
-            this.showToast('Terjadi kesalahan saat menghapus', 'error');
+            this.showToast('Terjadi kesalahan saat menghapus: ' + e.message, 'error');
           }
         },
 
         async verifikasiRiwayat(item, newStatus) {
           try {
-            const res = await this.callApi('verifikasi_riwayat', {
+            const res = await this.callServer('verifikasi_riwayat', {
               id: item.id,
               status: newStatus
             });
-            if (res.success) {
+            if (res && res.success) {
               this.showToast(`Status laporan diperbarui: ${newStatus}`, 'success');
-              this.loadRiwayat(this.riwayatPage);
+              await this.loadRiwayat(this.riwayatPage);
               this.loadDashboard();
             } else {
-              this.showToast(res.error || 'Gagal memperbarui status', 'error');
+              this.showToast((res && res.error) || 'Gagal memperbarui status', 'error');
             }
           } catch (e) {
-            this.showToast('Terjadi kesalahan saat verifikasi', 'error');
+            this.showToast('Terjadi kesalahan saat verifikasi: ' + e.message, 'error');
           }
         },
 
-        openKompetensiModal(item = null) {
+        openKompetensiForm(item = null) {
           if (item) {
             this.kompetensiForm = Object.assign({}, item);
           } else {
             this.kompetensiForm = {
               id: '',
-              pegawai_id: (this.currentUser && this.currentUser.id) || '',
+              pegawai_id: (this.currentUser && this.currentUser.pegawai_id) || (this.currentUser && this.currentUser.id) || '',
               jenis_kompetensi: 'Manajerial',
               nama_kompetensi: '',
               deskripsi: '',
@@ -620,27 +586,23 @@
               status_verifikasi: 'menunggu'
             };
           }
-          this.kompetensiModalOpen = true;
-        },
-
-        closeKompetensiModal() {
-          this.kompetensiModalOpen = false;
+          this.showKompetensiForm = true;
         },
 
         async saveKompetensi() {
           this.kompetensiSaving = true;
           try {
-            const res = await this.callApi('save_kompetensi', this.kompetensiForm);
-            if (res.success) {
+            const res = await this.callServer('save_kompetensi', { record: this.kompetensiForm });
+            if (res && res.success) {
               this.showToast('Master kompetensi berhasil disimpan', 'success');
-              this.closeKompetensiModal();
+              this.showKompetensiForm = false;
               await this.loadKompetensi(this.kompetensiPage);
               this.loadDashboard();
             } else {
-              this.showToast(res.error || 'Gagal menyimpan kompetensi', 'error');
+              this.showToast((res && res.error) || 'Gagal menyimpan kompetensi', 'error');
             }
           } catch (e) {
-            this.showToast('Terjadi kesalahan saat menyimpan', 'error');
+            this.showToast('Terjadi kesalahan saat menyimpan: ' + e.message, 'error');
           } finally {
             this.kompetensiSaving = false;
           }
@@ -649,38 +611,37 @@
         async deleteKompetensi(item) {
           if (!confirm(`Hapus kompetensi "${item.nama_kompetensi || item.id}"?`)) return;
           try {
-            const res = await this.callApi('delete_kompetensi', { id: item.id });
-            if (res.success) {
+            const res = await this.callServer('delete_kompetensi', { id: item.id });
+            if (res && res.success) {
               this.showToast('Kompetensi berhasil dihapus', 'success');
-              this.loadKompetensi(this.kompetensiPage);
+              await this.loadKompetensi(this.kompetensiPage);
               this.loadDashboard();
             } else {
-              this.showToast(res.error || 'Gagal menghapus kompetensi', 'error');
+              this.showToast((res && res.error) || 'Gagal menghapus kompetensi', 'error');
             }
           } catch (e) {
-            this.showToast('Terjadi kesalahan saat menghapus', 'error');
+            this.showToast('Terjadi kesalahan saat menghapus: ' + e.message, 'error');
           }
         },
 
         async verifikasiKompetensi(item, status) {
           try {
-            const res = await this.callApi('verifikasi_kompetensi', {
+            const res = await this.callServer('verifikasi_kompetensi', {
               id: item.id,
               status_verifikasi: status
             });
-            if (res.success) {
+            if (res && res.success) {
               this.showToast(`Verifikasi kompetensi berhasil: ${status}`, 'success');
-              this.loadKompetensi(this.kompetensiPage);
+              await this.loadKompetensi(this.kompetensiPage);
               this.loadDashboard();
             } else {
-              this.showToast(res.error || 'Gagal verifikasi', 'error');
+              this.showToast((res && res.error) || 'Gagal verifikasi', 'error');
             }
           } catch (e) {
-            this.showToast('Terjadi kesalahan verifikasi', 'error');
+            this.showToast('Terjadi kesalahan verifikasi: ' + e.message, 'error');
           }
         },
 
-        // --- Export Functions ---
         async exportRiwayatExcel() {
           if (typeof XLSX === 'undefined') {
             this.showToast('Memuat pustaka Excel...', 'info');
@@ -689,19 +650,46 @@
           const dataToExport = this.riwayatList.map((r, i) => ({
             'No': i + 1,
             'Nama Pegawai': this.getNamaPegawai(r.pegawai_id),
-            'Judul Pelaporan': r.judul,
-            'Jenis': r.jenis,
-            'Institusi': r.institusi,
+            'Judul Pelaporan': r.judul || r.nama_laporan || '',
+            'Jenis': r.jenis || '',
+            'Institusi': r.institusi || '',
             'Tgl Mulai': this.formatDate(r.tanggal_mulai),
             'Tgl Selesai': this.formatDate(r.tanggal_selesai),
-            'Jumlah JP': r.jumlah_jp,
-            'No Sertifikat': r.nomor_sertifikat,
-            'Status': r.status
+            'Jumlah JP': r.jumlah_jp || 0,
+            'No Sertifikat': r.nomor_sertifikat || '',
+            'Status': r.status || 'draft'
           }));
           const ws = XLSX.utils.json_to_sheet(dataToExport);
           const wb = XLSX.utils.book_new();
           XLSX.utils.book_append_sheet(wb, ws, 'Riwayat_Laporan');
           XLSX.writeFile(wb, `Riwayat_Laporan_Kompetensi_${this.todayIso_()}.xlsx`);
+        },
+
+        async exportRiwayatPDF() {
+          if (typeof jspdf === 'undefined' || !jspdf.jsPDF) {
+            this.showToast('Memuat modul PDF...', 'info');
+            await AppCore.loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+            await AppCore.loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js');
+          }
+          const { jsPDF } = jspdf;
+          const doc = new jsPDF();
+          doc.setFontSize(14);
+          doc.text('Daftar Riwayat Laporan Kompetensi', 14, 16);
+          const body = this.riwayatList.map((r, i) => [
+            i + 1,
+            this.getNamaPegawai(r.pegawai_id),
+            r.judul || r.nama_laporan || '-',
+            r.jenis || '-',
+            r.institusi || '-',
+            r.jumlah_jp || '0',
+            r.status || 'draft'
+          ]);
+          doc.autoTable({
+            startY: 22,
+            head: [['No', 'Pegawai', 'Judul', 'Jenis', 'Institusi', 'JP', 'Status']],
+            body: body
+          });
+          doc.save(`Riwayat_Laporan_Kompetensi_${this.todayIso_()}.pdf`);
         },
 
         async downloadAnalisaPDF() {
