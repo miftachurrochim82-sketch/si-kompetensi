@@ -931,8 +931,10 @@
       }
     };
 
-    const app = AppCore.initApp({
+    const createFn = AppCore.create || AppCore.initApp || AppCore.createApp;
+    const app = createFn.call(AppCore, {
       appName: 'SI-KOMPETENSI',
+      appTitle: 'SI-KOMPETENSI',
       appCode: 'SIKOMPETENSI',
       storagePrefix: 'sikompetensi_',
 
