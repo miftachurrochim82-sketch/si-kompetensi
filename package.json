@@ -1,0 +1,21 @@
+{
+  "name": "si-kompetensi",
+  "version": "1.0.0",
+  "description": "Sistem Informasi Pengembangan Kompetensi Pegawai Pemkab Trenggalek",
+  "scripts": {
+    "push": "clasp push",
+    "pull": "clasp pull",
+    "open": "clasp open",
+    "set-script": "node scripts/set-script-id.js"
+  },
+  "keywords": [
+    "google-apps-script",
+    "clasp",
+    "vue3",
+    "tailwind",
+    "sso",
+    "trenggalek"
+  ],
+  "author": "Diskominfo Kab. Trenggalek",
+  "license": "UNLICENSED"
+}

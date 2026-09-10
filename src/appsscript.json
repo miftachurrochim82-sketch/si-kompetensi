@@ -1,0 +1,19 @@
+{
+  "timeZone": "Asia/Jakarta",
+  "dependencies": {
+    "libraries": [
+      {
+        "userSymbol": "CoreLib",
+        "version": "0",
+        "developmentMode": true,
+        "libraryId": "1g9PekxV1r2vN32DqN9Bwh6dE-2k2YwY9F4oT-hPZqM28q4R6u8u_e3d-"
+      }
+    ]
+  },
+  "exceptionLogging": "STACKDRIVER",
+  "runtimeVersion": "V8",
+  "webapp": {
+    "executeAs": "USER_DEPLOYING",
+    "access": "ANYONE"
+  }
+}

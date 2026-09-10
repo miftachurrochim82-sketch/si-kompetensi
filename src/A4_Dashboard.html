@@ -1,0 +1,391 @@
+<!-- ============================================================
+     A4_Dashboard.html — Dashboard Utama SI-KOMPETENSI
+     Rewrite vs kiriman (D1–D4 + Eselon III 6 Divisi):
+     D1. Kartu Total: dashboardData.total_data -> dashboardData?.total_kompetensi.
+         Backend mengirim total_kompetensi (bukan total_data!) — sebelum fix
+         kartu selalu 0. Plus root-guard ?. anti crash saat null.
+     D2. Breakdown 3× dashboardData.jenis_count -> dashboardData?.jenis_count
+         (root-guard; ?. di tengah tak melindungi root null).
+     D3. + Box Bimtek (jenis form ke-4 — tanpanya record bimtek tak terlihat
+         di breakdown) + grid 3 -> sm:2/lg:4.
+     D4. Typo "Struksional" -> "Struktural".
+     D5. Chart 6 Divisi Eselon III & Top 5 Unit Kerja.
+     Backend: apiDashboard_ {total_kompetensi, jenis_count, terbaru[]}.
+     ============================================================ -->
+<div v-if="currentPage === 'dashboard'" class="space-y-6">
+
+  <!-- Skeleton / Spinner Loading Dashboard -->
+  <div v-if="loading && !dataLoaded" class="min-h-[400px] flex flex-col items-center justify-center space-y-4">
+    <div class="relative flex items-center justify-center">
+      <div class="w-12 h-12 rounded-full border-4 border-emerald-200 dark:border-emerald-950 border-t-emerald-600 animate-spin"></div>
+      <i class="fa-solid fa-gauge-high text-sm text-emerald-600 dark:text-emerald-400 absolute"></i>
+    </div>
+    <p class="text-sm font-semibold text-slate-500 dark:text-slate-400 animate-pulse">Memuat statistik & grafik dashboard...</p>
+  </div>
+
+  <template v-else>
+
+    <!-- Welcome Banner & Quick Action Header -->
+    <div class="p-5 rounded-3xl bg-gradient-to-r from-emerald-700 via-teal-700 to-slate-800 text-white shadow-xl relative overflow-hidden flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <!-- Decorative Background Icon -->
+      <i class="fa-solid fa-graduation-cap absolute -right-6 -bottom-8 text-9xl text-white/10 pointer-events-none"></i>
+
+      <div class="relative z-10">
+        <div class="flex items-center gap-2 text-emerald-200 text-xs font-semibold uppercase tracking-wider mb-1">
+          <i class="fa-solid fa-shield-halved"></i>
+          <span>Satpol PP & Kebakaran Trenggalek</span>
+        </div>
+        <h1 class="text-xl sm:text-2xl font-extrabold tracking-tight">
+          Selamat Datang, {{ (currentUser || {}).display_name || 'Pegawai' }}! 👋
+        </h1>
+        <p class="text-xs sm:text-sm text-emerald-100/90 mt-1 max-w-xl">
+          Pantau riwayat pengembangan kompetensi, distribusi pegawai, dan peta jabatan instansi secara real-time.
+        </p>
+      </div>
+
+      <div class="relative z-10 flex flex-wrap items-center gap-2.5 shrink-0">
+        <button @click="showPanduan = true"
+                class="bg-white text-emerald-700 hover:bg-emerald-50 active:scale-95 font-bold px-4 py-2.5 rounded-2xl text-xs transition-all duration-200 flex items-center gap-2 shadow-lg">
+          <i class="fa-solid fa-circle-question"></i>
+          <span>Panduan Aplikasi</span>
+        </button>
+        <button @click="refreshDashboard"
+                class="bg-white/10 hover:bg-white/20 active:scale-95 text-white border border-white/20 font-semibold px-4 py-2.5 rounded-2xl text-xs backdrop-blur-md transition-all duration-200 flex items-center gap-2 shadow-sm">
+          <i class="fa-solid fa-arrows-rotate" :class="{ 'animate-spin': loading }"></i>
+          <span>Refresh Data</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 1. Kartu Statistik Utama (4 Column KPI) -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+      <!-- Card 1: Data Kompetensi -->
+      <div class="p-5 rounded-2xl bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/60 shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-between group">
+        <div>
+          <p class="text-xs font-semibold text-slate-500 dark:text-slate-400">Total Kompetensi</p>
+          <h3 class="text-2xl font-extrabold text-slate-900 dark:text-white mt-1">{{ dashboardData?.total_kompetensi ?? 0 }}</h3>
+          <span class="inline-flex items-center text-[10px] font-bold text-emerald-600 dark:text-emerald-400 mt-2 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200/60 dark:border-emerald-800/40">
+            <i class="fa-solid fa-circle-check mr-1"></i> Terverifikasi
+          </span>
+        </div>
+        <div class="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl shrink-0 group-hover:scale-110 transition-transform">
+          <i class="fa-solid fa-book-bookmark"></i>
+        </div>
+      </div>
+
+      <!-- Card 2: Total Pegawai -->
+      <div class="p-5 rounded-2xl bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/60 shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-between group">
+        <div>
+          <p class="text-xs font-semibold text-slate-500 dark:text-slate-400">Pegawai Terdaftar</p>
+          <h3 class="text-2xl font-extrabold text-slate-900 dark:text-white mt-1">{{ (pegawaiList || []).length }}</h3>
+          <span class="inline-flex items-center text-[10px] font-bold text-sky-600 dark:text-sky-400 mt-2 bg-sky-50 dark:bg-sky-950/60 px-2 py-0.5 rounded-full border border-sky-200/60 dark:border-sky-800/40">
+            <i class="fa-solid fa-user-check mr-1"></i> SIMPEG Active
+          </span>
+        </div>
+        <div class="w-12 h-12 rounded-2xl bg-sky-100 dark:bg-sky-950/80 text-sky-600 dark:text-sky-400 flex items-center justify-center text-xl shrink-0 group-hover:scale-110 transition-transform">
+          <i class="fa-solid fa-users"></i>
+        </div>
+      </div>
+
+      <!-- Card 3: Unit Kerja -->
+      <div class="p-5 rounded-2xl bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/60 shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-between group">
+        <div>
+          <p class="text-xs font-semibold text-slate-500 dark:text-slate-400">Unit Kerja Utama</p>
+          <h3 class="text-2xl font-extrabold text-slate-900 dark:text-white mt-1">{{ (unitList || []).length }}</h3>
+          <span class="inline-flex items-center text-[10px] font-bold text-purple-600 dark:text-purple-400 mt-2 bg-purple-50 dark:bg-purple-950/60 px-2 py-0.5 rounded-full border border-purple-200/60 dark:border-purple-800/40">
+            <i class="fa-solid fa-sitemap mr-1"></i> Terstruktur
+          </span>
+        </div>
+        <div class="w-12 h-12 rounded-2xl bg-purple-100 dark:bg-purple-950/80 text-purple-600 dark:text-purple-400 flex items-center justify-center text-xl shrink-0 group-hover:scale-110 transition-transform">
+          <i class="fa-solid fa-building"></i>
+        </div>
+      </div>
+
+      <!-- Card 4: Jabatan -->
+      <div class="p-5 rounded-2xl bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/60 shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-between group">
+        <div>
+          <p class="text-xs font-semibold text-slate-500 dark:text-slate-400">Total Jabatan</p>
+          <h3 class="text-2xl font-extrabold text-slate-900 dark:text-white mt-1">{{ (jabatanList || []).length }}</h3>
+          <span class="inline-flex items-center text-[10px] font-bold text-amber-600 dark:text-amber-400 mt-2 bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-200/60 dark:border-amber-800/40">
+            <i class="fa-solid fa-briefcase mr-1"></i> Formasi Active
+          </span>
+        </div>
+        <div class="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-950/80 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xl shrink-0 group-hover:scale-110 transition-transform">
+          <i class="fa-solid fa-id-card"></i>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 2. Breakdown Ringkasan Jenis Kompetensi -->
+    <div class="p-5 rounded-3xl bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/60 shadow-sm space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-700/60 pb-3">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-layer-group text-emerald-600 dark:text-emerald-400"></i>
+          <h2 class="text-sm font-bold text-slate-800 dark:text-white">Rincian Jenis Kompetensi Pegawai</h2>
+        </div>
+        <span class="text-[11px] font-semibold text-slate-400">Real-time Count</span>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Diklat -->
+        <div class="p-4 rounded-2xl bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-800/40 flex items-center justify-between">
+          <div>
+            <p class="text-xs font-semibold text-emerald-800 dark:text-emerald-300">Diklat Struktural / Teknis</p>
+            <p class="text-2xl font-black text-emerald-700 dark:text-emerald-400 mt-1">{{ dashboardData?.jenis_count?.diklat || 0 }}</p>
+          </div>
+          <div class="p-3 bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 rounded-xl">
+            <i class="fa-solid fa-award text-lg"></i>
+          </div>
+        </div>
+
+        <!-- Sertifikasi -->
+        <div class="p-4 rounded-2xl bg-sky-50/60 dark:bg-sky-950/30 border border-sky-100 dark:border-sky-800/40 flex items-center justify-between">
+          <div>
+            <p class="text-xs font-semibold text-sky-800 dark:text-sky-300">Sertifikasi Profesi</p>
+            <p class="text-2xl font-black text-sky-700 dark:text-sky-400 mt-1">{{ dashboardData?.jenis_count?.sertifikasi || 0 }}</p>
+          </div>
+          <div class="p-3 bg-sky-100 dark:bg-sky-900/60 text-sky-700 dark:text-sky-300 rounded-xl">
+            <i class="fa-solid fa-certificate text-lg"></i>
+          </div>
+        </div>
+
+        <!-- Pelatihan -->
+        <div class="p-4 rounded-2xl bg-amber-50/60 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-800/40 flex items-center justify-between">
+          <div>
+            <p class="text-xs font-semibold text-amber-800 dark:text-amber-300">Pelatihan / Workshop</p>
+            <p class="text-2xl font-black text-amber-700 dark:text-amber-400 mt-1">{{ dashboardData?.jenis_count?.pelatihan || 0 }}</p>
+          </div>
+          <div class="p-3 bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 rounded-xl">
+            <i class="fa-solid fa-chalkboard-user text-lg"></i>
+          </div>
+        </div>
+
+        <!-- Bimtek -->
+        <div class="p-4 rounded-2xl bg-teal-50/60 dark:bg-teal-950/30 border border-teal-100 dark:border-teal-800/40 flex items-center justify-between">
+          <div>
+            <p class="text-xs font-semibold text-teal-800 dark:text-teal-300">Bimtek</p>
+            <p class="text-2xl font-black text-teal-700 dark:text-teal-400 mt-1">{{ dashboardData?.jenis_count?.bimtek || 0 }}</p>
+          </div>
+          <div class="p-3 bg-teal-100 dark:bg-teal-900/60 text-teal-700 dark:text-teal-300 rounded-xl">
+            <i class="fa-solid fa-person-chalkboard text-lg"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Visualisasi Grafik Analytics Chart.js -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+      <!-- Grafik 1: Bar Chart Pegawai per Unit / 6 Divisi Eselon III (Spans 2 Cols) -->
+      <div class="p-5 rounded-3xl bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/60 shadow-sm lg:col-span-2 flex flex-col justify-between">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-2">
+              <i class="fa-solid fa-chart-column text-emerald-600 dark:text-emerald-400"></i>
+              Distribusi Pegawai per Struktur Organisasi (Eselon III & Divisi)
+            </h3>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Pengelompokan personel ke dalam 6 entitas struktural & divisi utama</p>
+          </div>
+          <span class="inline-flex items-center text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-1 rounded-full border border-emerald-200/60 dark:border-emerald-800/40">
+            <i class="fa-solid fa-sitemap mr-1"></i> 6 Divisi Utama
+          </span>
+        </div>
+        <div class="h-72 w-full relative">
+          <canvas id="chartPegawaiUnit"></canvas>
+        </div>
+      </div>
+
+      <!-- Grafik 2: Doughnut Status Jabatan (Spans 1 Col) -->
+      <div class="p-5 rounded-3xl bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/60 shadow-sm lg:col-span-1 flex flex-col justify-between">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-2">
+              <i class="fa-solid fa-chart-pie text-emerald-600 dark:text-emerald-400"></i>
+              Proporsi Status Jabatan
+            </h3>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Komposisi Definitif, Plt, & Kosong</p>
+          </div>
+        </div>
+        <div class="h-72 w-full relative flex items-center justify-center">
+          <canvas id="chartStatusJabatan"></canvas>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 4. Top 5 Unit Kerja Ranking Widget -->
+    <div v-if="pegawaiPerUnitTop && pegawaiPerUnitTop.length > 0" class="p-5 rounded-3xl bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/60 shadow-sm">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h3 class="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-2">
+            <i class="fa-solid fa-ranking-star text-amber-500"></i>
+            5 Unit Kerja Terbesar (Berdasarkan Jumlah Personel)
+          </h3>
+          <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Unit dengan alokasi SDM terbanyak di Satpol PP & Damkar</p>
+        </div>
+      </div>
+
+      <div class="space-y-3">
+        <div v-for="(item, idx) in pegawaiPerUnitTop" :key="idx" class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+          <div class="flex items-center justify-between text-xs font-semibold mb-1.5">
+            <span class="text-slate-800 dark:text-slate-200 flex items-center gap-2">
+              <span class="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 font-bold text-[10px] flex items-center justify-center">
+                {{ idx + 1 }}
+              </span>
+              {{ item.nama_unit }}
+            </span>
+            <span class="text-emerald-600 dark:text-emerald-400 font-bold">{{ item.jumlah }} Pegawai</span>
+          </div>
+          <div class="w-full h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+            <div class="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-500"
+                 :style="{ width: Math.min((item.jumlah / ((pegawaiList || []).length || 1)) * 100 * 3, 100) + '%' }"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </template>
+
+  <!-- ===================== MODAL PANDUAN APLIKASI ===================== -->
+  <div v-if="showPanduan" class="fixed inset-0 z-[95] flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" @click="showPanduan = false"></div>
+
+    <div class="relative w-full max-w-3xl rounded-3xl bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60 shadow-2xl flex flex-col max-h-[90vh]">
+
+      <!-- Header -->
+      <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700/60 flex items-center justify-between shrink-0 rounded-t-3xl bg-gradient-to-r from-emerald-700 to-teal-700">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-white/15 text-white flex items-center justify-center text-lg shrink-0">
+            <i class="fa-solid fa-circle-question"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-extrabold text-white">Panduan Aplikasi SI-KOMPETENSI</h3>
+            <p class="text-[11px] text-emerald-100">Satpol PP & Kebakaran Kab. Trenggalek &bull; Terintegrasi SIMPEG</p>
+          </div>
+        </div>
+        <button @click="showPanduan = false" class="w-9 h-9 rounded-xl flex items-center justify-center text-white/80 hover:text-white hover:bg-white/10 transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Body (scrollable) -->
+      <div class="px-6 py-5 overflow-y-auto space-y-6 text-sm">
+
+        <!-- 1. Tentang Aplikasi -->
+        <section class="space-y-2">
+          <h4 class="font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
+            <i class="fa-solid fa-circle-info text-emerald-600 dark:text-emerald-400"></i> Tentang Aplikasi
+          </h4>
+          <p class="text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+            <strong>SI-KOMPETENSI</strong> adalah Sistem Informasi Pengembangan Kompetensi Pegawai di lingkungan
+            Satpol PP & Kebakaran Kabupaten Trenggalek. Aplikasi ini digunakan untuk mendata kompetensi
+            (diklat/sertifikasi) pegawai, mengelola riwayat laporan, serta menyajikan analisa pengembangan SDM —
+            dengan data pegawai, jabatan, dan unit kerja terintegrasi langsung (read-only) dari <strong>SIMPEG</strong>.
+            Login menggunakan akun resmi melalui <strong>SI-Platform (Single Sign-On)</strong>.
+          </p>
+        </section>
+
+        <!-- 2. Fitur Utama -->
+        <section class="space-y-2.5">
+          <h4 class="font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
+            <i class="fa-solid fa-cubes text-emerald-600 dark:text-emerald-400"></i> Fitur Utama
+          </h4>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+              <p class="text-xs font-bold text-slate-800 dark:text-slate-100"><i class="fa-solid fa-gauge-high text-emerald-600 mr-1.5"></i>Dashboard</p>
+              <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">Statistik kompetensi & laporan, grafik distribusi pegawai per unit, dan status jabatan.</p>
+            </div>
+            <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+              <p class="text-xs font-bold text-slate-800 dark:text-slate-100"><i class="fa-solid fa-file-lines text-emerald-600 mr-1.5"></i>Riwayat Laporan</p>
+              <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">Kelola laporan berkala pegawai: buat, ubah, hapus, verifikasi admin (setuju/tolak), serta ekspor Excel/PDF.</p>
+            </div>
+            <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+              <p class="text-xs font-bold text-slate-800 dark:text-slate-100"><i class="fa-solid fa-chart-pie text-emerald-600 mr-1.5"></i>Analisa Kompetensi</p>
+              <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">Analisa otomatis per tahun/bulan: ringkasan eksekutif, distribusi jenis kompetensi, temuan & rekomendasi (unduh PDF).</p>
+            </div>
+            <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+              <p class="text-xs font-bold text-slate-800 dark:text-slate-100"><i class="fa-solid fa-database text-emerald-600 mr-1.5"></i>Master Data</p>
+              <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">Tab <b>Data Kompetensi</b> (input diklat/sertifikasi + verifikasi) serta referensi SIMPEG read-only: pegawai, jabatan, unit.</p>
+            </div>
+            <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+              <p class="text-xs font-bold text-slate-800 dark:text-slate-100"><i class="fa-solid fa-user-tie text-emerald-600 mr-1.5"></i>Profil Saya</p>
+              <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">Data kepegawaian Anda dari SIMPEG (read-only) + pemeliharaan kontak: alamat, nomor HP, dan email.</p>
+            </div>
+            <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+              <p class="text-xs font-bold text-slate-800 dark:text-slate-100"><i class="fa-solid fa-gear text-emerald-600 mr-1.5"></i>Pengaturan <span class="text-[9px] font-bold uppercase bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 rounded ml-1">Admin</span></p>
+              <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">Parameter sistem yang dapat diubah administrator tanpa deploy ulang.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- 3. Alur Status Verifikasi -->
+        <section class="space-y-2.5">
+          <h4 class="font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
+            <i class="fa-solid fa-code-branch text-emerald-600 dark:text-emerald-400"></i> Alur Status Verifikasi
+          </h4>
+          <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 space-y-2.5">
+            <p class="text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
+              Data <b>kompetensi</b> dan <b>laporan</b> baru diverifikasi oleh administrator menjadi:
+            </p>
+            <ul class="text-[11px] leading-relaxed text-slate-600 dark:text-slate-300 space-y-1.5 list-none">
+              <li><span class="font-bold text-emerald-600 dark:text-emerald-400">Disetujui</span> — data valid dan diterima.</li>
+              <li><span class="font-bold text-amber-600 dark:text-amber-400">Revisi</span> (kompetensi) — perbaiki sesuai catatan verifikator, lalu simpan kembali.</li>
+              <li><span class="font-bold text-rose-600 dark:text-rose-400">Ditolak</span> (laporan) — tidak dapat diterima; alasan tertera pada catatan verifikator.</li>
+              <li><span class="font-bold text-slate-500 dark:text-slate-400">Draft</span> (laporan baru) — belum diverifikasi.</li>
+            </ul>
+          </div>
+        </section>
+
+        <!-- 4. Cara Input -->
+        <section class="space-y-2.5">
+          <h4 class="font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
+            <i class="fa-solid fa-list-ol text-emerald-600 dark:text-emerald-400"></i> Cara Menggunakan
+          </h4>
+          <ol class="text-xs leading-relaxed text-slate-600 dark:text-slate-300 space-y-2 list-none">
+            <li class="flex gap-2.5"><span class="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold text-[10px] flex items-center justify-center shrink-0">1</span><span><b>Input kompetensi</b>: buka Master Data → tab Data Kompetensi → Tambah Kompetensi → isi jenis, nama diklat/sertifikat, penyelenggara, JP, dan tanggal → simpan.</span></li>
+            <li class="flex gap-2.5"><span class="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold text-[10px] flex items-center justify-center shrink-0">2</span><span><b>Membuat laporan</b>: buka Riwayat Laporan → Buat Laporan → isi periode, nama laporan, pegawai, unit & jabatan → simpan (status draft).</span></li>
+            <li class="flex gap-2.5"><span class="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold text-[10px] flex items-center justify-center shrink-0">3</span><span>Tunggu verifikasi administrator; bila diminta <b>revisi</b>, baca catatannya, perbaiki, lalu simpan kembali.</span></li>
+            <li class="flex gap-2.5"><span class="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold text-[10px] flex items-center justify-center shrink-0">4</span><span>Pantau perkembangan pada <b>Analisa Kompetensi</b> dan unduh hasilnya sebagai PDF bila diperlukan.</span></li>
+          </ol>
+        </section>
+
+        <!-- 5. FAQ -->
+        <section class="space-y-2.5">
+          <h4 class="font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
+            <i class="fa-solid fa-circle-question text-emerald-600 dark:text-emerald-400"></i> Tanya Jawab
+          </h4>
+          <div class="space-y-2">
+            <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+              <p class="text-xs font-bold text-slate-700 dark:text-slate-200">Mengapa kompetensi saya belum tampil sebagai "disetujui"?</p>
+              <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">Setiap input baru menunggu verifikasi administrator. Status hanya berubah melalui proses verifikasi.</p>
+            </div>
+            <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+              <p class="text-xs font-bold text-slate-700 dark:text-slate-200">Mengapa saya hanya bisa mengelola data milik sendiri?</p>
+              <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">Sistem melindungi kepemilikan data: pegawai hanya dapat mengubah/menghapus datanya sendiri; administrator dapat melihat semuanya untuk verifikasi.</p>
+            </div>
+            <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+              <p class="text-xs font-bold text-slate-700 dark:text-slate-200">Data pegawai/jabatan/unit saya salah — bagaimana memperbaikinya?</p>
+              <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">Data tersebut berasal dari SIMPEG (read-only). Hubungi pengelola kepegawaian untuk perbaikan di sistem sumber.</p>
+            </div>
+            <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+              <p class="text-xs font-bold text-slate-700 dark:text-slate-200">Sesi saya berakhir / diminta login ulang terus?</p>
+              <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">Sesi mengikuti tiket SSO SI-Platform. Masuk kembali melalui tombol "Masuk via SI-Platform"; jika berulang, hubungi administrator aplikasi.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Footer info versi -->
+        <section class="pt-4 border-t border-slate-100 dark:border-slate-700/60 flex flex-col sm:flex-row items-center justify-between gap-2">
+          <p class="text-[11px] text-slate-400 dark:text-slate-500">SI-KOMPETENSI v1.0.0 &bull; Google Apps Script + Vue 3 &bull; © 2026 Pemkab Trenggalek</p>
+          <button @click="showPanduan = false" class="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold text-xs shadow-md shadow-emerald-600/20 transition">
+            Mengerti, Tutup
+          </button>
+        </section>
+
+      </div>
+    </div>
+  </div>
+
+</div>

@@ -1,0 +1,11 @@
+**/**
+!src/**
+!appsscript.json
+!src/appsscript.json
+node_modules/**
+.git/**
+.github/**
+scripts/**
+*.md
+package*.json
+tests/**
