@@ -1,4 +1,4 @@
-name: Deploy to Google Apps Script (SI-KOMPETENSI)
+name: Deploy SI-KOMPETENSI to Google Apps Script (CI/CD)
 
 on:
   push:
@@ -9,25 +9,41 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repository
+      - name: 📥 Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: 🟢 Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Install @google/clasp
+      - name: 📦 Install Google Clasp
         run: sudo npm install -g @google/clasp
 
-      - name: Authenticate with Google Apps Script
+      - name: 🔑 Setup Clasp Authentication (.clasprc.json)
         run: |
-          echo '${{ secrets.CLASPRC_JSON }}' > ~/.clasprc.json
+          echo "$CLASPRC_JSON" > ~/.clasprc.json
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
 
-      - name: Configure Target Script ID
+      - name: ⚙️ Setup Target Script ID
         run: |
-          node scripts/set-script-id.js "${{ secrets.GAS_SCRIPT_ID }}"
+          node -e "
+            const fs = require('fs');
+            const targetId = process.env.CLASP_SCRIPT_ID || process.env.GAS_SCRIPT_ID || '';
+            if (targetId) {
+              const clasp = fs.existsSync('.clasp.json') ? JSON.parse(fs.readFileSync('.clasp.json', 'utf8')) : { rootDir: 'src' };
+              clasp.scriptId = targetId.trim();
+              clasp.rootDir = 'src';
+              fs.writeFileSync('.clasp.json', JSON.stringify(clasp, null, 2));
+              console.log('Script ID terpasang:', targetId);
+            } else {
+              console.log('Menggunakan Script ID dari .clasp.json bawaan');
+            }
+          "
+        env:
+          CLASP_SCRIPT_ID: ${{ secrets.CLASP_SCRIPT_ID }}
+          GAS_SCRIPT_ID: ${{ secrets.GAS_SCRIPT_ID }}
 
-      - name: Push Code to Google Apps Script
-        run: |
-          clasp push --force
+      - name: 🚀 Push Code to Google Apps Script
+        run: clasp push --force
