@@ -108,7 +108,7 @@
                @login="goToPlatform">
     </app-login>
 
-    <!-- ===== 3. SHELL UTAMA APLIKASI (Setelah Terautentikasi) ===== -->
+    <!-- ===== 3. SHELL UTAMA APLIKASI ===== -->
     <div v-if="token" class="flex h-screen overflow-hidden bg-slate-100 dark:bg-slate-900">
       <!-- Sidebar Navigasi -->
       <app-sidebar :collapsed="sidebarCollapsed"
@@ -183,6 +183,8 @@
         return {
           isSsoLoading: false,
           ssoStatusMessage: '',
+          showPanduan: false,
+          pageSize: 10,
 
           // State Dashboard
           dashboardData: {
@@ -201,20 +203,17 @@
           riwayatLoading: false,
           riwayatSearch: '',
           riwayatFilterStatus: '',
+          riwayatFilterPegawai: '',
+          riwayatFilterUnit: '',
           showRiwayatForm: false,
           riwayatSaving: false,
           riwayatForm: {
             id: '',
             pegawai_id: '',
-            judul: '',
-            jenis: 'Pelatihan Struktural Kepemimpinan',
-            institusi: '',
-            tanggal_mulai: '',
-            tanggal_selesai: '',
-            jumlah_jp: 0,
-            nomor_sertifikat: '',
-            file_url: '',
-            deskripsi: '',
+            periode: '',
+            nama_laporan: '',
+            unit_id: '',
+            jabatan_id: '',
             status: 'draft'
           },
 
@@ -233,11 +232,11 @@
             pegawai_id: '',
             jenis_kompetensi: 'Manajerial',
             nama_kompetensi: '',
-            deskripsi: '',
-            tanggal_perolehan: '',
             penyelenggara: '',
-            jumlah_jp: 0,
-            nomor_sertifikat: '',
+            no_sertifikat: '',
+            jumlah_jp: 20,
+            tanggal_mulai: '',
+            tanggal_selesai: '',
             file_url: '',
             status_verifikasi: 'menunggu'
           },
@@ -256,34 +255,113 @@
           analisaTahun: new Date().getFullYear(),
           analisaBulan: '',
           tahunList: [],
-          bulanList: []
+          bulanList: [],
+
+          // Pagination SIMPEG Tab Referensi (A8)
+          pegawaiSearch: '',
+          unitSearch: '',
+          jabatanSearch: '',
+          pegawaiRefPage: 1,
+          unitRefPage: 1,
+          jabatanRefPage: 1
         };
       },
 
       computed: {
+        hasSsoTicket() {
+          try {
+            const urlParams = new URLSearchParams(window.location.search);
+            return Boolean(window.__SSO_TICKET__ || urlParams.get('ticket'));
+          } catch(e) {
+            return false;
+          }
+        },
         totalRiwayatPages() {
-          return Math.ceil(this.riwayatTotal / this.riwayatLimit) || 1;
+          return Math.max(1, Math.ceil((this.riwayatTotal || this.riwayatList.length) / this.pageSize));
+        },
+        riwayatTotalPages() {
+          return this.totalRiwayatPages;
         },
         totalKompetensiPages() {
-          return Math.ceil(this.kompetensiTotal / this.kompetensiLimit) || 1;
+          return Math.max(1, Math.ceil((this.kompetensiTotal || this.kompetensiList.length) / this.pageSize));
         },
-        riwayatStartIdx() {
-          if (this.riwayatTotal === 0) return 0;
-          return (this.riwayatPage - 1) * this.riwayatLimit + 1;
+        kompetensiTotalPages() {
+          return this.totalKompetensiPages;
         },
-        riwayatEndIdx() {
-          return Math.min(this.riwayatPage * this.riwayatLimit, this.riwayatTotal);
+        filteredPegawaiReferensi() {
+          const q = String(this.pegawaiSearch || '').toLowerCase().trim();
+          if (!q) return this.pegawaiList || [];
+          return (this.pegawaiList || []).filter(p =>
+            String(p.nip || '').toLowerCase().includes(q) ||
+            String(p.nama || '').toLowerCase().includes(q) ||
+            String(p.email || '').toLowerCase().includes(q)
+          );
         },
-        kompetensiStartIdx() {
-          if (this.kompetensiTotal === 0) return 0;
-          return (this.kompetensiPage - 1) * this.kompetensiLimit + 1;
+        filteredUnitReferensi() {
+          const q = String(this.unitSearch || '').toLowerCase().trim();
+          if (!q) return this.unitList || [];
+          return (this.unitList || []).filter(u =>
+            String(u.kode_unit || '').toLowerCase().includes(q) ||
+            String(u.nama_unit || '').toLowerCase().includes(q)
+          );
         },
-        kompetensiEndIdx() {
-          return Math.min(this.kompetensiPage * this.kompetensiLimit, this.kompetensiTotal);
+        filteredJabatanReferensi() {
+          const q = String(this.jabatanSearch || '').toLowerCase().trim();
+          if (!q) return this.jabatanList || [];
+          return (this.jabatanList || []).filter(j =>
+            String(j.kode_jabatan || '').toLowerCase().includes(q) ||
+            String(j.nama_jabatan || '').toLowerCase().includes(q)
+          );
+        },
+        paginatedPegawaiReferensi() {
+          const start = (this.pegawaiRefPage - 1) * this.pageSize;
+          return this.filteredPegawaiReferensi.slice(start, start + this.pageSize);
+        },
+        paginatedUnitReferensi() {
+          const start = (this.unitRefPage - 1) * this.pageSize;
+          return this.filteredUnitReferensi.slice(start, start + this.pageSize);
+        },
+        paginatedJabatanReferensi() {
+          const start = (this.jabatanRefPage - 1) * this.pageSize;
+          return this.filteredJabatanReferensi.slice(start, start + this.pageSize);
+        },
+        pegawaiRefTotalPages() {
+          return Math.max(1, Math.ceil(this.filteredPegawaiReferensi.length / this.pageSize));
+        },
+        unitRefTotalPages() {
+          return Math.max(1, Math.ceil(this.filteredUnitReferensi.length / this.pageSize));
+        },
+        jabatanRefTotalPages() {
+          return Math.max(1, Math.ceil(this.filteredJabatanReferensi.length / this.pageSize));
+        },
+        pegawaiPerUnitTop() {
+          const counts = {};
+          (this.pegawaiList || []).forEach(p => {
+            const uid = String(p.unit_id || 'tanpa_unit');
+            counts[uid] = (counts[uid] || 0) + 1;
+          });
+          return Object.keys(counts)
+            .map(uid => ({
+              nama_unit: uid === 'tanpa_unit' ? '(Tanpa Unit)' : this.namaUnit(uid),
+              jumlah: counts[uid]
+            }))
+            .sort((a, b) => b.jumlah - a.jumlah)
+            .slice(0, 5);
+        },
+        unitTanpaPegawai() {
+          const filled = {};
+          (this.pegawaiList || []).forEach(p => { filled[String(p.unit_id || '')] = true; });
+          return (this.unitList || []).filter(u => !filled[String(u.unit_id)]).length;
+        },
+        jabatanAktif() {
+          return (this.jabatanList || []).filter(j =>
+            String(j.status_jabatan || 'DEFINITIF').toUpperCase() !== 'KOSONG'
+          ).length;
         }
       },
 
       methods: {
+        // ================= FORMAT & HELPER =================
         formatDate(isoStr) {
           if (!isoStr) return '-';
           try {
@@ -295,28 +373,45 @@
           }
         },
 
+        formatDateDisplay(isoStr) {
+          return this.formatDate(isoStr);
+        },
+
         todayIso_() {
           return new Date().toISOString().split('T')[0];
         },
 
-        getNamaPegawai(id) {
+        namaPegawai(id) {
           if (!id) return '-';
-          const p = (this.pegawaiList || []).find(x => String(x.id) === String(id));
+          const p = (this.pegawaiList || []).find(x => String(x.id || x.pegawai_id) === String(id));
           return p ? (p.nama || p.display_name || p.nama_lengkap || id) : id;
         },
 
-        getNipPegawai(id) {
-          if (!id) return '-';
-          const p = (this.pegawaiList || []).find(x => String(x.id) === String(id));
-          return p ? (p.nip || '-') : '-';
+        getNamaPegawai(id) {
+          return this.namaPegawai(id);
         },
 
-        getNamaUnit(id) {
+        namaUnit(id) {
           if (!id) return '-';
-          const u = (this.unitList || []).find(x => String(x.id) === String(id));
+          const u = (this.unitList || []).find(x => String(x.id || x.unit_id) === String(id));
           return u ? (u.nama || u.nama_unit || id) : id;
         },
 
+        getNamaUnit(id) {
+          return this.namaUnit(id);
+        },
+
+        namaJabatan(id) {
+          if (!id) return '-';
+          const j = (this.jabatanList || []).find(x => String(x.id || x.jabatan_id) === String(id));
+          return j ? (j.nama || j.nama_jabatan || id) : id;
+        },
+
+        getNamaJabatan(id) {
+          return this.namaJabatan(id);
+        },
+
+        // ================= SSO REDIRECT =================
         goToPlatform() {
           const platformUrl = this.platformUrl || 'https://script.google.com/macros/s/AKfycbwh_OUVqmxLcuF81FHmPZtT33Wrm8Ce9Da1SQ3hfkSr7gM5P8ofyAlHSgW40mq3eo-PoQ/exec';
           if (window.top && window.top !== window) {
@@ -326,6 +421,7 @@
           }
         },
 
+        // ================= REFERENSI & DASHBOARD =================
         async loadReferensi(force = false) {
           try {
             await this.loadMasterSIMPEG(force);
@@ -353,79 +449,17 @@
           }
         },
 
-        async loadRiwayat(page = 1) {
-          this.riwayatLoading = true;
-          this.riwayatPage = page;
-          try {
-            const res = await this.callServer('get_riwayat_list', {
-              page: this.riwayatPage,
-              limit: this.riwayatLimit,
-              search: this.riwayatSearch,
-              filters: {
-                status: this.riwayatFilterStatus
-              }
-            });
-            if (res && res.success) {
-              this.riwayatList = res.data || [];
-              this.riwayatTotal = (res.meta && res.meta.total) || this.riwayatList.length;
-            } else {
-              this.showToast((res && res.error) || 'Gagal memuat riwayat laporan', 'error');
-            }
-          } catch (e) {
-            this.showToast('Gagal memuat data riwayat laporan: ' + e.message, 'error');
-          } finally {
-            this.riwayatLoading = false;
-          }
+        async refreshDashboard() {
+          await Promise.all([
+            this.loadDashboard(),
+            this.loadReferensi(true),
+            this.loadAnalisa()
+          ]);
+          await this.renderDashboardCharts();
+          this.showToast('Dashboard diperbarui');
         },
 
-        async loadKompetensi(page = 1) {
-          this.kompetensiLoading = true;
-          this.kompetensiPage = page;
-          try {
-            const res = await this.callServer('get_kompetensi_list', {
-              page: this.kompetensiPage,
-              limit: this.kompetensiLimit,
-              search: this.kompetensiSearch
-            });
-            if (res && res.success) {
-              this.kompetensiList = res.data || [];
-              this.kompetensiTotal = (res.meta && res.meta.total) || this.kompetensiList.length;
-            } else {
-              this.showToast((res && res.error) || 'Gagal memuat master kompetensi', 'error');
-            }
-          } catch (e) {
-            this.showToast('Gagal memuat data master kompetensi: ' + e.message, 'error');
-          } finally {
-            this.kompetensiLoading = false;
-          }
-        },
-
-        async loadAnalisa() {
-          this.analisaLoading = true;
-          try {
-            const res = await this.callServer('analytics', {
-              tahun: this.analisaTahun,
-              bulan: this.analisaBulan
-            });
-            if (res && res.success) {
-              this.analisaData = Object.assign({
-                total_data: 0,
-                ringkasan: '',
-                by_jenis: {},
-                by_divisi: {},
-                by_bulan: {},
-                temuan: [],
-                rekomendasi: []
-              }, res.data || {});
-            }
-          } catch (e) {
-            this.showToast('Gagal memuat analisa kompetensi: ' + e.message, 'error');
-          } finally {
-            this.analisaLoading = false;
-          }
-        },
-
-        renderDashboardCharts() {
+        async renderDashboardCharts() {
           this.$nextTick(() => {
             const ctx = document.getElementById('chartKompetensiDivisi');
             if (!ctx) return;
@@ -493,6 +527,34 @@
           });
         },
 
+        // ================= RIWAYAT LAPORAN (CRUD) =================
+        async loadRiwayat(page = 1) {
+          this.riwayatLoading = true;
+          this.riwayatPage = page;
+          try {
+            const res = await this.callServer('get_riwayat_list', {
+              page: this.riwayatPage,
+              limit: this.pageSize,
+              search: this.riwayatSearch,
+              filters: {
+                status: this.riwayatFilterStatus,
+                pegawai_id: this.riwayatFilterPegawai,
+                unit_id: this.riwayatFilterUnit
+              }
+            });
+            if (res && res.success) {
+              this.riwayatList = res.data || [];
+              this.riwayatTotal = (res.meta && res.meta.total) || this.riwayatList.length;
+            } else {
+              this.showToast((res && res.error) || 'Gagal memuat riwayat laporan', 'error');
+            }
+          } catch (e) {
+            this.showToast('Gagal memuat data riwayat laporan: ' + e.message, 'error');
+          } finally {
+            this.riwayatLoading = false;
+          }
+        },
+
         openRiwayatForm(item = null) {
           if (item) {
             this.riwayatForm = Object.assign({}, item);
@@ -500,15 +562,10 @@
             this.riwayatForm = {
               id: '',
               pegawai_id: (this.currentUser && this.currentUser.pegawai_id) || (this.currentUser && this.currentUser.id) || '',
-              judul: '',
-              jenis: 'Pelatihan Struktural Kepemimpinan',
-              institusi: '',
-              tanggal_mulai: this.todayIso_(),
-              tanggal_selesai: this.todayIso_(),
-              jumlah_jp: 10,
-              nomor_sertifikat: '',
-              file_url: '',
-              deskripsi: '',
+              periode: '',
+              nama_laporan: '',
+              unit_id: (this.currentUser && this.currentUser.unit_id) || '',
+              jabatan_id: (this.currentUser && this.currentUser.jabatan_id) || '',
               status: 'draft'
             };
           }
@@ -535,7 +592,7 @@
         },
 
         async deleteRiwayat(item) {
-          if (!confirm(`Hapus laporan "${item.judul || item.id}"?`)) return;
+          if (!confirm(`Hapus laporan "${item.nama_laporan || item.judul || item.id}"?`)) return;
           try {
             const res = await this.callServer('delete_riwayat', { id: item.id });
             if (res && res.success) {
@@ -568,6 +625,37 @@
           }
         },
 
+        resetRiwayatFilter() {
+          this.riwayatFilterStatus = '';
+          this.riwayatFilterPegawai = '';
+          this.riwayatFilterUnit = '';
+          this.riwayatSearch = '';
+          this.loadRiwayat(1);
+        },
+
+        // ================= MASTER KOMPETENSI (CRUD) =================
+        async loadKompetensi(page = 1) {
+          this.kompetensiLoading = true;
+          this.kompetensiPage = page;
+          try {
+            const res = await this.callServer('get_kompetensi_list', {
+              page: this.kompetensiPage,
+              limit: this.pageSize,
+              search: this.kompetensiSearch
+            });
+            if (res && res.success) {
+              this.kompetensiList = res.data || [];
+              this.kompetensiTotal = (res.meta && res.meta.total) || this.kompetensiList.length;
+            } else {
+              this.showToast((res && res.error) || 'Gagal memuat master kompetensi', 'error');
+            }
+          } catch (e) {
+            this.showToast('Gagal memuat data master kompetensi: ' + e.message, 'error');
+          } finally {
+            this.kompetensiLoading = false;
+          }
+        },
+
         openKompetensiForm(item = null) {
           if (item) {
             this.kompetensiForm = Object.assign({}, item);
@@ -577,11 +665,11 @@
               pegawai_id: (this.currentUser && this.currentUser.pegawai_id) || (this.currentUser && this.currentUser.id) || '',
               jenis_kompetensi: 'Manajerial',
               nama_kompetensi: '',
-              deskripsi: '',
-              tanggal_perolehan: this.todayIso_(),
               penyelenggara: '',
+              no_sertifikat: '',
               jumlah_jp: 20,
-              nomor_sertifikat: '',
+              tanggal_mulai: this.todayIso_(),
+              tanggal_selesai: this.todayIso_(),
               file_url: '',
               status_verifikasi: 'menunggu'
             };
@@ -642,54 +730,55 @@
           }
         },
 
-        async exportRiwayatExcel() {
-          if (typeof XLSX === 'undefined') {
-            this.showToast('Memuat pustaka Excel...', 'info');
-            await AppCore.loadScript('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js');
-          }
-          const dataToExport = this.riwayatList.map((r, i) => ({
-            'No': i + 1,
-            'Nama Pegawai': this.getNamaPegawai(r.pegawai_id),
-            'Judul Pelaporan': r.judul || r.nama_laporan || '',
-            'Jenis': r.jenis || '',
-            'Institusi': r.institusi || '',
-            'Tgl Mulai': this.formatDate(r.tanggal_mulai),
-            'Tgl Selesai': this.formatDate(r.tanggal_selesai),
-            'Jumlah JP': r.jumlah_jp || 0,
-            'No Sertifikat': r.nomor_sertifikat || '',
-            'Status': r.status || 'draft'
-          }));
-          const ws = XLSX.utils.json_to_sheet(dataToExport);
-          const wb = XLSX.utils.book_new();
-          XLSX.utils.book_append_sheet(wb, ws, 'Riwayat_Laporan');
-          XLSX.writeFile(wb, `Riwayat_Laporan_Kompetensi_${this.todayIso_()}.xlsx`);
+        // ================= SIMPEG TAB CONTROLS =================
+        loadPegawai(page) { this.pegawaiRefPage = page; },
+        resetPegawaiFilter() { this.pegawaiSearch = ''; this.pegawaiRefPage = 1; },
+        exportPegawaiExcel() {
+          this.exportExcel(this.pegawaiList, `Data_Pegawai_${this.todayIso_()}`, 'Pegawai');
         },
+        exportPegawaiPDF() {
+          this.exportPDF(
+            [
+              { header: 'No', field: (p, i) => i + 1 },
+              { header: 'NIP', key: 'nip' },
+              { header: 'Nama', key: 'nama' },
+              { header: 'Email', key: 'email' },
+              { header: 'Unit', field: p => this.namaUnit(p.unit_id) }
+            ],
+            this.pegawaiList,
+            `Data_Pegawai_${this.todayIso_()}`,
+            'Daftar Pegawai SIMPEG'
+          );
+        },
+        loadJabatan(page) { this.jabatanRefPage = page; },
+        resetJabatanFilter() { this.jabatanSearch = ''; this.jabatanRefPage = 1; },
+        loadUnit(page) { this.unitRefPage = page; },
+        resetUnitFilter() { this.unitSearch = ''; this.unitRefPage = 1; },
 
-        async exportRiwayatPDF() {
-          if (typeof jspdf === 'undefined' || !jspdf.jsPDF) {
-            this.showToast('Memuat modul PDF...', 'info');
-            await AppCore.loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
-            await AppCore.loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js');
+        // ================= ANALISA =================
+        async loadAnalisa() {
+          this.analisaLoading = true;
+          try {
+            const res = await this.callServer('analytics', {
+              tahun: this.analisaTahun,
+              bulan: this.analisaBulan
+            });
+            if (res && res.success) {
+              this.analisaData = Object.assign({
+                total_data: 0,
+                ringkasan: '',
+                by_jenis: {},
+                by_divisi: {},
+                by_bulan: {},
+                temuan: [],
+                rekomendasi: []
+              }, res.data || {});
+            }
+          } catch (e) {
+            this.showToast('Gagal memuat analisa: ' + e.message, 'error');
+          } finally {
+            this.analisaLoading = false;
           }
-          const { jsPDF } = jspdf;
-          const doc = new jsPDF();
-          doc.setFontSize(14);
-          doc.text('Daftar Riwayat Laporan Kompetensi', 14, 16);
-          const body = this.riwayatList.map((r, i) => [
-            i + 1,
-            this.getNamaPegawai(r.pegawai_id),
-            r.judul || r.nama_laporan || '-',
-            r.jenis || '-',
-            r.institusi || '-',
-            r.jumlah_jp || '0',
-            r.status || 'draft'
-          ]);
-          doc.autoTable({
-            startY: 22,
-            head: [['No', 'Pegawai', 'Judul', 'Jenis', 'Institusi', 'JP', 'Status']],
-            body: body
-          });
-          doc.save(`Riwayat_Laporan_Kompetensi_${this.todayIso_()}.pdf`);
         },
 
         async downloadAnalisaPDF() {
@@ -716,6 +805,53 @@
           y = doc.lastAutoTable.finalY + 6;
           doc.autoTable({ startY: y, head: [['Rekomendasi']], body: rekom.map(r => [r]) });
           doc.save(`Analisa_Kompetensi_${this.todayIso_()}.pdf`);
+        },
+
+        async exportRiwayatExcel() {
+          if (typeof XLSX === 'undefined') {
+            this.showToast('Memuat pustaka Excel...', 'info');
+            await AppCore.loadScript('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js');
+          }
+          const dataToExport = this.riwayatList.map((r, i) => ({
+            'No': i + 1,
+            'Periode': r.periode || '',
+            'Nama Laporan': r.nama_laporan || '',
+            'Nama Pegawai': this.namaPegawai(r.pegawai_id),
+            'Unit Kerja': this.namaUnit(r.unit_id),
+            'Jabatan': this.namaJabatan(r.jabatan_id),
+            'Status': r.status || 'draft',
+            'Update Terakhir': this.formatDate(r.updated_at)
+          }));
+          const ws = XLSX.utils.json_to_sheet(dataToExport);
+          const wb = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(wb, ws, 'Riwayat_Laporan');
+          XLSX.writeFile(wb, `Riwayat_Laporan_Kompetensi_${this.todayIso_()}.xlsx`);
+        },
+
+        async exportRiwayatPDF() {
+          if (typeof jspdf === 'undefined' || !jspdf.jsPDF) {
+            this.showToast('Memuat modul PDF...', 'info');
+            await AppCore.loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+            await AppCore.loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js');
+          }
+          const { jsPDF } = jspdf;
+          const doc = new jsPDF();
+          doc.setFontSize(14);
+          doc.text('Daftar Riwayat Laporan Kompetensi', 14, 16);
+          const body = this.riwayatList.map((r, i) => [
+            i + 1,
+            r.periode || '-',
+            r.nama_laporan || '-',
+            this.namaPegawai(r.pegawai_id),
+            this.namaUnit(r.unit_id),
+            r.status || 'draft'
+          ]);
+          doc.autoTable({
+            startY: 22,
+            head: [['No', 'Periode', 'Nama Laporan', 'Pegawai', 'Unit Kerja', 'Status']],
+            body: body
+          });
+          doc.save(`Riwayat_Laporan_Kompetensi_${this.todayIso_()}.pdf`);
         }
       },
 
