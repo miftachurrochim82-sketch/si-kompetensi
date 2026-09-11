@@ -369,6 +369,26 @@
             { id: '1', nama_nilai: 'Sangat Mendesak (Prioritas 1)' },
             { id: '2', nama_nilai: 'Kebutuhan Berkala (Prioritas 2)' }
           ];
+        },
+
+        sortedPegawaiList() {
+          const list = (this.simpegLookup && this.simpegLookup.pegawai) || [];
+          return [...list].sort((a, b) => (a.nama_lengkap || '').localeCompare(b.nama_lengkap || '', 'id'));
+        },
+
+        currentYearJadwalList() {
+          const currentYear = new Date().getFullYear();
+          return (this.jadwalList || [])
+            .filter(j => {
+              if (!j.tgl_mulai) return true;
+              const s = String(j.tgl_mulai);
+              return s.startsWith(String(currentYear)) || s.includes(String(currentYear));
+            })
+            .sort((a, b) => {
+              const dateA = a.tgl_mulai ? new Date(a.tgl_mulai).getTime() : 0;
+              const dateB = b.tgl_mulai ? new Date(b.tgl_mulai).getTime() : 0;
+              return dateB - dateA;
+            });
         }
       },
 
@@ -730,7 +750,7 @@
           this.kompetensiForm.diklat_id = jadwal.diklat_id || jadwal.id;
           this.kompetensiForm.jadwal_id = jadwal.id;
           this.kompetensiForm.nama_kegiatan = jadwal.nama_kegiatan || jadwal.nama_diklat || '';
-          this.kompetensiForm.rumpun = jadwal.rumpun || this.kompetensiForm.rumpun;
+          this.kompetensiForm.rumpun = jadwal.rumpun || 'Teknis Pemadam & Rescue';
           this.kompetensiForm.jumlah_jp = Number(jadwal.jumlah_jp) || 20;
           this.kompetensiForm.penyelenggara = jadwal.penyelenggara || '';
           this.kompetensiForm.metode = jadwal.metode || 'Klasikal';
@@ -743,9 +763,10 @@
           const j = this.jadwalList.find(x => String(x.id) === String(this.kompetensiForm.diklat_id)) ||
                     this.katalogList.find(x => String(x.id) === String(this.kompetensiForm.diklat_id));
           if (j) {
+            this.kompetensiForm.jadwal_id = j.id;
             this.kompetensiForm.nama_kegiatan = j.nama_kegiatan || j.nama_diklat || '';
-            this.kompetensiForm.rumpun = j.rumpun || this.kompetensiForm.rumpun;
-            this.kompetensiForm.jumlah_jp = Number(j.jumlah_jp || j.default_jp) || this.kompetensiForm.jumlah_jp;
+            this.kompetensiForm.rumpun = j.rumpun || 'Teknis Pemadam & Rescue';
+            this.kompetensiForm.jumlah_jp = Number(j.jumlah_jp || j.default_jp) || 20;
             this.kompetensiForm.penyelenggara = j.penyelenggara || j.penyelenggara_default || '';
             this.kompetensiForm.metode = j.metode || 'Klasikal';
             if (j.tgl_mulai) this.kompetensiForm.tgl_mulai = j.tgl_mulai;
@@ -811,17 +832,21 @@
             const myPeg = (this.simpegLookup.pegawai || []).find(p => String(p.email).toLowerCase() === String(this.currentUser.email).toLowerCase());
             if (myPeg) defaultPegawaiId = myPeg.id;
           }
-          if (!defaultPegawaiId && this.simpegLookup.pegawai && this.simpegLookup.pegawai[0]) {
-            defaultPegawaiId = this.simpegLookup.pegawai[0].id;
+          if (!defaultPegawaiId && this.sortedPegawaiList && this.sortedPegawaiList[0]) {
+            defaultPegawaiId = this.sortedPegawaiList[0].id;
           }
 
-          this.isMandiriTraining = false;
+          let defaultDiklatId = '';
+          if (this.currentYearJadwalList && this.currentYearJadwalList[0]) {
+            defaultDiklatId = this.currentYearJadwalList[0].id;
+          }
+
           this.pdfCompressInfo = '';
           this.kompetensiForm = {
             id: '',
             pegawai_id: defaultPegawaiId,
-            diklat_id: '',
-            jadwal_id: '',
+            diklat_id: defaultDiklatId,
+            jadwal_id: defaultDiklatId,
             nama_kegiatan: '',
             rumpun: 'Teknis Pemadam & Rescue',
             penyelenggara: '',
@@ -835,12 +860,19 @@
             file_url: '',
             status_verifikasi: 'menunggu'
           };
+
+          if (defaultDiklatId) {
+            this.onJadwalPelatihanChanged();
+          }
+
           this.showKompetensiForm = true;
         },
 
         openEditKompetensi(item) {
           this.kompetensiForm = Object.assign({}, item);
-          this.isMandiriTraining = !item.diklat_id && !item.jadwal_id;
+          if (!this.kompetensiForm.diklat_id && this.kompetensiForm.jadwal_id) {
+            this.kompetensiForm.diklat_id = this.kompetensiForm.jadwal_id;
+          }
           this.pdfCompressInfo = '';
           this.showKompetensiForm = true;
         },
@@ -848,6 +880,9 @@
         async saveKompetensi() {
           this.kompetensiSaving = true;
           try {
+            if (this.kompetensiForm.diklat_id && !this.kompetensiForm.nama_kegiatan) {
+              this.onJadwalPelatihanChanged();
+            }
             const res = await this.callServer('save_riwayat', { record: this.kompetensiForm });
             if (res && res.success) {
               this.showToast('Sertifikat kompetensi berhasil disimpan', 'success');
@@ -858,6 +893,11 @@
               this.showToast((res && res.error) || 'Gagal menyimpan', 'error');
             }
           } catch(e) {
+            this.showToast('Gagal: ' + e.message, 'error');
+          } finally {
+            this.kompetensiSaving = false;
+          }
+        },
             this.showToast('Terjadi kesalahan: ' + e.message, 'error');
           } finally {
             this.kompetensiSaving = false;

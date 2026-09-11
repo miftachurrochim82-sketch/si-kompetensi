@@ -951,8 +951,25 @@ function getRiwayatList_(params, user) {
 function saveRiwayat_(params, user) {
   try {
     var record = params.record || params;
-    if (!record.nama_kegiatan) return { success: false, error: 'Nama kegiatan pelatihan wajib diisi.' };
     if (!record.pegawai_id) return { success: false, error: 'Pegawai pemilik sertifikat wajib dipilih.' };
+
+    // Auto-populate from Jadwal if diklat_id / jadwal_id is provided
+    if ((!record.nama_kegiatan || !record.penyelenggara) && (record.jadwal_id || record.diklat_id)) {
+      var targetId = record.jadwal_id || record.diklat_id;
+      var allJadwal = getSheetData_(LOCAL_SHEETS.T_JADWAL_DIKLAT);
+      var j = allJadwal.find(function(x) { return String(x.id) === String(targetId); });
+      if (j) {
+        if (!record.nama_kegiatan) record.nama_kegiatan = j.nama_kegiatan || j.nama_diklat || '';
+        if (!record.rumpun) record.rumpun = j.rumpun || 'Teknis Pemadam & Rescue';
+        if (record.jumlah_jp === undefined || record.jumlah_jp === '') record.jumlah_jp = j.jumlah_jp || 20;
+        if (!record.penyelenggara) record.penyelenggara = j.penyelenggara || '';
+        if (!record.metode) record.metode = j.metode || 'Klasikal';
+        if (!record.tgl_mulai) record.tgl_mulai = j.tgl_mulai || '';
+        if (!record.tgl_selesai) record.tgl_selesai = j.tgl_selesai || '';
+      }
+    }
+
+    if (!record.nama_kegiatan) return { success: false, error: 'Nama kegiatan pelatihan / agenda diklat wajib dipilih.' };
 
     if (record.jumlah_jp === undefined || record.jumlah_jp === '') record.jumlah_jp = 20;
     if (!record.status_verifikasi) record.status_verifikasi = 'menunggu';
