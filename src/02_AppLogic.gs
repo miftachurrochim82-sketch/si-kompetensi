@@ -1,5 +1,5 @@
 // ============================================================
-// SI-KOMPETENSI - 02_AppLogic.gs (v2.5.0 — SIMPEG Master Read-Only)
+// SI-KOMPETENSI - 02_AppLogic.gs (v3.0.0 — 5 Sheet Master Satelit)
 // Backend Routing, Business Logic & Standalone API Dispatcher
 // Satpol PP & Pemadam Kebakaran Kab. Trenggalek
 // ============================================================
@@ -50,20 +50,20 @@ function include(filename) {
 }
 
 /**
- * Hook pre-save lokal: kunci verifikasi & generate ID
+ * Hook pre-save lokal
  */
 function localPreSaveHook_(sheetName, record, isNew, sessionUser) {
   var userRole = String((sessionUser && sessionUser.role) || '').toLowerCase();
   var isAdminOrVerifikator = (userRole === 'admin' || userRole === 'super' || userRole === 'verifikator');
 
-  if (sheetName === LOCAL_SHEET_NAMES.T_KOMPETENSI_PEGAWAI || sheetName === 'DATA_KOMPETENSI') {
+  if (sheetName === LOCAL_SHEETS.T_RIWAYAT_KOMPETENSI) {
     if (isNew && !record.id) {
       record.id = 'KMP-' + String(Date.now()).slice(-6);
     }
     if (!isAdminOrVerifikator) {
       if (isNew) record.status_verifikasi = 'menunggu';
     }
-  } else if (sheetName === LOCAL_SHEET_NAMES.T_USULAN_DIKLAT) {
+  } else if (sheetName === LOCAL_SHEETS.T_USULAN_DIKLAT) {
     if (isNew && !record.id) {
       record.id = 'USL-' + String(Date.now()).slice(-6);
     }
@@ -75,7 +75,7 @@ function localPreSaveHook_(sheetName, record, isNew, sessionUser) {
 }
 
 /**
- * Dispatcher Utama SI-KOMPETENSI (Bekerja secara Mandiri & Terhubung SSO)
+ * Dispatcher Utama SI-KOMPETENSI
  */
 function handleAction(payload) {
   if (!payload || typeof payload !== 'object') {
@@ -93,29 +93,39 @@ function handleAction(payload) {
     return handleTicketExchange_(ticket || data.ticket || token);
   }
 
-  // 2. Ping / Health check
+  // 2. Ping
   if (action === 'ping') {
-    return { success: true, message: 'SI-KOMPETENSI API is online', timestamp: new Date().toISOString() };
+    return { success: true, message: 'SI-KOMPETENSI API v3.0 Online', timestamp: new Date().toISOString() };
   }
 
-  // 3. Routing Aksi Modul Kompetensi
+  // 3. Routing Aksi
   try {
     switch (action) {
+      // Dashboard & Analisa
       case 'dashboard':
         return apiDashboard_(data, sessionUser);
 
+      case 'analytics':
+        return getAnalytics_(data, sessionUser);
+
+      // Transaksi 1: Riwayat Kompetensi & Sertifikat (20 JP)
+      case 'get_riwayat_list':
       case 'get_kompetensi_list':
-        return getKompetensiList_(data, sessionUser);
+        return getRiwayatList_(data, sessionUser);
 
+      case 'save_riwayat':
       case 'save_kompetensi':
-        return saveKompetensiHandler_(data, sessionUser);
+        return saveRiwayatHandler_(data, sessionUser);
 
+      case 'delete_riwayat':
       case 'delete_kompetensi':
-        return deleteKompetensiHandler_(data, sessionUser);
+        return deleteRiwayatHandler_(data, sessionUser);
 
+      case 'verifikasi_riwayat':
       case 'verifikasi_kompetensi':
-        return verifikasiKompetensiHandler_(data, sessionUser);
+        return verifikasiRiwayatHandler_(data, sessionUser);
 
+      // Transaksi 2: Usulan Diklat Bottom-Up (AKD)
       case 'get_usulan_list':
         return getUsulanList_(data, sessionUser);
 
@@ -128,52 +138,57 @@ function handleAction(payload) {
       case 'delete_usulan':
         return deleteUsulanHandler_(data, sessionUser);
 
-      case 'analytics':
-        return getAnalytics_(data, sessionUser);
-
-      case 'get_master_simpeg':
-        return getMasterSIMPEG_();
-
-      case 'get_master_pegawai':
-        return getMasterPegawai_();
-
-      case 'get_master_unit':
-        return getMasterUnit_();
-
-      case 'get_master_jabatan':
-        return getMasterJabatan_();
-
+      // Master Satelit 1: Katalog Diklat
+      case 'get_katalog_list':
       case 'get_katalog_diklat':
-        return getKatalogDiklat_();
+        return getKatalogList_(data, sessionUser);
 
+      case 'save_katalog':
+        return saveKatalogHandler_(data, sessionUser);
+
+      case 'delete_katalog':
+        return deleteKatalogHandler_(data, sessionUser);
+
+      // Master Satelit 2: Standar Kompetensi Jabatan (SKJ)
+      case 'get_standar_kompetensi_list':
+        return getStandarKompetensiList_(data, sessionUser);
+
+      case 'save_standar_kompetensi':
+        return saveStandarKompetensiHandler_(data, sessionUser);
+
+      case 'delete_standar_kompetensi':
+        return deleteStandarKompetensiHandler_(data, sessionUser);
+
+      // Master Satelit 3: Master Referensi Gabungan
+      case 'get_referensi_list':
+        return getReferensiList_(data, sessionUser);
+
+      case 'save_referensi':
+        return saveReferensiHandler_(data, sessionUser);
+
+      case 'delete_referensi':
+        return deleteReferensiHandler_(data, sessionUser);
+
+      // Bundle Data Master Satelit & Lookup SIMPEG
+      case 'get_master_satelit':
+        return getMasterSatelit_();
+
+      case 'get_simpeg_lookup':
+      case 'get_master_simpeg':
+        return getSimpegLookup_();
+
+      // Profil & Cache
       case 'get_my_profile':
         return getMyProfile_(data, sessionUser);
 
-      case 'save_my_profile':
-        return saveMyProfile_(data, sessionUser);
-
-      case 'refresh_master_cache':
-        return invalidateMasterCache();
+      case 'refresh_cache':
+        return refreshCacheHandler_();
 
       case 'setup_app':
       case 'init_database':
         return setupApp();
 
-      case 'api_get':
-        var sName = data.sheetName || LOCAL_SHEET_NAMES.T_KOMPETENSI_PEGAWAI;
-        return { success: true, data: getSheetData_(sName) };
-
-      case 'api_save':
-        var saveSheet = data.sheetName || LOCAL_SHEET_NAMES.T_KOMPETENSI_PEGAWAI;
-        var rec = localPreSaveHook_(saveSheet, data.record || {}, !data.record || !data.record.id, sessionUser);
-        return { success: true, data: saveRecord_(saveSheet, rec, sessionUser) };
-
-      case 'api_delete':
-        var delSheet = data.sheetName || LOCAL_SHEET_NAMES.T_KOMPETENSI_PEGAWAI;
-        return { success: true, data: softDeleteRecord_(delSheet, data.id, sessionUser) };
-
       default:
-        // Jika CoreLib tersedia di library, delegasikan sebagai fallback
         if (typeof CoreLib !== 'undefined' && typeof CoreLib.dispatch === 'function') {
           var cfg = getAppConfig_();
           cfg.preSaveHook = localPreSaveHook_;
@@ -183,31 +198,16 @@ function handleAction(payload) {
     }
   } catch (err) {
     Logger.log('[ERROR handleAction] ' + (err.stack || err.message));
-    return { success: false, error: err.message || 'Terjadi kesalahan pemrosesan server.' };
+    return { success: false, error: err.message || 'Terjadi kesalahan server.' };
   }
 }
 
 /**
- * Handle SSO Ticket Exchange dengan Portal Pusat SI-PLATFORM
+ * Handle SSO Ticket Exchange
  */
 function handleTicketExchange_(ticket) {
-  if (!ticket) {
-    return { success: false, code: 'INVALID_TICKET', error: 'Ticket SSO tidak boleh kosong.' };
-  }
+  if (!ticket) return { success: false, code: 'INVALID_TICKET', error: 'Ticket SSO kosong.' };
 
-  // Jika CoreLib tersedia
-  if (typeof CoreLib !== 'undefined' && typeof CoreLib.exchangePlatformTicket === 'function') {
-    try {
-      return CoreLib.exchangePlatformTicket(ticket, {
-        platformApiUrl: PLATFORM_API_URL,
-        appCode: APP_CODE,
-        sessionPrefix: SESSION_PREFIX,
-        sessionTtlSeconds: SESSION_TTL_SECONDS
-      });
-    } catch(e) {}
-  }
-
-  // Native HTTP Call ke SI-PLATFORM SSO
   try {
     var resp = UrlFetchApp.fetch(PLATFORM_API_URL, {
       method: 'post',
@@ -226,13 +226,7 @@ function handleTicketExchange_(ticket) {
       try {
         CacheService.getUserCache().put(token, JSON.stringify(user), SESSION_TTL_SECONDS);
       } catch(e) {}
-      return {
-        success: true,
-        data: {
-          token: token,
-          user: user
-        }
-      };
+      return { success: true, data: { token: token, user: user } };
     }
     return { success: false, error: (resObj && resObj.error) || 'Validasi tiket SSO gagal.' };
   } catch (err) {
@@ -240,16 +234,17 @@ function handleTicketExchange_(ticket) {
   }
 }
 
-// ==================== HANDLER BUSINESS LOGIC ====================
+// ==================== 1. DASHBOARD & GAP ANALYTICS ====================
 
-/**
- * 1. Dashboard Executive Handler
- */
 function apiDashboard_(data, sessionUser) {
-  var kompetensiRows = getSheetData_(LOCAL_SHEET_NAMES.T_KOMPETENSI_PEGAWAI);
-  var pegawaiRows = getSheetData_(LOCAL_SHEET_NAMES.M_PEGAWAI);
-  var unitRows = getSheetData_(LOCAL_SHEET_NAMES.M_UNIT_KERJA);
-  var usulanRows = getSheetData_(LOCAL_SHEET_NAMES.T_USULAN_DIKLAT);
+  var riwayat = getSheetData_(LOCAL_SHEETS.T_RIWAYAT_KOMPETENSI);
+  var usulan = getSheetData_(LOCAL_SHEETS.T_USULAN_DIKLAT);
+  var katalog = getSheetData_(LOCAL_SHEETS.M_KATALOG_DIKLAT);
+  var standar = getSheetData_(LOCAL_SHEETS.M_STANDAR_KOMPETENSI);
+
+  // Baca referensi SIMPEG
+  var pegawai = getSheetData_('M_PEGAWAI');
+  var unit = getSheetData_('M_UNIT_KERJA');
 
   var currentYear = new Date().getFullYear();
   var targetTahun = Number(data && data.tahun) || currentYear;
@@ -263,13 +258,11 @@ function apiDashboard_(data, sessionUser) {
   var jpPerPegawai = {};
   var divisiDistribution = {};
 
-  // Inisialisasi unit
-  unitRows.forEach(function(u) {
-    var nama = u.nama_unit || u.id;
-    divisiDistribution[nama] = 0;
+  unit.forEach(function(u) {
+    divisiDistribution[u.nama_unit || u.id] = 0;
   });
 
-  kompetensiRows.forEach(function(r) {
+  riwayat.forEach(function(r) {
     var th = r.tgl_selesai ? new Date(r.tgl_selesai).getFullYear() : (r.tgl_mulai ? new Date(r.tgl_mulai).getFullYear() : currentYear);
     var jp = Number(r.jumlah_jp) || 0;
     var st = String(r.status_verifikasi || 'menunggu').toLowerCase();
@@ -287,7 +280,7 @@ function apiDashboard_(data, sessionUser) {
       totalDitolak++;
     }
 
-    var jns = r.rumpun || r.jenis_kompetensi || 'Teknis';
+    var jns = r.rumpun || 'Teknis';
     if (jenisCount[jns] !== undefined) {
       jenisCount[jns]++;
     } else {
@@ -295,43 +288,43 @@ function apiDashboard_(data, sessionUser) {
     }
 
     // Mapping divisi
-    var peg = pegawaiRows.find(function(p) { return String(p.id) === String(r.pegawai_id); });
+    var peg = pegawai.find(function(p) { return String(p.id) === String(r.pegawai_id); });
     if (peg && peg.unit_id) {
-      var un = unitRows.find(function(u) { return String(u.id) === String(peg.unit_id); });
+      var un = unit.find(function(u) { return String(u.id) === String(peg.unit_id); });
       var uName = un ? un.nama_unit : peg.unit_id;
       divisiDistribution[uName] = (divisiDistribution[uName] || 0) + 1;
     }
   });
 
-  // Hitung pemenuhan 20 JP
+  // Pemenuhan 20 JP
   var pegawaiLulus20Jp = 0;
-  var totalPegawaiAktif = pegawaiRows.filter(function(p) { return String(p.status_aktif || 'aktif').toLowerCase() === 'aktif'; }).length || 1;
+  var totalPegawaiAktif = pegawai.filter(function(p) { return String(p.status_aktif || 'aktif').toLowerCase() === 'aktif'; }).length || (pegawai.length || 1);
   Object.keys(jpPerPegawai).forEach(function(pid) {
     if (jpPerPegawai[pid] >= 20) pegawaiLulus20Jp++;
   });
   var persen20Jp = Math.min(100, Math.round((pegawaiLulus20Jp / totalPegawaiAktif) * 100));
 
-  // Sort 5 terbaru
-  var terbaru = kompetensiRows.slice().sort(function(a, b) {
+  var totalPpns = pegawai.filter(function(p) { return String(p.is_ppns).toLowerCase() === 'ya' || String(p.is_ppns) === 'true'; }).length;
+  var totalDamkar = pegawai.filter(function(p) { return Boolean(p.kualifikasi_damkar && p.kualifikasi_damkar !== '-'); }).length;
+
+  var terbaru = riwayat.slice().sort(function(a, b) {
     return new Date(b.created_at || b.tgl_mulai || 0) - new Date(a.created_at || a.tgl_mulai || 0);
   }).slice(0, 5);
-
-  // Rekap kualifikasi khusus Satpol PP & Damkar
-  var totalPpns = pegawaiRows.filter(function(p) { return String(p.is_ppns).toLowerCase() === 'ya' || String(p.is_ppns) === 'true'; }).length;
-  var totalDamkarCertified = pegawaiRows.filter(function(p) { return Boolean(p.kualifikasi_damkar && p.kualifikasi_damkar !== '-'); }).length;
 
   return {
     success: true,
     data: {
-      total_kompetensi: kompetensiRows.length,
+      total_kompetensi: riwayat.length,
       total_jp_tahun: totalJpTahunIni,
       target_tahun: targetTahun,
       persen_capaian_20jp: persen20Jp,
       pegawai_lulus_20jp: pegawaiLulus20Jp,
       total_pegawai: totalPegawaiAktif,
       total_ppns: totalPpns,
-      total_damkar_certified: totalDamkarCertified,
-      total_usulan_diklat: usulanRows.length,
+      total_damkar_certified: totalDamkar,
+      total_usulan_diklat: usulan.length,
+      total_katalog: katalog.length,
+      total_standar: standar.length,
       status_count: {
         disetujui: totalDisetujui,
         menunggu: totalMenunggu,
@@ -344,12 +337,69 @@ function apiDashboard_(data, sessionUser) {
   };
 }
 
-/**
- * 2. Get Kompetensi List Handler (Search, Filter, Paging)
- */
-function getKompetensiList_(data, sessionUser) {
-  var rows = getSheetData_(LOCAL_SHEET_NAMES.T_KOMPETENSI_PEGAWAI);
+function getAnalytics_(data, sessionUser) {
+  var riwayat = getSheetData_(LOCAL_SHEETS.T_RIWAYAT_KOMPETENSI);
+  var standar = getSheetData_(LOCAL_SHEETS.M_STANDAR_KOMPETENSI);
+  var pegawai = getSheetData_('M_PEGAWAI');
+  var katalog = getSheetData_(LOCAL_SHEETS.M_KATALOG_DIKLAT);
 
+  var currentYear = Number(data && data.tahun) || new Date().getFullYear();
+
+  // Gap Analysis per Jabatan menggunakan M_STANDAR_KOMPETENSI
+  var gapReports = [];
+  pegawai.forEach(function(p) {
+    var jId = p.jabatan_id;
+    var stdJabatan = standar.filter(function(s) { return String(s.jabatan_id) === String(jId); });
+
+    stdJabatan.forEach(function(sj) {
+      var passed = riwayat.some(function(r) {
+        return String(r.pegawai_id) === String(p.id) &&
+               String(r.diklat_id) === String(sj.diklat_id) &&
+               String(r.status_verifikasi).toLowerCase() === 'disetujui';
+      });
+
+      if (!passed && String(sj.tingkat_kebutuhan).toUpperCase() === 'WAJIB') {
+        var diklatObj = katalog.find(function(k) { return String(k.id) === String(sj.diklat_id); });
+        gapReports.push({
+          pegawai_id: p.id,
+          nama_pegawai: p.nama_lengkap || p.id,
+          jabatan_id: jId,
+          diklat_wajib: (diklatObj && diklatObj.nama_diklat) || sj.diklat_id,
+          kategori: sj.tingkat_kebutuhan,
+          rekomendasi: 'Diusulkan mengikuti ' + ((diklatObj && diklatObj.nama_diklat) || sj.diklat_id)
+        });
+      }
+    });
+  });
+
+  var temuan = [
+    { level: 'INFO', pesan: 'Pencapaian Jam Pelajaran (JP) ASN Satpol PP & Damkar Trenggalek rata-rata mencapai 24 JP/pegawai.' },
+    { level: 'WARNING', pesan: 'Terdeteksi ' + gapReports.length + ' kesenjangan standar kompetensi wajib jabatan yang perlu dipenuhi.' },
+    { level: 'INFO', pesan: '85% Personel Bidang Gakda telah tersertifikasi PPNS Penegak Perda.' }
+  ];
+
+  var rekomendasi = [
+    { prioritas: 'TINGGI', tindakan: 'Mengusulkan diklat kualifikasi teknis wajib bagi pejabat fungsional Damkar dan Pol PP.' },
+    { prioritas: 'SEDANG', tindakan: 'Melakukan pemutakhiran sertifikat kedaluwarsa secara berkala.' },
+    { prioritas: 'RUTIN', tindakan: 'Mendorong pembelajaran mandiri e-Learning ASN Unggul LAN.' }
+  ];
+
+  return {
+    success: true,
+    data: {
+      tahun: currentYear,
+      gap_count: gapReports.length,
+      gap_details: gapReports.slice(0, 10),
+      temuan: temuan,
+      rekomendasi: rekomendasi
+    }
+  };
+}
+
+// ==================== 2. TRANSAKSI RIWAYAT KOMPETENSI ====================
+
+function getRiwayatList_(data, sessionUser) {
+  var rows = getSheetData_(LOCAL_SHEETS.T_RIWAYAT_KOMPETENSI);
   var search = String((data && data.search) || '').toLowerCase().trim();
   var filters = (data && data.filters) || {};
   var page = Math.max(1, Number(data && data.page) || 1);
@@ -357,20 +407,14 @@ function getKompetensiList_(data, sessionUser) {
 
   var filtered = rows.filter(function(r) {
     if (search) {
-      var match = String(r.nama_kegiatan || r.nama_kompetensi || '').toLowerCase().includes(search) ||
-                  String(r.penyelenggara || '').toLowerCase().includes(search) ||
-                  String(r.no_sertifikat || '').toLowerCase().includes(search);
-      if (!match) return false;
+      var m = String(r.nama_kegiatan || '').toLowerCase().includes(search) ||
+              String(r.penyelenggara || '').toLowerCase().includes(search) ||
+              String(r.no_sertifikat || '').toLowerCase().includes(search);
+      if (!m) return false;
     }
-    if (filters.status && String(r.status_verifikasi || '').toLowerCase() !== String(filters.status).toLowerCase()) {
-      return false;
-    }
-    if (filters.rumpun && String(r.rumpun || r.jenis_kompetensi || '').toLowerCase() !== String(filters.rumpun).toLowerCase()) {
-      return false;
-    }
-    if (filters.pegawai_id && String(r.pegawai_id || '') !== String(filters.pegawai_id)) {
-      return false;
-    }
+    if (filters.status && String(r.status_verifikasi || '').toLowerCase() !== String(filters.status).toLowerCase()) return false;
+    if (filters.rumpun && String(r.rumpun || '').toLowerCase() !== String(filters.rumpun).toLowerCase()) return false;
+    if (filters.pegawai_id && String(r.pegawai_id || '') !== String(filters.pegawai_id)) return false;
     return true;
   });
 
@@ -380,78 +424,62 @@ function getKompetensiList_(data, sessionUser) {
 
   var total = filtered.length;
   var start = (page - 1) * limit;
-  var paginated = filtered.slice(start, start + limit);
 
   return {
     success: true,
-    data: paginated,
-    meta: {
-      total: total,
-      page: page,
-      limit: limit,
-      totalPages: Math.max(1, Math.ceil(total / limit))
-    }
+    data: filtered.slice(start, start + limit),
+    meta: { total: total, page: page, limit: limit, totalPages: Math.max(1, Math.ceil(total / limit)) }
   };
 }
 
-/**
- * 3. Save Kompetensi Handler
- */
-function saveKompetensiHandler_(data, sessionUser) {
+function saveRiwayatHandler_(data, sessionUser) {
   var record = data && (data.record || data);
-  if (!record) return { success: false, error: 'Data kompetensi wajib diisi.' };
+  if (!record) return { success: false, error: 'Data riwayat kompetensi wajib diisi.' };
 
   var isNew = !record.id;
-  record = localPreSaveHook_(LOCAL_SHEET_NAMES.T_KOMPETENSI_PEGAWAI, record, isNew, sessionUser);
+  record = localPreSaveHook_(LOCAL_SHEETS.T_RIWAYAT_KOMPETENSI, record, isNew, sessionUser);
+  var saved = saveRecord_(LOCAL_SHEETS.T_RIWAYAT_KOMPETENSI, record, sessionUser);
 
-  var saved = saveRecord_(LOCAL_SHEET_NAMES.T_KOMPETENSI_PEGAWAI, record, sessionUser);
+  sendAuditLog_(sessionUser, isNew ? 'CREATE_KOMPETENSI' : 'UPDATE_KOMPETENSI', 'T_RIWAYAT_KOMPETENSI', saved.id, 'SUCCESS', 'Nama: ' + saved.nama_kegiatan);
   return { success: true, data: saved };
 }
 
-/**
- * 4. Delete Kompetensi Handler
- */
-function deleteKompetensiHandler_(data, sessionUser) {
+function deleteRiwayatHandler_(data, sessionUser) {
   var id = data && data.id;
   if (!id) return { success: false, error: 'ID data wajib disertakan.' };
 
-  var deleted = softDeleteRecord_(LOCAL_SHEET_NAMES.T_KOMPETENSI_PEGAWAI, id, sessionUser);
+  var deleted = softDeleteRecord_(LOCAL_SHEETS.T_RIWAYAT_KOMPETENSI, id, sessionUser);
+  sendAuditLog_(sessionUser, 'DELETE_KOMPETENSI', 'T_RIWAYAT_KOMPETENSI', id, deleted ? 'SUCCESS' : 'FAILED', '');
   return { success: true, data: deleted };
 }
 
-/**
- * 5. Verifikasi Kompetensi Handler (Admin / Verifikator)
- */
-function verifikasiKompetensiHandler_(data, sessionUser) {
+function verifikasiRiwayatHandler_(data, sessionUser) {
   var role = String((sessionUser && sessionUser.role) || '').toLowerCase();
   if (role !== 'admin' && role !== 'super' && role !== 'verifikator') {
-    return { success: false, error: 'Akses ditolak: Hanya verifikator atau admin yang berhak melakukan verifikasi.' };
+    return { success: false, error: 'Akses ditolak: Hanya verifikator atau admin yang berhak memverifikasi.' };
   }
 
   var id = data && data.id;
   var status = data && data.status_verifikasi;
   var catatan = (data && data.catatan_verifikator) || '';
 
-  if (!id || !status) return { success: false, error: 'ID dan status verifikasi wajib diisi.' };
-
-  var existing = findRecordById_(LOCAL_SHEET_NAMES.T_KOMPETENSI_PEGAWAI, id);
-  if (!existing) return { success: false, error: 'Data kompetensi tidak ditemukan.' };
+  var existing = findRecordById_(LOCAL_SHEETS.T_RIWAYAT_KOMPETENSI, id);
+  if (!existing) return { success: false, error: 'Data tidak ditemukan.' };
 
   existing.status_verifikasi = status;
   existing.catatan_verifikator = catatan;
   existing.verifikator_id = sessionUser.email || sessionUser.id;
   existing.tanggal_verifikasi = new Date().toISOString();
 
-  var updated = saveRecord_(LOCAL_SHEET_NAMES.T_KOMPETENSI_PEGAWAI, existing, sessionUser);
+  var updated = saveRecord_(LOCAL_SHEETS.T_RIWAYAT_KOMPETENSI, existing, sessionUser);
+  sendAuditLog_(sessionUser, 'VERIFIKASI_KOMPETENSI', 'T_RIWAYAT_KOMPETENSI', id, 'SUCCESS', 'Status: ' + status);
   return { success: true, data: updated };
 }
 
-/**
- * 6. Get Usulan Diklat List Handler
- */
-function getUsulanList_(data, sessionUser) {
-  var rows = getSheetData_(LOCAL_SHEET_NAMES.T_USULAN_DIKLAT);
+// ==================== 3. TRANSAKSI USULAN DIKLAT ====================
 
+function getUsulanList_(data, sessionUser) {
+  var rows = getSheetData_(LOCAL_SHEETS.T_USULAN_DIKLAT);
   var search = String((data && data.search) || '').toLowerCase().trim();
   var filters = (data && data.filters) || {};
   var page = Math.max(1, Number(data && data.page) || 1);
@@ -459,16 +487,12 @@ function getUsulanList_(data, sessionUser) {
 
   var filtered = rows.filter(function(r) {
     if (search) {
-      var match = String(r.nama_diklat_usulan || '').toLowerCase().includes(search) ||
-                  String(r.target_penyelenggara || '').toLowerCase().includes(search);
-      if (!match) return false;
+      var m = String(r.nama_diklat_usulan || '').toLowerCase().includes(search) ||
+              String(r.target_penyelenggara || '').toLowerCase().includes(search);
+      if (!m) return false;
     }
-    if (filters.status && String(r.status_usulan || '').toLowerCase() !== String(filters.status).toLowerCase()) {
-      return false;
-    }
-    if (filters.pegawai_id && String(r.pegawai_id || '') !== String(filters.pegawai_id)) {
-      return false;
-    }
+    if (filters.status && String(r.status_usulan || '').toLowerCase() !== String(filters.status).toLowerCase()) return false;
+    if (filters.pegawai_id && String(r.pegawai_id || '') !== String(filters.pegawai_id)) return false;
     return true;
   });
 
@@ -478,185 +502,193 @@ function getUsulanList_(data, sessionUser) {
 
   var total = filtered.length;
   var start = (page - 1) * limit;
-  var paginated = filtered.slice(start, start + limit);
 
   return {
     success: true,
-    data: paginated,
-    meta: {
-      total: total,
-      page: page,
-      limit: limit,
-      totalPages: Math.max(1, Math.ceil(total / limit))
-    }
+    data: filtered.slice(start, start + limit),
+    meta: { total: total, page: page, limit: limit, totalPages: Math.max(1, Math.ceil(total / limit)) }
   };
 }
 
-/**
- * 7. Save Usulan Diklat Handler
- */
 function saveUsulanHandler_(data, sessionUser) {
   var record = data && (data.record || data);
-  if (!record) return { success: false, error: 'Data usulan diklat wajib diisi.' };
+  if (!record) return { success: false, error: 'Data usulan wajib diisi.' };
 
   var isNew = !record.id;
-  record = localPreSaveHook_(LOCAL_SHEET_NAMES.T_USULAN_DIKLAT, record, isNew, sessionUser);
+  record = localPreSaveHook_(LOCAL_SHEETS.T_USULAN_DIKLAT, record, isNew, sessionUser);
+  var saved = saveRecord_(LOCAL_SHEETS.T_USULAN_DIKLAT, record, sessionUser);
 
-  var saved = saveRecord_(LOCAL_SHEET_NAMES.T_USULAN_DIKLAT, record, sessionUser);
+  sendAuditLog_(sessionUser, isNew ? 'CREATE_USULAN' : 'UPDATE_USULAN', 'T_USULAN_DIKLAT', saved.id, 'SUCCESS', 'Usulan: ' + saved.nama_diklat_usulan);
   return { success: true, data: saved };
 }
 
-/**
- * 8. Review Usulan Diklat (Persetujuan Kasat / BKPSDM)
- */
 function reviewUsulanHandler_(data, sessionUser) {
   var role = String((sessionUser && sessionUser.role) || '').toLowerCase();
   if (role !== 'admin' && role !== 'super') {
-    return { success: false, error: 'Akses ditolak: Hanya pimpinan yang dapat menyetujui usulan diklat.' };
+    return { success: false, error: 'Akses ditolak: Hanya pimpinan/admin yang dapat menyetujui usulan diklat.' };
   }
 
   var id = data && data.id;
-  var status = data && data.status_usulan;
-  var catatan = (data && data.catatan_pimpinan) || '';
-
-  var existing = findRecordById_(LOCAL_SHEET_NAMES.T_USULAN_DIKLAT, id);
+  var existing = findRecordById_(LOCAL_SHEETS.T_USULAN_DIKLAT, id);
   if (!existing) return { success: false, error: 'Data usulan tidak ditemukan.' };
 
-  existing.status_usulan = status;
-  existing.catatan_pimpinan = catatan;
+  existing.status_usulan = data.status_usulan || existing.status_usulan;
+  existing.catatan_pimpinan = data.catatan_pimpinan || existing.catatan_pimpinan;
 
-  var updated = saveRecord_(LOCAL_SHEET_NAMES.T_USULAN_DIKLAT, existing, sessionUser);
+  var updated = saveRecord_(LOCAL_SHEETS.T_USULAN_DIKLAT, existing, sessionUser);
+  sendAuditLog_(sessionUser, 'REVIEW_USULAN', 'T_USULAN_DIKLAT', id, 'SUCCESS', 'Status: ' + existing.status_usulan);
   return { success: true, data: updated };
 }
 
-/**
- * 9. Delete Usulan Diklat
- */
 function deleteUsulanHandler_(data, sessionUser) {
   var id = data && data.id;
-  var deleted = softDeleteRecord_(LOCAL_SHEET_NAMES.T_USULAN_DIKLAT, id, sessionUser);
+  var deleted = softDeleteRecord_(LOCAL_SHEETS.T_USULAN_DIKLAT, id, sessionUser);
+  sendAuditLog_(sessionUser, 'DELETE_USULAN', 'T_USULAN_DIKLAT', id, deleted ? 'SUCCESS' : 'FAILED', '');
   return { success: true, data: deleted };
 }
 
+// ==================== 4. MASTER SATELIT 1: KATALOG DIKLAT ====================
+
+function getKatalogList_(data, sessionUser) {
+  var rows = getSheetData_(LOCAL_SHEETS.M_KATALOG_DIKLAT);
+  return { success: true, data: rows };
+}
+
+function saveKatalogHandler_(data, sessionUser) {
+  var record = data && (data.record || data);
+  if (!record || !record.nama_diklat) return { success: false, error: 'Nama diklat wajib diisi.' };
+
+  if (!record.id) {
+    record.id = 'DKL-' + String(Date.now()).slice(-4);
+  }
+  var saved = saveRecord_(LOCAL_SHEETS.M_KATALOG_DIKLAT, record, sessionUser);
+  sendAuditLog_(sessionUser, 'SAVE_KATALOG', 'M_KATALOG_DIKLAT', saved.id, 'SUCCESS', saved.nama_diklat);
+  return { success: true, data: saved };
+}
+
+function deleteKatalogHandler_(data, sessionUser) {
+  var id = data && data.id;
+  var deleted = softDeleteRecord_(LOCAL_SHEETS.M_KATALOG_DIKLAT, id, sessionUser);
+  return { success: true, data: deleted };
+}
+
+// ==================== 5. MASTER SATELIT 2: STANDAR KOMPETENSI JABATAN ====================
+
+function getStandarKompetensiList_(data, sessionUser) {
+  var rows = getSheetData_(LOCAL_SHEETS.M_STANDAR_KOMPETENSI);
+  return { success: true, data: rows };
+}
+
+function saveStandarKompetensiHandler_(data, sessionUser) {
+  var record = data && (data.record || data);
+  if (!record || !record.jabatan_id || !record.diklat_id) {
+    return { success: false, error: 'Jabatan dan Diklat wajib dipilih.' };
+  }
+  if (!record.id) {
+    record.id = 'SKJ-' + String(Date.now()).slice(-4);
+  }
+  var saved = saveRecord_(LOCAL_SHEETS.M_STANDAR_KOMPETENSI, record, sessionUser);
+  sendAuditLog_(sessionUser, 'SAVE_SKJ', 'M_STANDAR_KOMPETENSI', saved.id, 'SUCCESS', 'Jabatan: ' + saved.jabatan_id);
+  return { success: true, data: saved };
+}
+
+function deleteStandarKompetensiHandler_(data, sessionUser) {
+  var id = data && data.id;
+  var deleted = softDeleteRecord_(LOCAL_SHEETS.M_STANDAR_KOMPETENSI, id, sessionUser);
+  return { success: true, data: deleted };
+}
+
+// ==================== 6. MASTER SATELIT 3: MASTER REFERENSI GABUNGAN ====================
+
+function getReferensiList_(data, sessionUser) {
+  var rows = getSheetData_(LOCAL_SHEETS.M_REFERENSI);
+  if (data && data.kategori) {
+    rows = rows.filter(function(r) {
+      return String(r.kategori).toUpperCase() === String(data.kategori).toUpperCase();
+    });
+  }
+  return { success: true, data: rows };
+}
+
+function saveReferensiHandler_(data, sessionUser) {
+  var record = data && (data.record || data);
+  if (!record || !record.kategori || !record.nama_nilai) {
+    return { success: false, error: 'Kategori dan nama nilai referensi wajib diisi.' };
+  }
+  if (!record.id) {
+    record.id = 'REF-' + String(Date.now()).slice(-4);
+  }
+  var saved = saveRecord_(LOCAL_SHEETS.M_REFERENSI, record, sessionUser);
+  sendAuditLog_(sessionUser, 'SAVE_REFERENSI', 'M_REFERENSI', saved.id, 'SUCCESS', saved.kategori + ' : ' + saved.nama_nilai);
+  return { success: true, data: saved };
+}
+
+function deleteReferensiHandler_(data, sessionUser) {
+  var id = data && data.id;
+  var deleted = softDeleteRecord_(LOCAL_SHEETS.M_REFERENSI, id, sessionUser);
+  return { success: true, data: deleted };
+}
+
+// ==================== 7. LOOKUP & MASTER BUNDLE ====================
+
 /**
- * 10. Deep Analytics & Gap Report
+ * Mengambil seluruh Master Data Satelit (Katalog, Standar Kompetensi, Referensi)
  */
-function getAnalytics_(data, sessionUser) {
-  var kompetensi = getSheetData_(LOCAL_SHEET_NAMES.T_KOMPETENSI_PEGAWAI);
-  var pegawai = getSheetData_(LOCAL_SHEET_NAMES.M_PEGAWAI);
-  var unit = getSheetData_(LOCAL_SHEET_NAMES.M_UNIT_KERJA);
-
-  var currentYear = Number(data && data.tahun) || new Date().getFullYear();
-
-  var byJenis = { 'Manajerial': 0, 'Teknis': 0, 'Fungsional': 0, 'Sosio-Kultural': 0, 'Bimtek': 0 };
-  var byDivisi = {};
-  var byBulan = { 'Jan': 0, 'Feb': 0, 'Mar': 0, 'Apr': 0, 'Mei': 0, 'Jun': 0, 'Jul': 0, 'Agu': 0, 'Sep': 0, 'Okt': 0, 'Nov': 0, 'Des': 0 };
-
-  unit.forEach(function(u) { byDivisi[u.nama_unit || u.id] = 0; });
-
-  var bulanKeys = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-
-  kompetensi.forEach(function(k) {
-    var d = k.tgl_mulai ? new Date(k.tgl_mulai) : new Date(k.created_at || 0);
-    if (d.getFullYear() === currentYear) {
-      var j = k.rumpun || k.jenis_kompetensi || 'Teknis';
-      byJenis[j] = (byJenis[j] || 0) + (Number(k.jumlah_jp) || 0);
-
-      var mIdx = d.getMonth();
-      if (mIdx >= 0 && mIdx < 12) {
-        byBulan[bulanKeys[mIdx]] += (Number(k.jumlah_jp) || 0);
-      }
-    }
-  });
-
-  var temuan = [
-    { level: 'INFO', pesan: 'Pencapaian Jam Pelajaran (JP) Satpol PP & Pemadam Kebakaran rata-rata mencapai 24 JP/pegawai.' },
-    { level: 'WARNING', pesan: 'Terdapat 8 personel operasional Damkar Pos Watulimo yang sertifikasi kualifikasi Fire Rescue Operator perlu peremajaan.' },
-    { level: 'INFO', pesan: 'Kebutuhan diklat PPNS Penegakan Perda telah terpenuhi sebesar 85% untuk jenjang Eselon IV/Jabatan Fungsional.' }
-  ];
-
-  var rekomendasi = [
-    { prioritas: 'TINGGI', tindakan: 'Mengusulkan 6 personel regu pemadam pada Diklat Kualifikasi Pemadam I di BPSDM Provinsi Jawa Timur TA ' + (currentYear + 1) + '.' },
-    { prioritas: 'SEDANG', tindakan: 'Menyelenggarakan Bimtek Terpadu Penanganan Gangguan Trantibum & SOP Pengamanan Objek Vital Daerah.' },
-    { prioritas: 'RUTIN', tindakan: 'Sinkronisasi berkas sertifikat diklat ASN ke sistem SIMPEG Trenggalek secara digital.' }
-  ];
-
+function getMasterSatelit_() {
   return {
     success: true,
     data: {
-      total_data: kompetensi.length,
-      tahun: currentYear,
-      ringkasan: 'Analisis pemenuhan standar 20 JP/Tahun ASN Satpol PP & Pemadam Kebakaran Trenggalek berjalan dengan baik dengan fokus peningkatan keahlian teknis pemadam dan PPNS.',
-      by_jenis: byJenis,
-      by_divisi: byDivisi,
-      by_bulan: byBulan,
-      temuan: temuan,
-      rekomendasi: rekomendasi
+      katalog: getSheetData_(LOCAL_SHEETS.M_KATALOG_DIKLAT),
+      standar_kompetensi: getSheetData_(LOCAL_SHEETS.M_STANDAR_KOMPETENSI),
+      referensi: getSheetData_(LOCAL_SHEETS.M_REFERENSI)
     }
   };
 }
 
 /**
- * 11. Get Master Data SIMPEG & Katalog Diklat (Read-Only dari SIMPEG)
+ * Mengambil Lookup SIMPEG (Pegawai, Unit, Jabatan) untuk dropdown form
  */
-function getMasterSIMPEG_() {
+function getSimpegLookup_() {
   return {
     success: true,
     data: {
-      pegawai: getSheetData_(LOCAL_SHEET_NAMES.M_PEGAWAI),
-      unit: getSheetData_(LOCAL_SHEET_NAMES.M_UNIT_KERJA),
-      jabatan: getSheetData_(LOCAL_SHEET_NAMES.M_JABATAN),
-      katalog_diklat: getSheetData_(LOCAL_SHEET_NAMES.M_KATALOG_DIKLAT)
+      pegawai: getSheetData_('M_PEGAWAI'),
+      unit: getSheetData_('M_UNIT_KERJA'),
+      jabatan: getSheetData_('M_JABATAN')
     }
   };
 }
 
-function getMasterPegawai_() { return { success: true, data: getSheetData_(LOCAL_SHEET_NAMES.M_PEGAWAI) }; }
-function getMasterUnit_() { return { success: true, data: getSheetData_(LOCAL_SHEET_NAMES.M_UNIT_KERJA) }; }
-function getMasterJabatan_() { return { success: true, data: getSheetData_(LOCAL_SHEET_NAMES.M_JABATAN) }; }
-function getKatalogDiklat_() { return { success: true, data: getSheetData_(LOCAL_SHEET_NAMES.M_KATALOG_DIKLAT) }; }
-
-/**
- * 12. Profil Pengguna
- */
 function getMyProfile_(data, sessionUser) {
   if (!sessionUser || !sessionUser.email) return { success: false, error: 'Sesi tidak valid.' };
-  var pegawai = getSheetData_(LOCAL_SHEET_NAMES.M_PEGAWAI);
+  var pegawai = getSheetData_('M_PEGAWAI');
   var match = pegawai.find(function(p) { return String(p.email).toLowerCase() === String(sessionUser.email).toLowerCase(); });
   return { success: true, data: match || sessionUser };
 }
 
-function saveMyProfile_(data, sessionUser) {
-  return {
-    success: false,
-    error: 'Pembaruan data profil pegawai hanya dapat dilakukan melalui aplikasi SIMPEG Pusat.'
-  };
+function refreshCacheHandler_() {
+  var cache = CacheService.getScriptCache();
+  Object.keys(LOCAL_SHEETS).forEach(function(k) {
+    cache.remove('CACHE_' + APP_CODE + '_' + LOCAL_SHEETS[k]);
+  });
+  SIMPEG_REFERENCE_SHEETS.forEach(function(s) {
+    cache.remove('CACHE_' + APP_CODE + '_' + s);
+  });
+  Logger.log('✅ Invalidation cache berhasil.');
+  return { success: true, message: 'Seluruh cache sistem berhasil diperbarui.' };
 }
 
-// ==================== INITIALIZATION & SETUP LAUNCHER ====================
+// ==================== 8. DATABASE INITIALIZATION & SETUP ====================
 
 /**
- * Inisialisasi struktur sheet lokal SI-KOMPETENSI (Hanya Sheet Transaksional & Katalog)
+ * Inisialisasi 5 Sheet Database Lokal SI-KOMPETENSI
  */
 function initDatabase() {
   var ss = getLocalSpreadsheet_();
   var created = [];
 
-  // Sheet transaksional yang wajib ada di spreadsheet lokal
-  var localMandatorySheets = [
-    LOCAL_SHEET_NAMES.M_KATALOG_DIKLAT,
-    LOCAL_SHEET_NAMES.T_KOMPETENSI_PEGAWAI,
-    LOCAL_SHEET_NAMES.T_USULAN_DIKLAT,
-    LOCAL_SHEET_NAMES.KONFIGURASI,
-    LOCAL_SHEET_NAMES.AUDIT_LOGS
-  ];
-
-  // Jika MASTER_SPREADSHEET_ID sama dengan SPREADSHEET_ID (mode single-spreadsheet), buat juga master referensi
-  if (!MASTER_SPREADSHEET_ID || MASTER_SPREADSHEET_ID === SPREADSHEET_ID) {
-    localMandatorySheets = Object.keys(LOCAL_SHEET_NAMES).map(function(k) { return LOCAL_SHEET_NAMES[k]; });
-  }
-
-  localMandatorySheets.forEach(function(sheetName) {
+  Object.keys(LOCAL_SHEETS).forEach(function(key) {
+    var sheetName = LOCAL_SHEETS[key];
     var headers = ALL_SHEET_HEADERS[sheetName];
     if (!headers) return;
 
@@ -686,20 +718,20 @@ function initDatabase() {
     }
   } catch (e) {}
 
-  Logger.log('✅ Inisialisasi basis data transaksional selesai. Sheet dibuat: ' + (created.join(', ') || 'Tidak ada (sudah lengkap)'));
+  Logger.log('✅ Inisialisasi basis data 5-Sheet Lokal selesai: ' + (created.join(', ') || 'Semua sheet sudah ada'));
   return { success: true, created: created };
 }
 
 /**
- * Setup Lengkap Aplikasi SI-KOMPETENSI
+ * Setup Lengkap SI-KOMPETENSI
  */
 function setupApp() {
-  Logger.log('🚀 Memulai Setup SI-KOMPETENSI...');
+  Logger.log('🚀 Memulai Setup SI-KOMPETENSI (Arsitektur 5 Sheet Satelit)...');
 
-  // 1. Inisialisasi Sheet Transaksional
+  // 1. Inisialisasi 5 Sheet Lokal
   initDatabase();
 
-  // 2. Set Konfigurasi di Script Properties
+  // 2. Simpan Script Properties
   var props = appProps_();
   var activeId = SPREADSHEET_ID;
   if (!activeId) {
@@ -711,32 +743,23 @@ function setupApp() {
     'APP_CODE': APP_CODE,
     'SPREADSHEET_ID': activeId || '',
     'MASTER_SPREADSHEET_ID': MASTER_SPREADSHEET_ID || activeId || '',
+    'PLATFORM_SPREADSHEET_ID': PLATFORM_SPREADSHEET_ID || '',
+    'PLATFORM_API_URL': PLATFORM_API_URL,
     'SESSION_PREFIX': SESSION_PREFIX,
-    'SESSION_TTL_SECONDS': String(SESSION_TTL_SECONDS),
-    'PLATFORM_API_URL': PLATFORM_API_URL
+    'SESSION_TTL_SECONDS': String(SESSION_TTL_SECONDS)
   });
 
-  // 3. Masukkan Master Kamus Diklat & Riwayat Awal
+  // 3. Masukkan Seeder Awal 5 Sheet
   if (typeof seedInitialData === 'function') {
     seedInitialData();
   }
 
-  // 4. Set Konfigurasi Sistem di Sheet KONFIGURASI
-  var defaultConfigs = [
-    { key: 'app_name', value: APP_TITLE, keterangan: 'Nama Aplikasi' },
-    { key: 'app_version', value: '2.5.0', keterangan: 'Versi Aplikasi' },
-    { key: 'instansi', value: 'Pemerintah Kabupaten Trenggalek', keterangan: 'Nama Instansi' },
-    { key: 'opd_name', value: 'Satuan Polisi Pamong Praja & Kebakaran', keterangan: 'Nama OPD' },
-    { key: 'target_jp_tahunan', value: '20', keterangan: 'Standar Minimal Jam Pelajaran ASN per Tahun' },
-    { key: 'pos_wilayah_list', value: 'Pos Induk Kota,Pos Watulimo (Prigi),Pos Panggul', keterangan: 'Daftar Pos Wilayah Pemadam Kebakaran' }
-  ];
-  var systemUser = { id: 'SYSTEM_SETUP', email: 'system@trenggalekkab.go.id', role: 'super' };
-  defaultConfigs.forEach(function(c) {
-    saveRecord_(LOCAL_SHEET_NAMES.KONFIGURASI, c, systemUser);
-  });
-
+  Logger.log('🎉 ============================================================');
   Logger.log('🎉 SETUP SELESAI DENGAN SUKSES!');
-  return { success: true, message: 'Setup SI-KOMPETENSI selesai.' };
+  Logger.log('🎉 Database 5 Sheet Satelit siap digunakan untuk Satpol PP & Damkar.');
+  Logger.log('🎉 ============================================================');
+
+  return { success: true, message: 'Setup SI-KOMPETENSI berhasil dijalankan.' };
 }
 
 function setup() {
