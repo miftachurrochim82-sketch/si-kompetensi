@@ -1,9 +1,10 @@
 <!-- ============================================================
-     V_Layout.html — Antarmuka Lengkap SI-KOMPETENSI (v3.3.0)
+     V_Layout.html — Antarmuka Lengkap SI-KOMPETENSI (v3.4.0)
      Satuan Polisi Pamong Praja & Pemadam Kebakaran Kab. Trenggalek
+     Adopsi Fitur Inovatif SIPKA: AI Insights, Matriks Bulanan & Target PNS/PPPK
      ============================================================ -->
 
-<!-- ==================== 1. TAB DASHBOARD & CAPAIAN 20 JP ==================== -->
+<!-- ==================== 1. TAB DASHBOARD & CAPAIAN 20/24 JP ==================== -->
 <div v-if="currentPage === 'dashboard'" class="space-y-6">
 
   <!-- Welcome Banner & Quick Actions -->
@@ -19,7 +20,7 @@
         Selamat Datang, {{ (currentUser || {}).nama_lengkap || (currentUser || {}).display_name || 'Pegawai' }}! 👋
       </h1>
       <p class="text-xs sm:text-sm text-emerald-100/90 max-w-xl">
-        Pantau capaian standar minimal 20 JP tahunan, agenda pelatihan resmi bulanan, serta portofolio sertifikasi personel.
+        Pantau standar minimal Jam Pelajaran (PNS: 20 JP, PPPK: 24 JP), analisis prediktif AI organisasi, dan agenda diklat bulanan.
       </p>
     </div>
 
@@ -27,7 +28,7 @@
       <button @click="showPanduan = true"
               class="bg-white/10 hover:bg-white/20 active:scale-95 text-white font-bold px-4 py-2.5 rounded-2xl text-xs backdrop-blur-md border border-white/20 transition-all flex items-center gap-2">
         <i class="fa-solid fa-circle-info text-emerald-300"></i>
-        <span>Panduan 20 JP</span>
+        <span>Panduan JP</span>
       </button>
       <button v-if="isAdmin || isVerifikator" @click="openJadwalModal()"
               class="bg-teal-600 hover:bg-teal-500 active:scale-95 text-white font-bold px-4 py-2.5 rounded-2xl text-xs shadow-lg transition-all flex items-center gap-2">
@@ -56,10 +57,10 @@
       </div>
     </div>
 
-    <!-- Card 2: Capaian 20 JP OPD -->
+    <!-- Card 2: Capaian Standar JP OPD -->
     <div class="p-5 rounded-3xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 shadow-sm flex items-center justify-between">
       <div>
-        <p class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Capaian 20 JP OPD</p>
+        <p class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Capaian Target OPD</p>
         <p class="text-2xl font-black text-teal-600 dark:text-teal-400 mt-1">{{ dashboardData.persen_capaian_20jp || 0 }}%</p>
         <p class="text-[11px] text-slate-500 mt-0.5">{{ dashboardData.pegawai_lulus_20jp || 0 }} dari {{ dashboardData.total_pegawai || 10 }} ASN tuntas</p>
       </div>
@@ -93,14 +94,82 @@
     </div>
   </div>
 
+  <!-- ==================== FITUR ADOPSI: AI INSIGHT ORGANISASI ==================== -->
+  <div class="p-6 rounded-3xl bg-gradient-to-br from-emerald-950/10 via-teal-950/5 to-slate-900/10 dark:from-emerald-950/40 dark:via-slate-900/50 dark:to-teal-950/30 border border-emerald-500/30 dark:border-emerald-500/20 shadow-sm space-y-4">
+    <div class="flex items-center justify-between">
+      <h3 class="text-sm font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
+        <span class="text-base">🧠</span>
+        <span>AI Insight & Analisis Prediktif Organisasi</span>
+      </h3>
+      <span class="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-bold text-[10px]">
+        Otomatis Diperbarui
+      </span>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <!-- 1. Tren Partisipasi -->
+      <div class="p-4 rounded-2xl bg-white/80 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 space-y-1.5">
+        <p class="text-[11px] font-bold text-slate-500 flex items-center gap-1.5">
+          <i class="fa-solid fa-arrow-trend-up text-emerald-500"></i> Tren Partisipasi
+        </p>
+        <div class="text-base font-black" :class="(dashboardData.ai_insights || {}).tren_partisipasi?.naik ? 'text-emerald-600' : 'text-amber-600'">
+          {{ (dashboardData.ai_insights || {}).tren_partisipasi?.naik ? '📈 Meningkat' : '📉 Melambat' }}
+          <span class="text-xs font-semibold text-slate-400">({{ (dashboardData.ai_insights || {}).tren_partisipasi?.persen || 0 }}%)</span>
+        </div>
+        <p class="text-[10px] text-slate-500">
+          Bulan ini: <strong>{{ (dashboardData.ai_insights || {}).tren_partisipasi?.bulan_ini_jp || 0 }} JP</strong> vs Lalu: {{ (dashboardData.ai_insights || {}).tren_partisipasi?.bulan_lalu_jp || 0 }} JP
+        </p>
+      </div>
+
+      <!-- 2. Unit Terbaik -->
+      <div class="p-4 rounded-2xl bg-white/80 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 space-y-1.5">
+        <p class="text-[11px] font-bold text-slate-500 flex items-center gap-1.5">
+          <i class="fa-solid fa-award text-amber-500"></i> Unit Terbaik
+        </p>
+        <p class="text-xs font-black text-slate-900 dark:text-white truncate">
+          {{ (dashboardData.ai_insights || {}).unit_terbaik?.nama || 'Bidang Gakda' }}
+        </p>
+        <p class="text-[10px] text-slate-500">
+          Rata-rata: <strong class="text-emerald-600">{{ (dashboardData.ai_insights || {}).unit_terbaik?.rata_jp || 0 }} JP</strong> / Pegawai
+        </p>
+      </div>
+
+      <!-- 3. Prediksi Risiko -->
+      <div class="p-4 rounded-2xl bg-white/80 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 space-y-1.5">
+        <p class="text-[11px] font-bold text-slate-500 flex items-center gap-1.5">
+          <i class="fa-solid fa-triangle-exclamation text-rose-500"></i> Risiko Target Akhir Tahun
+        </p>
+        <p class="text-base font-black text-rose-600">
+          {{ (dashboardData.ai_insights || {}).prediksi_tidak_capai?.total_berisiko || 0 }} Personel
+        </p>
+        <p class="text-[10px] text-slate-500">
+          Sisa <strong>{{ (dashboardData.ai_insights || {}).prediksi_tidak_capai?.sisa_bulan || 3 }} bulan</strong> tahun anggaran berjalan
+        </p>
+      </div>
+
+      <!-- 4. Rekomendasi Pelatihan -->
+      <div class="p-4 rounded-2xl bg-white/80 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 space-y-1.5">
+        <p class="text-[11px] font-bold text-slate-500 flex items-center gap-1.5">
+          <i class="fa-solid fa-lightbulb text-teal-500"></i> Rekomendasi Prioritas
+        </p>
+        <p class="text-xs font-bold text-teal-700 dark:text-teal-300">
+          Teknis Gakda & Damkar
+        </p>
+        <p class="text-[10px] text-slate-500">
+          Perbanyak diklat fungsional & sertifikasi rescue operasional
+        </p>
+      </div>
+    </div>
+  </div>
+
   <!-- ==================== SECTION GRAFIK VISUALISASI INTERAKTIF ==================== -->
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <!-- Chart 1: Donut Capaian 20 JP -->
+    <!-- Chart 1: Donut Capaian Target -->
     <div class="p-6 rounded-3xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 shadow-sm space-y-4">
       <div class="flex items-center justify-between">
         <h3 class="text-sm font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
           <i class="fa-solid fa-chart-pie text-emerald-500"></i>
-          <span>Pemenuhan 20 JP ASN</span>
+          <span>Pemenuhan Target JP ASN</span>
         </h3>
         <span class="text-xs font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-full">{{ dashboardData.persen_capaian_20jp || 0 }}%</span>
       </div>
@@ -110,7 +179,7 @@
       <div class="flex items-center justify-around text-xs text-slate-500 pt-2 border-t border-slate-100 dark:border-slate-700/50">
         <div class="flex items-center gap-1.5">
           <span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span>
-          <span>Tuntas (≥20 JP): <strong>{{ dashboardData.pegawai_lulus_20jp || 0 }}</strong></span>
+          <span>Tuntas: <strong>{{ dashboardData.pegawai_lulus_20jp || 0 }}</strong></span>
         </div>
         <div class="flex items-center gap-1.5">
           <span class="w-3 h-3 rounded-full bg-slate-300 dark:bg-slate-600 inline-block"></span>
@@ -153,6 +222,133 @@
           <p class="font-bold text-rose-600">{{ (dashboardData.jenis_count || {})['Bimbingan Teknis & Workshop'] || 0 }}</p>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- ==================== FITUR ADOPSI: KLASIFIKASI CAPAIAN (PNS VS PPPK) ==================== -->
+  <div class="p-6 rounded-3xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 shadow-sm space-y-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <h3 class="text-sm font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
+          <i class="fa-solid fa-trophy text-amber-500"></i>
+          <span>Klasifikasi Capaian JP Pegawai (PNS vs PPPK)</span>
+        </h3>
+        <p class="text-xs text-slate-500">Target Standar Tahunan: <strong>PNS = 20 JP</strong> | <strong>PPPK = 24 JP</strong></p>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Kolom PNS -->
+      <div class="space-y-3">
+        <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-700">
+          <span class="text-xs font-black text-emerald-600 flex items-center gap-1.5">
+            <i class="fa-solid fa-user-check"></i> Pegawai Negeri Sipil (PNS) — Target 20 JP
+          </span>
+          <span class="badge badge-success">{{ (dashboardData.capaian_pns || []).length }} Personel</span>
+        </div>
+        <div class="space-y-2 max-h-60 overflow-y-auto pr-1">
+          <div v-for="p in (dashboardData.capaian_pns || [])" :key="p.pegawai_id"
+               class="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800 text-xs space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-slate-900 dark:text-white truncate max-w-[200px]">{{ p.nama_pegawai }}</span>
+              <span class="font-black" :class="p.total_jp >= 20 ? 'text-emerald-600' : (p.total_jp >= 10 ? 'text-teal-600' : 'text-rose-600')">
+                {{ p.total_jp }} / 20 JP
+              </span>
+            </div>
+            <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2 overflow-hidden">
+              <div class="h-full rounded-full transition-all"
+                   :class="p.total_jp >= 20 ? 'bg-emerald-500' : (p.total_jp >= 10 ? 'bg-teal-500' : 'bg-rose-500')"
+                   :style="{ width: p.persen + '%' }"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Kolom PPPK -->
+      <div class="space-y-3">
+        <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-700">
+          <span class="text-xs font-black text-amber-600 flex items-center gap-1.5">
+            <i class="fa-solid fa-user-shield"></i> Pegawai Pemerintah dgn Perjanjian Kerja (PPPK) — Target 24 JP
+          </span>
+          <span class="badge badge-warning">{{ (dashboardData.capaian_pppk || []).length }} Personel</span>
+        </div>
+        <div class="space-y-2 max-h-60 overflow-y-auto pr-1">
+          <div v-if="(dashboardData.capaian_pppk || []).length === 0" class="p-6 text-center text-slate-400 text-xs">
+            Belum ada data personel PPPK yang terdaftar di SIMPEG.
+          </div>
+          <div v-for="p in (dashboardData.capaian_pppk || [])" :key="p.pegawai_id"
+               class="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800 text-xs space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-slate-900 dark:text-white truncate max-w-[200px]">{{ p.nama_pegawai }}</span>
+              <span class="font-black" :class="p.total_jp >= 24 ? 'text-emerald-600' : (p.total_jp >= 12 ? 'text-teal-600' : 'text-rose-600')">
+                {{ p.total_jp }} / 24 JP
+              </span>
+            </div>
+            <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2 overflow-hidden">
+              <div class="h-full rounded-full transition-all"
+                   :class="p.total_jp >= 24 ? 'bg-emerald-500' : (p.total_jp >= 12 ? 'bg-amber-500' : 'bg-rose-500')"
+                   :style="{ width: p.persen + '%' }"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== FITUR ADOPSI: MATRIKS CAPAIAN JP BULANAN ==================== -->
+  <div class="p-6 rounded-3xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 shadow-sm space-y-4">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+      <div>
+        <h3 class="text-sm font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
+          <i class="fa-solid fa-table-cells text-emerald-500"></i>
+          <span>Matriks Capaian Jam Pelajaran per Bulan (Januari - Desember)</span>
+        </h3>
+        <p class="text-xs text-slate-500">Pemetaan perolehan JP personel setiap bulan dalam tahun anggaran {{ dashboardData.target_tahun || 2026 }}.</p>
+      </div>
+      <button @click="exportMatriksExcel()" class="btn btn-secondary text-xs">
+        <i class="fa-solid fa-file-excel text-emerald-600"></i>
+        <span>XLS Matriks Bulanan</span>
+      </button>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-center text-xs border-collapse">
+        <thead class="bg-slate-50 dark:bg-slate-900/50 text-slate-500 uppercase font-bold border-b border-slate-100 dark:border-slate-800">
+          <tr>
+            <th class="p-2.5 text-left min-w-[180px]">Nama Pegawai</th>
+            <th class="p-2 w-10">Jan</th>
+            <th class="p-2 w-10">Feb</th>
+            <th class="p-2 w-10">Mar</th>
+            <th class="p-2 w-10">Apr</th>
+            <th class="p-2 w-10">Mei</th>
+            <th class="p-2 w-10">Jun</th>
+            <th class="p-2 w-10">Jul</th>
+            <th class="p-2 w-10">Agt</th>
+            <th class="p-2 w-10">Sep</th>
+            <th class="p-2 w-10">Okt</th>
+            <th class="p-2 w-10">Nov</th>
+            <th class="p-2 w-10">Des</th>
+            <th class="p-2.5 font-black text-emerald-700 dark:text-emerald-300">Total</th>
+            <th class="p-2.5">Status</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+          <tr v-for="m in (dashboardData.matriks_bulanan || [])" :key="m.pegawai_id" class="hover:bg-slate-50/50 dark:hover:bg-slate-900/30">
+            <td class="p-2.5 text-left">
+              <div class="font-bold text-slate-900 dark:text-white truncate max-w-[200px]">{{ m.nama_pegawai }}</div>
+              <div class="text-[10px] text-slate-400 font-mono">{{ m.nip || m.pegawai_id }}</div>
+            </td>
+            <td v-for="(val, idx) in m.bulan" :key="idx" class="p-2" :class="val > 0 ? 'font-bold text-emerald-600 bg-emerald-50/50 dark:bg-emerald-950/20' : 'text-slate-300 dark:text-slate-600'">
+              {{ val > 0 ? val : '-' }}
+            </td>
+            <td class="p-2.5 font-black text-emerald-600 bg-slate-50 dark:bg-slate-900/50">{{ m.total_jp }} JP</td>
+            <td class="p-2.5">
+              <span v-if="m.total_jp >= m.target_jp" class="badge badge-success text-[10px]">Tuntas</span>
+              <span v-else class="badge badge-warning text-[10px]">Proses</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 
@@ -284,7 +480,7 @@
         <i class="fa-solid fa-certificate text-emerald-500"></i>
         <span>Portofolio & Riwayat Pelatihan ASN</span>
       </h2>
-      <p class="text-xs text-slate-500">Catatan sertifikat terverifikasi, jam pelajaran (JP), dan dokumen pendukung 20 JP tahunan.</p>
+      <p class="text-xs text-slate-500">Catatan sertifikat terverifikasi, jam pelajaran (JP), dan dokumen pendukung standar tahunan.</p>
     </div>
     <div class="flex flex-wrap items-center gap-2">
       <button @click="exportKompetensiExcel()" class="btn btn-secondary text-xs">
@@ -848,11 +1044,27 @@
         </div>
       </div>
 
-      <div>
-        <label class="form-label">Tautan Berkas Sertifikat (Google Drive / Cloud)</label>
-        <div class="relative">
-          <i class="fa-solid fa-link absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-          <input v-model="kompetensiForm.file_url" type="url" class="form-input pl-9 text-xs" placeholder="https://drive.google.com/file/d/...">
+      <!-- Input Berkas Sertifikat dengan Kompresi Otomatis pdf-lib -->
+      <div class="space-y-2">
+        <label class="form-label font-bold text-slate-700 dark:text-slate-200">
+          Berkas Sertifikat Pelatihan (Unggah PDF / Link Google Drive)
+        </label>
+        
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="text-[11px] text-slate-500 block mb-1">Pilih File PDF (Kompresi Otomatis):</label>
+            <input type="file" @change="onPdfFileSelected" accept="application/pdf" class="form-input text-xs file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-xs file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100">
+            <p v-if="pdfCompressInfo" class="text-[10px] text-emerald-600 font-bold mt-1">
+              ✨ {{ pdfCompressInfo }}
+            </p>
+          </div>
+          <div>
+            <label class="text-[11px] text-slate-500 block mb-1">Atau Tautan Google Drive:</label>
+            <div class="relative">
+              <i class="fa-solid fa-link absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+              <input v-model="kompetensiForm.file_url" type="url" class="form-input pl-8 text-xs" placeholder="https://drive.google.com/file/d/...">
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1239,28 +1451,31 @@
 </div>
 
 
-<!-- 8. MODAL PANDUAN STANDAR 20 JP -->
+<!-- 8. MODAL PANDUAN STANDAR JP PNS & PPPK -->
 <div v-if="showPanduan" class="modal-overlay" @click.self="showPanduan = false">
   <div class="modal-box max-w-lg">
     <div class="modal-header">
       <h3 class="font-black text-sm text-slate-800 dark:text-white flex items-center gap-2">
         <i class="fa-solid fa-circle-info text-emerald-500"></i>
-        <span>Panduan Pemenuhan 20 Jam Pelajaran (JP)</span>
+        <span>Panduan Standar Jam Pelajaran (PNS & PPPK)</span>
       </h3>
       <button @click="showPanduan = false" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
     </div>
 
     <div class="p-6 space-y-4 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
       <div class="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/50 text-emerald-950 dark:text-emerald-200">
-        <p class="font-bold">Landasan Hukum:</p>
-        <p class="mt-1">Pasal 203 PP No. 11/2017 jo. PP No. 17/2020 tentang Manajemen Pegawai Negeri Sipil mengamanatkan bahwa setiap ASN berhak & wajib memperoleh minimal <strong>20 Jam Pelajaran (JP)</strong> pengembangan kompetensi dalam 1 tahun anggaran.</p>
+        <p class="font-bold">Landasan Hukum Target Pengembangan Kompetensi:</p>
+        <ul class="list-disc list-inside space-y-1 mt-1 text-slate-700 dark:text-slate-300">
+          <li><strong>PNS (Pegawai Negeri Sipil):</strong> Minimal <strong>20 JP/tahun</strong> (PP No. 11/2017 jo. PP No. 17/2020).</li>
+          <li><strong>PPPK (Pegawai Pemerintah dgn Perjanjian Kerja):</strong> Maksimal <strong>24 JP/tahun</strong> sesuai masa perjanjian kerja (PermenPAN-RB No. 14/2019 & Perka LAN).</li>
+        </ul>
       </div>
 
       <div class="space-y-2">
-        <p class="font-bold text-slate-900 dark:text-white">Jenis Kegiatan yang Dapat Dikonversi:</p>
+        <p class="font-bold text-slate-900 dark:text-white">Rumpun Pelatihan yang Dapat Dikonversi:</p>
         <ul class="list-disc list-inside space-y-1 text-slate-500">
           <li>Diklat Kepemimpinan Struktural (PKA, PKP).</li>
-          <li>Diklat Teknis Operasional (PPNS Penegak Perda, Pemadam Kebakaran I/II, Water Rescue, Vertical Rescue).</li>
+          <li>Diklat Teknis Operasional (PPNS Penegak Perda, Fire I/II, Water Rescue, Vertical Rescue).</li>
           <li>Bimbingan Teknis, Workshop, Seminar, dan Lokakarya.</li>
           <li>Pembelajaran Daring Mandiri / MOOC ASN Unggul LAN RI.</li>
         </ul>

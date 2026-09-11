@@ -1,5 +1,5 @@
 // ============================================================
-// SI-KOMPETENSI - 02_AppLogic.gs (v3.3.0 — Enriched SIMPEG & Streamlined Flow)
+// SI-KOMPETENSI - 02_AppLogic.gs (v3.4.0 — AI Insights & Matriks Bulanan)
 // Backend Routing, Business Logic & Standalone API Dispatcher
 // Satpol PP & Pemadam Kebakaran Kab. Trenggalek
 // ============================================================
@@ -95,20 +95,20 @@ function handleAction(payload) {
 
   // 2. Ping
   if (action === 'ping') {
-    return { success: true, message: 'SI-KOMPETENSI API v3.3.0 Online', timestamp: new Date().toISOString() };
+    return { success: true, message: 'SI-KOMPETENSI API v3.4.0 Online', timestamp: new Date().toISOString() };
   }
 
   // 3. Routing Aksi
   try {
     switch (action) {
-      // Dashboard & Analisa
+      // Dashboard, AI Insights & Analisa
       case 'dashboard':
         return apiDashboard_(data, sessionUser);
 
       case 'analytics':
         return getAnalytics_(data, sessionUser);
 
-      // Transaksi 1: Riwayat Kompetensi & Sertifikat (20 JP)
+      // Transaksi 1: Riwayat Kompetensi & Sertifikat (20/24 JP)
       case 'get_riwayat_list':
       case 'get_kompetensi_list':
         return getRiwayatList_(data, sessionUser);
@@ -311,7 +311,7 @@ function handleTicketExchange_(ticket) {
   return { success: false, error: 'Tiket Single Sign-On tidak valid atau telah kedaluwarsa.' };
 }
 
-// ==================== 1. DASHBOARD & GAP ANALYTICS ====================
+// ==================== 1. DASHBOARD, AI INSIGHTS & MATRIKS ====================
 
 function apiDashboard_(data, sessionUser) {
   var riwayat = getSheetData_(LOCAL_SHEETS.T_RIWAYAT_KOMPETENSI);
@@ -324,14 +324,20 @@ function apiDashboard_(data, sessionUser) {
   var unit = getSheetData_('UNIT_KERJA');
   var jabatan = getSheetData_('JABATAN');
 
-  // Lookup maps
   var pegMap = {};
   pegawai.forEach(function(p) {
     var id = String(p.id || p.pegawai_id);
     pegMap[id] = p;
   });
 
-  var currentYear = new Date().getFullYear();
+  var unitMap = {};
+  unit.forEach(function(u) {
+    unitMap[String(u.id || u.unit_id)] = u.nama_unit || u.nama;
+  });
+
+  var now = new Date();
+  var currentYear = now.getFullYear();
+  var currentMonth = now.getMonth(); // 0 - 11
   var targetTahun = Number(data && data.tahun) || currentYear;
 
   var totalJpTahunIni = 0;
@@ -346,29 +352,89 @@ function apiDashboard_(data, sessionUser) {
     'Jabatan Fungsional Pol PP & Damkar': 0,
     'Bimbingan Teknis & Workshop': 0
   };
-  var jpPerPegawai = {};
-  var divisiDistribution = {};
+
+  // Struktur Matriks Capaian Bulanan (Jan - Des)
+  var matriksData = {};
+  pegawai.forEach(function(p) {
+    var pId = String(p.id || p.pegawai_id);
+    var isPppk = String(p.status_pegawai || '').toUpperCase().includes('PPPK');
+    matriksData[pId] = {
+      pegawai_id: pId,
+      nama_pegawai: p.nama_lengkap || p.nama || pId,
+      nip: p.nip || '',
+      status_pegawai: isPppk ? 'PPPK' : 'PNS',
+      target_jp: isPppk ? 24 : 20,
+      unit_id: p.unit_id || '',
+      unit_nama: unitMap[String(p.unit_id)] || 'Satpol PP & Damkar',
+      bulan: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      total_jp: 0,
+      jenis_diambil: {},
+      bulan_aktif_count: 0
+    };
+  });
+
+  var entriesBulanIni = 0;
+  var entriesBulanLalu = 0;
+  var jpBulanIni = 0;
+  var jpBulanLalu = 0;
+  var divisiJpTotal = {};
+  var divisiPegawaiCount = {};
 
   unit.forEach(function(u) {
-    divisiDistribution[u.nama_unit || u.nama || u.id] = 0;
+    var uName = u.nama_unit || u.nama || u.id;
+    divisiJpTotal[uName] = 0;
+    divisiPegawaiCount[uName] = 0;
+  });
+
+  pegawai.forEach(function(p) {
+    var uName = unitMap[String(p.unit_id)];
+    if (uName && divisiPegawaiCount[uName] !== undefined) {
+      divisiPegawaiCount[uName]++;
+    }
   });
 
   riwayat.forEach(function(r) {
-    var th = r.tgl_selesai ? new Date(r.tgl_selesai).getFullYear() : (r.tgl_mulai ? new Date(r.tgl_mulai).getFullYear() : currentYear);
+    var dateObj = r.tgl_selesai ? new Date(r.tgl_selesai) : (r.tgl_mulai ? new Date(r.tgl_mulai) : null);
+    var rYear = dateObj ? dateObj.getFullYear() : currentYear;
+    var rMonth = dateObj ? dateObj.getMonth() : currentMonth;
     var jp = Number(r.jumlah_jp) || 0;
     var st = String(r.status_verifikasi || 'menunggu').toLowerCase();
 
     if (st === 'disetujui') {
       totalDisetujui++;
-      if (th === targetTahun) {
+      if (rYear === targetTahun) {
         totalJpTahunIni += jp;
         var pId = String(r.pegawai_id || '');
-        jpPerPegawai[pId] = (jpPerPegawai[pId] || 0) + jp;
+        if (matriksData[pId]) {
+          matriksData[pId].bulan[rMonth] += jp;
+          matriksData[pId].total_jp += jp;
+          var rRumpun = r.rumpun || 'Teknis Pemadam & Rescue';
+          matriksData[pId].jenis_diambil[rRumpun] = (matriksData[pId].jenis_diambil[rRumpun] || 0) + 1;
+        }
+
+        // Unit breakdown
+        var peg = pegMap[pId];
+        if (peg && peg.unit_id) {
+          var uName = unitMap[String(peg.unit_id)];
+          if (uName && divisiJpTotal[uName] !== undefined) {
+            divisiJpTotal[uName] += jp;
+          }
+        }
       }
     } else if (st === 'menunggu') {
       totalMenunggu++;
     } else if (st === 'ditolak') {
       totalDitolak++;
+    }
+
+    if (rYear === targetTahun) {
+      if (rMonth === currentMonth) {
+        entriesBulanIni++;
+        if (st === 'disetujui') jpBulanIni += jp;
+      } else if (rMonth === (currentMonth - 1)) {
+        entriesBulanLalu++;
+        if (st === 'disetujui') jpBulanLalu += jp;
+      }
     }
 
     var jns = r.rumpun || 'Teknis Pemadam & Rescue';
@@ -377,26 +443,78 @@ function apiDashboard_(data, sessionUser) {
     } else {
       jenisCount[jns] = 1;
     }
+  });
 
-    // Mapping divisi
-    var peg = pegMap[String(r.pegawai_id)];
-    if (peg && peg.unit_id) {
-      var un = unit.find(function(u) { return String(u.id || u.unit_id) === String(peg.unit_id); });
-      var uName = un ? (un.nama_unit || un.nama) : peg.unit_id;
-      divisiDistribution[uName] = (divisiDistribution[uName] || 0) + 1;
+  // Hitung Bulan Aktif & Klasifikasi PNS vs PPPK
+  var capaianPNS = [];
+  var capaianPPPK = [];
+  var pegawaiLulusTarget = 0;
+  var totalPegawaiAktif = 0;
+  var prediksiTidakCapaiList = [];
+  var sisaBulan = Math.max(1, 12 - (currentMonth + 1));
+
+  Object.keys(matriksData).forEach(function(pid) {
+    var item = matriksData[pid];
+    totalPegawaiAktif++;
+    var activeMonths = item.bulan.filter(function(v) { return v > 0; }).length;
+    item.bulan_aktif_count = activeMonths;
+    item.persen = Math.min(100, Math.round((item.total_jp / item.target_jp) * 100));
+
+    if (item.total_jp >= item.target_jp) {
+      pegawaiLulusTarget++;
+    }
+
+    // Hitung Prediksi Akhir Tahun
+    var rataPerBulan = (currentMonth > 0) ? (item.total_jp / (currentMonth + 1)) : item.total_jp;
+    var proyeksiAkhir = Math.round(item.total_jp + (rataPerBulan * sisaBulan));
+    item.proyeksi_akhir = proyeksiAkhir;
+    item.akan_capai = proyeksiAkhir >= item.target_jp;
+
+    if (!item.akan_capai && item.total_jp < item.target_jp) {
+      prediksiTidakCapaiList.push({
+        nama: item.nama_pegawai,
+        nip: item.nip,
+        total_jp: item.total_jp,
+        target_jp: item.target_jp,
+        kurang_jp: item.target_jp - item.total_jp,
+        proyeksi: proyeksiAkhir
+      });
+    }
+
+    // Skor Kepatuhan Individu (0 - 100)
+    var skorJP = Math.min((item.total_jp / item.target_jp) * 60, 60);
+    var skorKonsistensi = Math.min((activeMonths / 12) * 40, 40);
+    item.skor = Math.round(skorJP + skorKonsistensi);
+
+    if (item.status_pegawai === 'PPPK') {
+      capaianPPPK.push(item);
+    } else {
+      capaianPNS.push(item);
     }
   });
 
-  // Pemenuhan 20 JP OPD
-  var pegawaiLulus20Jp = 0;
-  var totalPegawaiAktif = pegawai.filter(function(p) { return String(p.status_aktif || 'aktif').toLowerCase() === 'aktif'; }).length || (pegawai.length || 1);
-  Object.keys(jpPerPegawai).forEach(function(pid) {
-    if (jpPerPegawai[pid] >= 20) pegawaiLulus20Jp++;
-  });
-  var persen20Jp = Math.min(100, Math.round((pegawaiLulus20Jp / totalPegawaiAktif) * 100));
+  capaianPNS.sort(function(a, b) { return b.total_jp - a.total_jp; });
+  capaianPPPK.sort(function(a, b) { return b.total_jp - a.total_jp; });
 
+  var persen20Jp = Math.min(100, Math.round((pegawaiLulusTarget / (totalPegawaiAktif || 1)) * 100));
   var totalPpns = pegawai.filter(function(p) { return String(p.is_ppns).toLowerCase() === 'ya' || String(p.is_ppns) === 'true'; }).length;
   var totalDamkar = pegawai.filter(function(p) { return Boolean(p.kualifikasi_damkar && p.kualifikasi_damkar !== '-'); }).length;
+
+  // AI Insight 1: Tren Keikutsertaan
+  var trenNaik = entriesBulanIni >= entriesBulanLalu;
+  var persenPerubahan = entriesBulanLalu ? Math.abs(Math.round(((entriesBulanIni - entriesBulanLalu) / entriesBulanLalu) * 100)) : 100;
+
+  // AI Insight 2: Unit Terbaik
+  var bestUnit = '-';
+  var maxAvgJp = -1;
+  Object.keys(divisiJpTotal).forEach(function(uName) {
+    var pCount = divisiPegawaiCount[uName] || 1;
+    var avg = divisiJpTotal[uName] / pCount;
+    if (avg > maxAvgJp) {
+      maxAvgJp = avg;
+      bestUnit = uName;
+    }
+  });
 
   // 5 Riwayat Terbaru dengan Enriched Pegawai Name
   var terbaru = riwayat.slice().sort(function(a, b) {
@@ -410,7 +528,7 @@ function apiDashboard_(data, sessionUser) {
   });
 
   // Jadwal Pelatihan Bulan Ini & Mendatang (Dari M_KATALOG_DIKLAT)
-  var currentMonthName = new Date().toLocaleString('id-ID', { month: 'long', year: 'numeric' });
+  var currentMonthName = now.toLocaleString('id-ID', { month: 'long', year: 'numeric' });
   var jadwalPelatihan = katalog.filter(function(k) {
     return String(k.status_aktif).toLowerCase() !== 'false';
   }).map(function(k) {
@@ -437,7 +555,7 @@ function apiDashboard_(data, sessionUser) {
       total_jp_tahun: totalJpTahunIni,
       target_tahun: targetTahun,
       persen_capaian_20jp: persen20Jp,
-      pegawai_lulus_20jp: pegawaiLulus20Jp,
+      pegawai_lulus_20jp: pegawaiLulusTarget,
       total_pegawai: totalPegawaiAktif,
       total_ppns: totalPpns,
       total_damkar_certified: totalDamkar,
@@ -451,9 +569,33 @@ function apiDashboard_(data, sessionUser) {
         ditolak: totalDitolak
       },
       jenis_count: jenisCount,
-      divisi_distribution: divisiDistribution,
+      divisi_distribution: divisiJpTotal,
       terbaru: terbaru,
-      jadwal_pelatihan: jadwalPelatihan
+      jadwal_pelatihan: jadwalPelatihan,
+      // Fitur Adopsi SIPKA: Matriks Bulanan & Klasifikasi
+      matriks_bulanan: Object.keys(matriksData).map(function(k) { return matriksData[k]; }),
+      capaian_pns: capaianPNS,
+      capaian_pppk: capaianPPPK,
+      // Fitur Adopsi SIPKA: AI Insights Organisasi
+      ai_insights: {
+        tren_partisipasi: {
+          naik: trenNaik,
+          persen: persenPerubahan,
+          bulan_ini_entri: entriesBulanIni,
+          bulan_lalu_entri: entriesBulanLalu,
+          bulan_ini_jp: jpBulanIni,
+          bulan_lalu_jp: jpBulanLalu
+        },
+        unit_terbaik: {
+          nama: bestUnit,
+          rata_jp: Math.round(maxAvgJp * 10) / 10
+        },
+        prediksi_tidak_capai: {
+          total_berisiko: prediksiTidakCapaiList.length,
+          sisa_bulan: sisaBulan,
+          daftar: prediksiTidakCapaiList.slice(0, 5)
+        }
+      }
     }
   };
 }
@@ -523,7 +665,6 @@ function getRiwayatList_(data, sessionUser) {
   var rows = getSheetData_(LOCAL_SHEETS.T_RIWAYAT_KOMPETENSI);
   var pegawai = getSheetData_('PEGAWAI');
   var unit = getSheetData_('UNIT_KERJA');
-  var jabatan = getSheetData_('JABATAN');
 
   var pegMap = {};
   pegawai.forEach(function(p) {
