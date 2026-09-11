@@ -1,0 +1,1441 @@
+<!-- ==================== V_Layout.html (Seluruh Tampilan Halaman) ==================== -->
+<!-- Partial Halaman A4: Dashboard -->
+<!-- ============================================================
+     A4_Dashboard.html — Dashboard Utama SI-KOMPETENSI
+     Rewrite vs kiriman (D1–D4 + Eselon III 6 Divisi):
+     D1. Kartu Total: dashboardData.total_data -> dashboardData?.total_kompetensi.
+         Backend mengirim total_kompetensi (bukan total_data!) — sebelum fix
+         kartu selalu 0. Plus root-guard ?. anti crash saat null.
+     D2. Breakdown 3× dashboardData.jenis_count -> dashboardData?.jenis_count
+         (root-guard; ?. di tengah tak melindungi root null).
+     D3. + Box Bimtek (jenis form ke-4 — tanpanya record bimtek tak terlihat
+         di breakdown) + grid 3 -> sm:2/lg:4.
+     D4. Typo "Struksional" -> "Struktural".
+     D5. Chart 6 Divisi Eselon III & Top 5 Unit Kerja.
+     Backend: apiDashboard_ {total_kompetensi, jenis_count, terbaru[]}.
+     ============================================================ -->
+<div v-if="currentPage === 'dashboard'" class="space-y-6">
+
+  <!-- Skeleton / Spinner Loading Dashboard -->
+  <div v-if="loading && !dataLoaded" class="min-h-[400px] flex flex-col items-center justify-center space-y-4">
+    <div class="relative flex items-center justify-center">
+      <div class="w-12 h-12 rounded-full border-4 border-emerald-200 dark:border-emerald-950 border-t-emerald-600 animate-spin"></div>
+      <i class="fa-solid fa-gauge-high text-sm text-emerald-600 dark:text-emerald-400 absolute"></i>
+    </div>
+    <p class="text-sm font-semibold text-slate-500 dark:text-slate-400 animate-pulse">Memuat statistik & grafik dashboard...</p>
+  </div>
+
+  <template v-else>
+
+    <!-- Welcome Banner & Quick Action Header -->
+    <div class="p-5 rounded-3xl bg-gradient-to-r from-emerald-700 via-teal-700 to-slate-800 text-white shadow-xl relative overflow-hidden flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <!-- Decorative Background Icon -->
+      <i class="fa-solid fa-graduation-cap absolute -right-6 -bottom-8 text-9xl text-white/10 pointer-events-none"></i>
+
+      <div class="relative z-10">
+        <div class="flex items-center gap-2 text-emerald-200 text-xs font-semibold uppercase tracking-wider mb-1">
+          <i class="fa-solid fa-shield-halved"></i>
+          <span>Satpol PP & Kebakaran Trenggalek</span>
+        </div>
+        <h1 class="text-xl sm:text-2xl font-extrabold tracking-tight">
+          Selamat Datang, {{ (currentUser || {}).display_name || 'Pegawai' }}! 👋
+        </h1>
+        <p class="text-xs sm:text-sm text-emerald-100/90 mt-1 max-w-xl">
+          Pantau riwayat pengembangan kompetensi, distribusi pegawai, dan peta jabatan instansi secara real-time.
+        </p>
+      </div>
+
+      <div class="relative z-10 flex flex-wrap items-center gap-2.5 shrink-0">
+        <button @click="showPanduan = true"
+                class="bg-white text-emerald-700 hover:bg-emerald-50 active:scale-95 font-bold px-4 py-2.5 rounded-2xl text-xs transition-all duration-200 flex items-center gap-2 shadow-lg">
+          <i class="fa-solid fa-circle-question"></i>
+          <span>Panduan Aplikasi</span>
+        </button>
+        <button @click="refreshDashboard"
+                class="bg-white/10 hover:bg-white/20 active:scale-95 text-white border border-white/20 font-semibold px-4 py-2.5 rounded-2xl text-xs backdrop-blur-md transition-all duration-200 flex items-center gap-2 shadow-sm">
+          <i class="fa-solid fa-arrows-rotate" :class="{ 'animate-spin': loading }"></i>
+          <span>Refresh Data</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 1. Kartu Statistik Utama (4 Column KPI) -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+      <!-- Card 1: Data Kompetensi -->
+      <div class="p-5 rounded-2xl bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/60 shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-between group">
+        <div>
+          <p class="text-xs font-semibold text-slate-500 dark:text-slate-400">Total Kompetensi</p>
+          <h3 class="text-2xl font-extrabold text-slate-900 dark:text-white mt-1">{{ dashboardData?.total_kompetensi ?? 0 }}</h3>
+          <span class="inline-flex items-center text-[10px] font-bold text-emerald-600 dark:text-emerald-400 mt-2 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200/60 dark:border-emerald-800/40">
+            <i class="fa-solid fa-circle-check mr-1"></i> Terverifikasi
+          </span>
+        </div>
+        <div class="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl shrink-0 group-hover:scale-110 transition-transform">
+          <i class="fa-solid fa-book-bookmark"></i>
+        </div>
+      </div>
+
+      <!-- Card 2: Total Pegawai -->
+      <div class="p-5 rounded-2xl bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/60 shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-between group">
+        <div>
+          <p class="text-xs font-semibold text-slate-500 dark:text-slate-400">Pegawai Terdaftar</p>
+          <h3 class="text-2xl font-extrabold text-slate-900 dark:text-white mt-1">{{ (pegawaiList || []).length }}</h3>
+          <span class="inline-flex items-center text-[10px] font-bold text-sky-600 dark:text-sky-400 mt-2 bg-sky-50 dark:bg-sky-950/60 px-2 py-0.5 rounded-full border border-sky-200/60 dark:border-sky-800/40">
+            <i class="fa-solid fa-user-check mr-1"></i> SIMPEG Active
+          </span>
+        </div>
+        <div class="w-12 h-12 rounded-2xl bg-sky-100 dark:bg-sky-950/80 text-sky-600 dark:text-sky-400 flex items-center justify-center text-xl shrink-0 group-hover:scale-110 transition-transform">
+          <i class="fa-solid fa-users"></i>
+        </div>
+      </div>
+
+      <!-- Card 3: Unit Kerja -->
+      <div class="p-5 rounded-2xl bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/60 shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-between group">
+        <div>
+          <p class="text-xs font-semibold text-slate-500 dark:text-slate-400">Unit Kerja Utama</p>
+          <h3 class="text-2xl font-extrabold text-slate-900 dark:text-white mt-1">{{ (unitList || []).length }}</h3>
+          <span class="inline-flex items-center text-[10px] font-bold text-purple-600 dark:text-purple-400 mt-2 bg-purple-50 dark:bg-purple-950/60 px-2 py-0.5 rounded-full border border-purple-200/60 dark:border-purple-800/40">
+            <i class="fa-solid fa-sitemap mr-1"></i> Terstruktur
+          </span>
+        </div>
+        <div class="w-12 h-12 rounded-2xl bg-purple-100 dark:bg-purple-950/80 text-purple-600 dark:text-purple-400 flex items-center justify-center text-xl shrink-0 group-hover:scale-110 transition-transform">
+          <i class="fa-solid fa-building"></i>
+        </div>
+      </div>
+
+      <!-- Card 4: Jabatan -->
+      <div class="p-5 rounded-2xl bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/60 shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-between group">
+        <div>
+          <p class="text-xs font-semibold text-slate-500 dark:text-slate-400">Total Jabatan</p>
+          <h3 class="text-2xl font-extrabold text-slate-900 dark:text-white mt-1">{{ (jabatanList || []).length }}</h3>
+          <span class="inline-flex items-center text-[10px] font-bold text-amber-600 dark:text-amber-400 mt-2 bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-200/60 dark:border-amber-800/40">
+            <i class="fa-solid fa-briefcase mr-1"></i> Formasi Active
+          </span>
+        </div>
+        <div class="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-950/80 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xl shrink-0 group-hover:scale-110 transition-transform">
+          <i class="fa-solid fa-id-card"></i>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 2. Breakdown Ringkasan Jenis Kompetensi -->
+    <div class="p-5 rounded-3xl bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/60 shadow-sm space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-700/60 pb-3">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-layer-group text-emerald-600 dark:text-emerald-400"></i>
+          <h2 class="text-sm font-bold text-slate-800 dark:text-white">Rincian Jenis Kompetensi Pegawai</h2>
+        </div>
+        <span class="text-[11px] font-semibold text-slate-400">Real-time Count</span>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Diklat -->
+        <div class="p-4 rounded-2xl bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-800/40 flex items-center justify-between">
+          <div>
+            <p class="text-xs font-semibold text-emerald-800 dark:text-emerald-300">Diklat Struktural / Teknis</p>
+            <p class="text-2xl font-black text-emerald-700 dark:text-emerald-400 mt-1">{{ dashboardData?.jenis_count?.diklat || 0 }}</p>
+          </div>
+          <div class="p-3 bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 rounded-xl">
+            <i class="fa-solid fa-award text-lg"></i>
+          </div>
+        </div>
+
+        <!-- Sertifikasi -->
+        <div class="p-4 rounded-2xl bg-sky-50/60 dark:bg-sky-950/30 border border-sky-100 dark:border-sky-800/40 flex items-center justify-between">
+          <div>
+            <p class="text-xs font-semibold text-sky-800 dark:text-sky-300">Sertifikasi Profesi</p>
+            <p class="text-2xl font-black text-sky-700 dark:text-sky-400 mt-1">{{ dashboardData?.jenis_count?.sertifikasi || 0 }}</p>
+          </div>
+          <div class="p-3 bg-sky-100 dark:bg-sky-900/60 text-sky-700 dark:text-sky-300 rounded-xl">
+            <i class="fa-solid fa-certificate text-lg"></i>
+          </div>
+        </div>
+
+        <!-- Pelatihan -->
+        <div class="p-4 rounded-2xl bg-amber-50/60 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-800/40 flex items-center justify-between">
+          <div>
+            <p class="text-xs font-semibold text-amber-800 dark:text-amber-300">Pelatihan / Workshop</p>
+            <p class="text-2xl font-black text-amber-700 dark:text-amber-400 mt-1">{{ dashboardData?.jenis_count?.pelatihan || 0 }}</p>
+          </div>
+          <div class="p-3 bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 rounded-xl">
+            <i class="fa-solid fa-chalkboard-user text-lg"></i>
+          </div>
+        </div>
+
+        <!-- Bimtek -->
+        <div class="p-4 rounded-2xl bg-teal-50/60 dark:bg-teal-950/30 border border-teal-100 dark:border-teal-800/40 flex items-center justify-between">
+          <div>
+            <p class="text-xs font-semibold text-teal-800 dark:text-teal-300">Bimtek</p>
+            <p class="text-2xl font-black text-teal-700 dark:text-teal-400 mt-1">{{ dashboardData?.jenis_count?.bimtek || 0 }}</p>
+          </div>
+          <div class="p-3 bg-teal-100 dark:bg-teal-900/60 text-teal-700 dark:text-teal-300 rounded-xl">
+            <i class="fa-solid fa-person-chalkboard text-lg"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Visualisasi Grafik Analytics Chart.js -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+      <!-- Grafik 1: Bar Chart Pegawai per Unit / 6 Divisi Eselon III (Spans 2 Cols) -->
+      <div class="p-5 rounded-3xl bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/60 shadow-sm lg:col-span-2 flex flex-col justify-between">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-2">
+              <i class="fa-solid fa-chart-column text-emerald-600 dark:text-emerald-400"></i>
+              Distribusi Pegawai per Struktur Organisasi (Eselon III & Divisi)
+            </h3>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Pengelompokan personel ke dalam 6 entitas struktural & divisi utama</p>
+          </div>
+          <span class="inline-flex items-center text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-1 rounded-full border border-emerald-200/60 dark:border-emerald-800/40">
+            <i class="fa-solid fa-sitemap mr-1"></i> 6 Divisi Utama
+          </span>
+        </div>
+        <div class="h-72 w-full relative">
+          <canvas id="chartPegawaiUnit"></canvas>
+        </div>
+      </div>
+
+      <!-- Grafik 2: Doughnut Status Jabatan (Spans 1 Col) -->
+      <div class="p-5 rounded-3xl bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/60 shadow-sm lg:col-span-1 flex flex-col justify-between">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-2">
+              <i class="fa-solid fa-chart-pie text-emerald-600 dark:text-emerald-400"></i>
+              Proporsi Status Jabatan
+            </h3>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Komposisi Definitif, Plt, & Kosong</p>
+          </div>
+        </div>
+        <div class="h-72 w-full relative flex items-center justify-center">
+          <canvas id="chartStatusJabatan"></canvas>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 4. Top 5 Unit Kerja Ranking Widget -->
+    <div v-if="pegawaiPerUnitTop && pegawaiPerUnitTop.length > 0" class="p-5 rounded-3xl bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/60 shadow-sm">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h3 class="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-2">
+            <i class="fa-solid fa-ranking-star text-amber-500"></i>
+            5 Unit Kerja Terbesar (Berdasarkan Jumlah Personel)
+          </h3>
+          <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Unit dengan alokasi SDM terbanyak di Satpol PP & Damkar</p>
+        </div>
+      </div>
+
+      <div class="space-y-3">
+        <div v-for="(item, idx) in pegawaiPerUnitTop" :key="idx" class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+          <div class="flex items-center justify-between text-xs font-semibold mb-1.5">
+            <span class="text-slate-800 dark:text-slate-200 flex items-center gap-2">
+              <span class="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 font-bold text-[10px] flex items-center justify-center">
+                {{ idx + 1 }}
+              </span>
+              {{ item.nama_unit }}
+            </span>
+            <span class="text-emerald-600 dark:text-emerald-400 font-bold">{{ item.jumlah }} Pegawai</span>
+          </div>
+          <div class="w-full h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+            <div class="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-500"
+                 :style="{ width: Math.min((item.jumlah / ((pegawaiList || []).length || 1)) * 100 * 3, 100) + '%' }"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </template>
+
+  <!-- ===================== MODAL PANDUAN APLIKASI ===================== -->
+  <div v-if="showPanduan" class="fixed inset-0 z-[95] flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" @click="showPanduan = false"></div>
+
+    <div class="relative w-full max-w-3xl rounded-3xl bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/60 shadow-2xl flex flex-col max-h-[90vh]">
+
+      <!-- Header -->
+      <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700/60 flex items-center justify-between shrink-0 rounded-t-3xl bg-gradient-to-r from-emerald-700 to-teal-700">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-white/15 text-white flex items-center justify-center text-lg shrink-0">
+            <i class="fa-solid fa-circle-question"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-extrabold text-white">Panduan Aplikasi SI-KOMPETENSI</h3>
+            <p class="text-[11px] text-emerald-100">Satpol PP & Kebakaran Kab. Trenggalek &bull; Terintegrasi SIMPEG</p>
+          </div>
+        </div>
+        <button @click="showPanduan = false" class="w-9 h-9 rounded-xl flex items-center justify-center text-white/80 hover:text-white hover:bg-white/10 transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Body (scrollable) -->
+      <div class="px-6 py-5 overflow-y-auto space-y-6 text-sm">
+
+        <!-- 1. Tentang Aplikasi -->
+        <section class="space-y-2">
+          <h4 class="font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
+            <i class="fa-solid fa-circle-info text-emerald-600 dark:text-emerald-400"></i> Tentang Aplikasi
+          </h4>
+          <p class="text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+            <strong>SI-KOMPETENSI</strong> adalah Sistem Informasi Pengembangan Kompetensi Pegawai di lingkungan
+            Satpol PP & Kebakaran Kabupaten Trenggalek. Aplikasi ini digunakan untuk mendata kompetensi
+            (diklat/sertifikasi) pegawai, mengelola riwayat laporan, serta menyajikan analisa pengembangan SDM —
+            dengan data pegawai, jabatan, dan unit kerja terintegrasi langsung (read-only) dari <strong>SIMPEG</strong>.
+            Login menggunakan akun resmi melalui <strong>SI-Platform (Single Sign-On)</strong>.
+          </p>
+        </section>
+
+        <!-- 2. Fitur Utama -->
+        <section class="space-y-2.5">
+          <h4 class="font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
+            <i class="fa-solid fa-cubes text-emerald-600 dark:text-emerald-400"></i> Fitur Utama
+          </h4>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+              <p class="text-xs font-bold text-slate-800 dark:text-slate-100"><i class="fa-solid fa-gauge-high text-emerald-600 mr-1.5"></i>Dashboard</p>
+              <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">Statistik kompetensi & laporan, grafik distribusi pegawai per unit, dan status jabatan.</p>
+            </div>
+            <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+              <p class="text-xs font-bold text-slate-800 dark:text-slate-100"><i class="fa-solid fa-file-lines text-emerald-600 mr-1.5"></i>Riwayat Laporan</p>
+              <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">Kelola laporan berkala pegawai: buat, ubah, hapus, verifikasi admin (setuju/tolak), serta ekspor Excel/PDF.</p>
+            </div>
+            <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+              <p class="text-xs font-bold text-slate-800 dark:text-slate-100"><i class="fa-solid fa-chart-pie text-emerald-600 mr-1.5"></i>Analisa Kompetensi</p>
+              <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">Analisa otomatis per tahun/bulan: ringkasan eksekutif, distribusi jenis kompetensi, temuan & rekomendasi (unduh PDF).</p>
+            </div>
+            <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+              <p class="text-xs font-bold text-slate-800 dark:text-slate-100"><i class="fa-solid fa-database text-emerald-600 mr-1.5"></i>Master Data</p>
+              <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">Tab <b>Data Kompetensi</b> (input diklat/sertifikasi + verifikasi) serta referensi SIMPEG read-only: pegawai, jabatan, unit.</p>
+            </div>
+            <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+              <p class="text-xs font-bold text-slate-800 dark:text-slate-100"><i class="fa-solid fa-user-tie text-emerald-600 mr-1.5"></i>Profil Saya</p>
+              <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">Data kepegawaian Anda dari SIMPEG (read-only) + pemeliharaan kontak: alamat, nomor HP, dan email.</p>
+            </div>
+            <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+              <p class="text-xs font-bold text-slate-800 dark:text-slate-100"><i class="fa-solid fa-gear text-emerald-600 mr-1.5"></i>Pengaturan <span class="text-[9px] font-bold uppercase bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 rounded ml-1">Admin</span></p>
+              <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">Parameter sistem yang dapat diubah administrator tanpa deploy ulang.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- 3. Alur Status Verifikasi -->
+        <section class="space-y-2.5">
+          <h4 class="font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
+            <i class="fa-solid fa-code-branch text-emerald-600 dark:text-emerald-400"></i> Alur Status Verifikasi
+          </h4>
+          <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 space-y-2.5">
+            <p class="text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
+              Data <b>kompetensi</b> dan <b>laporan</b> baru diverifikasi oleh administrator menjadi:
+            </p>
+            <ul class="text-[11px] leading-relaxed text-slate-600 dark:text-slate-300 space-y-1.5 list-none">
+              <li><span class="font-bold text-emerald-600 dark:text-emerald-400">Disetujui</span> — data valid dan diterima.</li>
+              <li><span class="font-bold text-amber-600 dark:text-amber-400">Revisi</span> (kompetensi) — perbaiki sesuai catatan verifikator, lalu simpan kembali.</li>
+              <li><span class="font-bold text-rose-600 dark:text-rose-400">Ditolak</span> (laporan) — tidak dapat diterima; alasan tertera pada catatan verifikator.</li>
+              <li><span class="font-bold text-slate-500 dark:text-slate-400">Draft</span> (laporan baru) — belum diverifikasi.</li>
+            </ul>
+          </div>
+        </section>
+
+        <!-- 4. Cara Input -->
+        <section class="space-y-2.5">
+          <h4 class="font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
+            <i class="fa-solid fa-list-ol text-emerald-600 dark:text-emerald-400"></i> Cara Menggunakan
+          </h4>
+          <ol class="text-xs leading-relaxed text-slate-600 dark:text-slate-300 space-y-2 list-none">
+            <li class="flex gap-2.5"><span class="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold text-[10px] flex items-center justify-center shrink-0">1</span><span><b>Input kompetensi</b>: buka Master Data → tab Data Kompetensi → Tambah Kompetensi → isi jenis, nama diklat/sertifikat, penyelenggara, JP, dan tanggal → simpan.</span></li>
+            <li class="flex gap-2.5"><span class="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold text-[10px] flex items-center justify-center shrink-0">2</span><span><b>Membuat laporan</b>: buka Riwayat Laporan → Buat Laporan → isi periode, nama laporan, pegawai, unit & jabatan → simpan (status draft).</span></li>
+            <li class="flex gap-2.5"><span class="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold text-[10px] flex items-center justify-center shrink-0">3</span><span>Tunggu verifikasi administrator; bila diminta <b>revisi</b>, baca catatannya, perbaiki, lalu simpan kembali.</span></li>
+            <li class="flex gap-2.5"><span class="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold text-[10px] flex items-center justify-center shrink-0">4</span><span>Pantau perkembangan pada <b>Analisa Kompetensi</b> dan unduh hasilnya sebagai PDF bila diperlukan.</span></li>
+          </ol>
+        </section>
+
+        <!-- 5. FAQ -->
+        <section class="space-y-2.5">
+          <h4 class="font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
+            <i class="fa-solid fa-circle-question text-emerald-600 dark:text-emerald-400"></i> Tanya Jawab
+          </h4>
+          <div class="space-y-2">
+            <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+              <p class="text-xs font-bold text-slate-700 dark:text-slate-200">Mengapa kompetensi saya belum tampil sebagai "disetujui"?</p>
+              <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">Setiap input baru menunggu verifikasi administrator. Status hanya berubah melalui proses verifikasi.</p>
+            </div>
+            <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+              <p class="text-xs font-bold text-slate-700 dark:text-slate-200">Mengapa saya hanya bisa mengelola data milik sendiri?</p>
+              <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">Sistem melindungi kepemilikan data: pegawai hanya dapat mengubah/menghapus datanya sendiri; administrator dapat melihat semuanya untuk verifikasi.</p>
+            </div>
+            <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+              <p class="text-xs font-bold text-slate-700 dark:text-slate-200">Data pegawai/jabatan/unit saya salah — bagaimana memperbaikinya?</p>
+              <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">Data tersebut berasal dari SIMPEG (read-only). Hubungi pengelola kepegawaian untuk perbaikan di sistem sumber.</p>
+            </div>
+            <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+              <p class="text-xs font-bold text-slate-700 dark:text-slate-200">Sesi saya berakhir / diminta login ulang terus?</p>
+              <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">Sesi mengikuti tiket SSO SI-Platform. Masuk kembali melalui tombol "Masuk via SI-Platform"; jika berulang, hubungi administrator aplikasi.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Footer info versi -->
+        <section class="pt-4 border-t border-slate-100 dark:border-slate-700/60 flex flex-col sm:flex-row items-center justify-between gap-2">
+          <p class="text-[11px] text-slate-400 dark:text-slate-500">SI-KOMPETENSI v1.0.0 &bull; Google Apps Script + Vue 3 &bull; © 2026 Pemkab Trenggalek</p>
+          <button @click="showPanduan = false" class="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold text-xs shadow-md shadow-emerald-600/20 transition">
+            Mengerti, Tutup
+          </button>
+        </section>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- Partial Halaman A5: Riwayat Laporan -->
+<!-- ============================================================
+     A5_RiwayatLaporan.html — CRUD Data Riwayat Laporan (LAPORAN)
+     Rewrite vs kiriman (T1–T3):
+     T1. Select Status di form -> badge READ-ONLY. Alasan: hook backend
+         mengunci status (baru='draft', update=warisi) anti self-approve;
+         satu-satunya penulis status = tombol verifikasi admin (T2).
+     T2. + Tombol Setujui/Tolak khusus admin di kolom Aksi
+         (verifikasiRiwayat -> aksi verifikasi_riwayat).
+     T3. Form modal + scroll containment (pola A8-F6).
+     Backend kawan: get_riwayat_list / save_riwayat / delete_riwayat /
+     verifikasi_riwayat (patch R1–R4 di 02_AppLogic.gs).
+     ============================================================ -->
+<div v-if="currentPage === 'riwayat_laporan'" class="space-y-6">
+
+  <!-- Header Halaman & Aksi Utama -->
+  <div class="p-5 rounded-3xl bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/60 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div>
+      <div class="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold text-xs uppercase tracking-wider">
+        <i class="fa-solid fa-file-lines"></i>
+        <span>Manajemen Laporan</span>
+      </div>
+      <h2 class="text-xl font-extrabold text-slate-900 dark:text-white mt-1">Riwayat Laporan Kompetensi</h2>
+      <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Kelola, verifikasi, dan ekspor dokumen riwayat laporan periode berjalan.</p>
+    </div>
+
+    <!-- Tombol Ekspor & Tambah Data -->
+    <div class="flex flex-wrap items-center gap-2">
+      <button @click="exportRiwayatExcel"
+              class="px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/80 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60 font-semibold text-xs transition-all duration-200 flex items-center gap-2 shadow-sm">
+        <i class="fa-solid fa-file-excel text-emerald-600"></i> Excel
+      </button>
+      <button @click="exportRiwayatPDF"
+              class="px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/60 dark:hover:bg-rose-900/80 text-rose-700 dark:text-rose-300 border border-rose-200/60 dark:border-rose-800/60 font-semibold text-xs transition-all duration-200 flex items-center gap-2 shadow-sm">
+        <i class="fa-solid fa-file-pdf text-rose-600"></i> PDF
+      </button>
+      <button @click="openRiwayatForm()"
+              class="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold text-xs transition-all duration-200 shadow-md shadow-emerald-600/20 flex items-center gap-2">
+        <i class="fa-solid fa-plus"></i> Buat Laporan
+      </button>
+    </div>
+  </div>
+
+  <!-- Filter Bar & Pencarian -->
+  <div class="p-4 rounded-3xl bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/60 shadow-sm grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+    <!-- Input Search -->
+    <div class="relative">
+      <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+      <input v-model="riwayatSearch"
+             @input="loadRiwayat(1)"
+             placeholder="Cari kata kunci..."
+             class="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition" />
+    </div>
+
+    <!-- Filter Status -->
+    <select v-model="riwayatFilterStatus" @change="loadRiwayat(1)" class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/50">
+      <option value="">Semua Status</option>
+      <option value="draft">Draft</option>
+      <option value="disetujui">Disetujui</option>
+      <option value="ditolak">Ditolak</option>
+    </select>
+
+    <!-- Filter Pegawai -->
+    <select v-model="riwayatFilterPegawai" @change="loadRiwayat(1)" class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 truncate">
+      <option value="">Semua Pegawai</option>
+      <option v-for="p in (pegawaiList || [])" :key="p.pegawai_id" :value="p.pegawai_id">{{ p.nama }}</option>
+    </select>
+
+    <!-- Filter Unit -->
+    <select v-model="riwayatFilterUnit" @change="loadRiwayat(1)" class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 truncate">
+      <option value="">Semua Unit Kerja</option>
+      <option v-for="u in (unitList || [])" :key="u.unit_id" :value="u.unit_id">{{ u.nama_unit }}</option>
+    </select>
+
+    <!-- Tombol Reset Filter -->
+    <button @click="resetRiwayatFilter" class="w-full px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-semibold text-xs transition flex items-center justify-center gap-2">
+      <i class="fa-solid fa-rotate-right"></i> Reset Filter
+    </button>
+  </div>
+
+  <!-- Tabel Data Riwayat Laporan -->
+  <div class="rounded-3xl bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/60 shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse">
+        <thead>
+          <tr class="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-200/80 dark:border-slate-700/60 text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            <th class="py-3.5 px-4 w-12 text-center">No</th>
+            <th class="py-3.5 px-4">Periode</th>
+            <th class="py-3.5 px-4">Nama Laporan</th>
+            <th class="py-3.5 px-4">Pegawai</th>
+            <th class="py-3.5 px-4">Unit Kerja</th>
+            <th class="py-3.5 px-4">Jabatan</th>
+            <th class="py-3.5 px-4">Status</th>
+            <th class="py-3.5 px-4">Update Terakhir</th>
+            <th class="py-3.5 px-4 text-right">Aksi</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
+          <!-- Rows Data -->
+          <tr v-for="(item, index) in riwayatList" :key="item.id" class="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
+            <td class="py-3.5 px-4 text-center font-bold text-slate-400">{{ (riwayatPage - 1) * pageSize + index + 1 }}</td>
+            <td class="py-3.5 px-4 font-bold text-slate-800 dark:text-slate-200">{{ item.periode || '-' }}</td>
+            <td class="py-3.5 px-4 font-semibold text-slate-700 dark:text-slate-300 max-w-xs truncate">{{ item.nama_laporan || '-' }}</td>
+            <td class="py-3.5 px-4 text-slate-600 dark:text-slate-400 font-medium">{{ namaPegawai(item.pegawai_id) }}</td>
+            <td class="py-3.5 px-4 text-slate-600 dark:text-slate-400">{{ namaUnit(item.unit_id) }}</td>
+            <td class="py-3.5 px-4 text-slate-600 dark:text-slate-400">{{ namaJabatan(item.jabatan_id) }}</td>
+            <td class="py-3.5 px-4">
+              <!-- Status Badges -->
+              <span :class="[
+                'px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider inline-flex items-center gap-1.5 border',
+                item.status === 'disetujui' ? 'bg-emerald-50 text-emerald-700 border-emerald-200/60 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800/50' :
+                item.status === 'ditolak' ? 'bg-rose-50 text-rose-700 border-rose-200/60 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800/50' :
+                'bg-amber-50 text-amber-700 border-amber-200/60 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800/50'
+              ]">
+                <span class="w-1.5 h-1.5 rounded-full" :class="item.status === 'disetujui' ? 'bg-emerald-500' : item.status === 'ditolak' ? 'bg-rose-500' : 'bg-amber-500'"></span>
+                {{ item.status || 'Draft' }}
+              </span>
+            </td>
+            <td class="py-3.5 px-4 text-slate-400 text-[11px]">{{ formatDateDisplay(item.updated_at) }}</td>
+            <td class="py-3.5 px-4 text-right space-x-1">
+              <!-- T2: Tombol verifikasi khusus admin -->
+              <button v-if="isAdmin" @click="verifikasiRiwayat(item, 'disetujui')"
+                      class="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 text-emerald-600 dark:text-emerald-400 transition inline-flex items-center justify-center" title="Setujui Laporan">
+                <i class="fa-solid fa-check text-xs"></i>
+              </button>
+              <button v-if="isAdmin" @click="verifikasiRiwayat(item, 'ditolak')"
+                      class="w-7 h-7 rounded-lg bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 text-amber-600 dark:text-amber-400 transition inline-flex items-center justify-center" title="Tolak Laporan">
+                <i class="fa-solid fa-xmark text-xs"></i>
+              </button>
+              <button @click="openRiwayatForm(item)"
+                      class="w-7 h-7 rounded-lg bg-sky-50 dark:bg-sky-950/60 hover:bg-sky-100 text-sky-600 dark:text-sky-400 transition inline-flex items-center justify-center" title="Edit Data">
+                <i class="fa-solid fa-pen text-xs"></i>
+              </button>
+              <button @click="deleteRiwayat(item)"
+                      class="w-7 h-7 rounded-lg bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 text-rose-600 dark:text-rose-400 transition inline-flex items-center justify-center" title="Hapus Data">
+                <i class="fa-solid fa-trash text-xs"></i>
+              </button>
+            </td>
+          </tr>
+
+          <!-- Empty State -->
+          <tr v-if="!(riwayatList || []).length && !riwayatLoading">
+            <td colspan="9" class="py-12 text-center text-slate-400 dark:text-slate-500">
+              <i class="fa-solid fa-folder-open text-4xl block mb-2 opacity-50"></i>
+              <p class="text-xs font-semibold">Belum ada data riwayat laporan ditemukan.</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination Controls -->
+    <div class="px-5 py-3.5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 flex items-center justify-between">
+      <span class="text-xs font-medium text-slate-500 dark:text-slate-400">
+        Halaman <span class="font-bold text-slate-800 dark:text-white">{{ riwayatPage }}</span> dari <span class="font-bold text-slate-800 dark:text-white">{{ riwayatTotalPages }}</span>
+      </span>
+      <div class="flex items-center gap-1.5">
+        <button @click="loadRiwayat(riwayatPage - 1)"
+                :disabled="riwayatPage <= 1"
+                class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition">
+          <i class="fa-solid fa-chevron-left mr-1"></i> Prev
+        </button>
+        <button @click="loadRiwayat(riwayatPage + 1)"
+                :disabled="riwayatPage >= riwayatTotalPages"
+                class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition">
+          Next <i class="fa-solid fa-chevron-right ml-1"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Dialog Input / Edit Riwayat Laporan -->
+  <transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0 scale-95" enter-to-class="opacity-100 scale-100" leave-active-class="transition duration-150 ease-in" leave-from-class="opacity-100 scale-100" leave-to-class="opacity-0 scale-95">
+    <div v-if="showRiwayatForm" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+      <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-700/80 max-w-lg w-full p-6 overflow-hidden">
+
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-700/60">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-sm">
+              <i class="fa-solid fa-file-pen"></i>
+            </div>
+            <h3 class="text-base font-extrabold text-slate-900 dark:text-white">
+              {{ riwayatForm.id ? 'Edit Riwayat Laporan' : 'Tambah Laporan Baru' }}
+            </h3>
+          </div>
+          <button @click="showRiwayatForm = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition">
+            <i class="fa-solid fa-xmark text-base"></i>
+          </button>
+        </div>
+
+        <!-- Form Body -->
+        <form @submit.prevent="saveRiwayat" class="space-y-4 mt-4 max-h-[70vh] overflow-y-auto no-scrollbar pr-1">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Periode Laporan *</label>
+            <input v-model="riwayatForm.periode" required placeholder="Contoh: 2026-Q1 / Triwulan I" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500/50 focus:outline-none" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Nama Laporan *</label>
+            <input v-model="riwayatForm.nama_laporan" required placeholder="Judul laporan pengembangan..." class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500/50 focus:outline-none" />
+          </div>
+
+          <div class="space-y-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Pegawai Bersangkutan</label>
+              <select v-model="riwayatForm.pegawai_id" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500/50 focus:outline-none">
+                <option value="">-- Pilih Pegawai --</option>
+                <option v-for="p in (pegawaiList || [])" :key="p.pegawai_id" :value="p.pegawai_id">{{ p.nama }} ({{ p.nip || '-' }})</option>
+              </select>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Unit Kerja</label>
+                <select v-model="riwayatForm.unit_id" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500/50 focus:outline-none truncate">
+                  <option value="">-- Pilih Unit --</option>
+                  <option v-for="u in (unitList || [])" :key="u.unit_id" :value="u.unit_id">{{ u.nama_unit }}</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Jabatan</label>
+                <select v-model="riwayatForm.jabatan_id" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500/50 focus:outline-none truncate">
+                  <option value="">-- Pilih Jabatan --</option>
+                  <option v-for="j in (jabatanList || [])" :key="j.jabatan_id" :value="j.jabatan_id">{{ j.nama_jabatan }}</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- T1: Status READ-ONLY (hook kunci; penulis = verifikasi admin) -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Status Verifikasi</label>
+            <div class="px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
+              <span :class="[
+                'px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider inline-flex items-center gap-1.5 border',
+                riwayatForm.status === 'disetujui' ? 'bg-emerald-50 text-emerald-700 border-emerald-200/60 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800/50' :
+                riwayatForm.status === 'ditolak' ? 'bg-rose-50 text-rose-700 border-rose-200/60 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800/50' :
+                'bg-amber-50 text-amber-700 border-amber-200/60 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800/50'
+              ]">
+                <span class="w-1.5 h-1.5 rounded-full" :class="riwayatForm.status === 'disetujui' ? 'bg-emerald-500' : riwayatForm.status === 'ditolak' ? 'bg-rose-500' : 'bg-amber-500'"></span>
+                {{ riwayatForm.status || 'Draft' }}
+              </span>
+            </div>
+            <p class="text-[10px] text-slate-400 mt-1">Status hanya dapat diubah admin melalui tombol Setujui/Tolak di tabel.</p>
+          </div>
+
+          <!-- Actions -->
+          <div class="flex items-center justify-end gap-2 pt-4 border-t border-slate-100 dark:border-slate-700/60">
+            <button type="button" @click="showRiwayatForm = false" class="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-semibold text-xs hover:bg-slate-100 dark:hover:bg-slate-700 transition">
+              Batal
+            </button>
+            <button type="submit" :disabled="riwayatSaving" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs transition shadow-md shadow-emerald-600/20 disabled:opacity-50 flex items-center gap-2">
+              <i v-if="riwayatSaving" class="fa-solid fa-spinner animate-spin"></i>
+              <span>{{ riwayatSaving ? 'Menyimpan...' : 'Simpan Data' }}</span>
+            </button>
+          </div>
+        </form>
+
+      </div>
+    </div>
+  </transition>
+
+</div>
+
+
+<!-- Partial Halaman A6: Analisa -->
+<!-- ============================================================
+     A6_Analisa.html — Halaman Analisa & Rekomendasi
+     Rewrite vs kiriman (N1):
+     N1. Seksi distribusi mensyaratkan total_data > 0 (objek kosong itu
+         truthy — tanpa ini header kartu tampil kosong saat data nol).
+     Backend kawan (N2 di 02): getAnalytics_ kini kirim by_bulan (agregat
+     YYYY-MM) + HONOR filter tahun/bulan dari UI ini. Tanpa N2, kartu
+     "Distribusi per Bulan" selalu kosong & tombol Refresh = pajangan.
+     ============================================================ -->
+<div v-if="currentPage === 'analisa'" class="space-y-6">
+
+  <!-- Header & Control Action Bar -->
+  <div class="p-5 rounded-3xl bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/60 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+    <div>
+      <div class="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold text-xs uppercase tracking-wider">
+        <i class="fa-solid fa-chart-pie"></i>
+        <span>Executive Intelligence</span>
+      </div>
+      <h2 class="text-xl font-extrabold text-slate-900 dark:text-white mt-1">Analisa & Rekomendasi Kompetensi</h2>
+      <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Hasil kalkulasi otomatis dan temuan strategis berbasis data pegawai terintegrasi.</p>
+    </div>
+
+    <!-- Filter Control & PDF Download Bar -->
+    <div class="flex flex-wrap items-center gap-2.5">
+      <!-- Filter Tahun -->
+      <select v-model="analisaTahun" class="px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500/50 focus:outline-none">
+        <option value="">Semua Tahun</option>
+        <option v-for="tahun in (tahunList.length ? tahunList : [new Date().getFullYear()])" :key="tahun" :value="tahun">{{ tahun }}</option>
+      </select>
+
+      <!-- Filter Bulan -->
+      <select v-model="analisaBulan" class="px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500/50 focus:outline-none">
+        <option value="">Semua Bulan</option>
+        <option v-for="bulan in bulanList" :key="bulan" :value="bulan">{{ bulan }}</option>
+      </select>
+
+      <!-- Tombol Refresh -->
+      <button @click="loadAnalisa"
+              :disabled="analisaLoading"
+              class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-semibold text-xs transition flex items-center gap-2 disabled:opacity-50">
+        <i class="fa-solid fa-rotate" :class="{ 'animate-spin': analisaLoading }"></i>
+        <span>Refresh</span>
+      </button>
+
+      <!-- Tombol Unduh PDF -->
+      <button v-if="analisaData"
+              @click="downloadAnalisaPDF"
+              class="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold text-xs transition shadow-md shadow-emerald-600/20 flex items-center gap-2">
+        <i class="fa-solid fa-file-pdf"></i>
+        <span>Unduh PDF</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Skeleton Loading State -->
+  <div v-if="analisaLoading" class="py-12 flex flex-col items-center justify-center space-y-3">
+    <div class="relative flex items-center justify-center">
+      <div class="w-10 h-10 rounded-full border-3 border-emerald-200 dark:border-emerald-950 border-t-emerald-600 animate-spin"></div>
+      <i class="fa-solid fa-chart-line text-xs text-emerald-600 dark:text-emerald-400 absolute"></i>
+    </div>
+    <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 animate-pulse">Menyusun laporan analisa & kecerdasan data...</p>
+  </div>
+
+  <template v-else>
+
+    <!-- 1. Ringkasan Kartu Statistik KPI (4 Columns) -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="p-4 rounded-2xl bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/60 shadow-sm flex items-center justify-between">
+        <div>
+          <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Kompetensi Teranalisa</p>
+          <p class="text-2xl font-black text-slate-900 dark:text-white mt-1">{{ analisaData?.total_data ?? 0 }}</p>
+        </div>
+        <div class="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-lg">
+          <i class="fa-solid fa-book-bookmark"></i>
+        </div>
+      </div>
+
+      <div class="p-4 rounded-2xl bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/60 shadow-sm flex items-center justify-between">
+        <div>
+          <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Pegawai</p>
+          <p class="text-2xl font-black text-slate-900 dark:text-white mt-1">{{ (pegawaiList || []).length }}</p>
+        </div>
+        <div class="w-10 h-10 rounded-xl bg-sky-100 dark:bg-sky-950 text-sky-600 dark:text-sky-400 flex items-center justify-center text-lg">
+          <i class="fa-solid fa-users"></i>
+        </div>
+      </div>
+
+      <div class="p-4 rounded-2xl bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/60 shadow-sm flex items-center justify-between">
+        <div>
+          <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Unit Kerja Utama</p>
+          <p class="text-2xl font-black text-slate-900 dark:text-white mt-1">{{ (unitList || []).length }}</p>
+        </div>
+        <div class="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-950 text-purple-600 dark:text-purple-400 flex items-center justify-center text-lg">
+          <i class="fa-solid fa-building"></i>
+        </div>
+      </div>
+
+      <div class="p-4 rounded-2xl bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/60 shadow-sm flex items-center justify-between">
+        <div>
+          <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Formasi Jabatan</p>
+          <p class="text-2xl font-black text-slate-900 dark:text-white mt-1">{{ (jabatanList || []).length }}</p>
+        </div>
+        <div class="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-950 text-amber-600 dark:text-amber-400 flex items-center justify-center text-lg">
+          <i class="fa-solid fa-briefcase"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Ringkasan Eksekutif Callout Card -->
+    <div v-if="analisaData" class="p-5 rounded-3xl bg-white dark:bg-slate-800/90 border-l-4 border-l-emerald-500 border border-slate-200/80 dark:border-slate-700/60 shadow-sm space-y-2">
+      <div class="flex items-center gap-2">
+        <i class="fa-solid fa-lightbulb text-amber-500 text-sm"></i>
+        <h3 class="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wider">Ringkasan Eksekutif</h3>
+      </div>
+      <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+        {{ analisaData.ringkasan || 'Belum ada ringkasan analisa yang dapat disajikan untuk periode terpilih.' }}
+      </p>
+    </div>
+
+    <!-- 3. Insight Referensi SIMPEG (3 Grid) -->
+    <div v-if="(pegawaiList || []).length || (unitList || []).length" class="p-5 rounded-3xl bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/60 shadow-sm space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-700/60 pb-3">
+        <h3 class="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-2">
+          <i class="fa-solid fa-magnifying-glass-chart text-emerald-600 dark:text-emerald-400"></i>
+          Insight Struktur Pegawai & Formasi
+        </h3>
+        <span class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200/50">Simpeg Live Data</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- Top Unit -->
+        <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+          <p class="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2.5">Distribusi Terbesar</p>
+          <ul class="space-y-2">
+            <li v-for="(item, idx) in (pegawaiPerUnitTop || []).slice(0, 3)" :key="idx" class="flex justify-between items-center text-xs">
+              <span class="text-slate-700 dark:text-slate-300 font-medium truncate max-w-[160px]">{{ item.nama_unit }}</span>
+              <span class="font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950/80 px-2 py-0.5 rounded-md text-[10px]">{{ item.jumlah }} Pegawai</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Unit Tanpa Pegawai -->
+        <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 flex flex-col justify-between">
+          <p class="text-xs font-bold text-slate-500 dark:text-slate-400">Status Kebutuhan Personel Unit</p>
+          <div class="mt-2">
+            <p class="text-2xl font-black" :class="unitTanpaPegawai > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'">
+              {{ unitTanpaPegawai }} Unit
+            </p>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+              {{ unitTanpaPegawai > 0 ? 'Terdeteksi unit kerja tanpa alokasi pegawai.' : 'Semua unit kerja telah terisi personel.' }}
+            </p>
+          </div>
+        </div>
+
+        <!-- Jabatan Aktif -->
+        <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 flex flex-col justify-between">
+          <p class="text-xs font-bold text-slate-500 dark:text-slate-400">Status Jabatan Terisi</p>
+          <div class="mt-2">
+            <p class="text-2xl font-black text-sky-600 dark:text-sky-400">
+              {{ jabatanAktif }} Jabatan
+            </p>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Formasi jabatan aktif terdaftar di sistem referensi.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Visualisasi Distribusi (2 Grid) — N1: sembunyi saat data nol -->
+    <div v-if="analisaData && analisaData.total_data > 0" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+      <!-- Progress Bar Distribusi Jenis -->
+      <div class="p-5 rounded-3xl bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/60 shadow-sm space-y-4">
+        <h3 class="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-2">
+          <i class="fa-solid fa-chart-bar text-emerald-600 dark:text-emerald-400"></i>
+          Distribusi per Jenis Kompetensi
+        </h3>
+        <div class="space-y-3">
+          <div v-for="(jumlah, jenis) in (analisaData.by_jenis || {})" :key="jenis" class="space-y-1">
+            <div class="flex justify-between items-center text-xs font-semibold">
+              <span class="capitalize text-slate-700 dark:text-slate-300">{{ jenis }}</span>
+              <span class="text-emerald-600 dark:text-emerald-400 font-bold">{{ jumlah }} Record</span>
+            </div>
+            <div class="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
+              <div class="h-full rounded-full bg-emerald-500" :style="{ width: Math.min((jumlah / (analisaData.total_data || 1)) * 100, 100) + '%' }"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Progress Bar Distribusi Bulan -->
+      <div class="p-5 rounded-3xl bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/60 shadow-sm space-y-4">
+        <h3 class="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-2">
+          <i class="fa-solid fa-calendar-days text-teal-600 dark:text-teal-400"></i>
+          Distribusi per Bulan
+        </h3>
+        <div class="space-y-3">
+          <div v-for="(jumlah, bulan) in (analisaData.by_bulan || {})" :key="bulan" class="space-y-1">
+            <div class="flex justify-between items-center text-xs font-semibold">
+              <span class="capitalize text-slate-700 dark:text-slate-300">{{ bulan }}</span>
+              <span class="text-teal-600 dark:text-teal-400 font-bold">{{ jumlah }} Record</span>
+            </div>
+            <div class="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
+              <div class="h-full rounded-full bg-teal-500" :style="{ width: Math.min((jumlah / (analisaData.total_data || 1)) * 100, 100) + '%' }"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 5. Temuan Penting (Findings) -->
+    <div v-if="analisaData && analisaData.temuan && analisaData.temuan.length" class="p-5 rounded-3xl bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/60 shadow-sm space-y-3">
+      <div class="flex items-center gap-2">
+        <i class="fa-solid fa-triangle-exclamation text-rose-500"></i>
+        <h3 class="text-sm font-bold text-slate-800 dark:text-white">Temuan Penting & Evaluasi Data</h3>
+      </div>
+      <div class="space-y-2">
+        <div v-for="(temuan, idx) in analisaData.temuan" :key="idx"
+             :class="[
+               'p-3.5 rounded-2xl border text-xs flex items-start gap-3',
+               temuan.level === 'kritis'
+                 ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-900/60 text-rose-700 dark:text-rose-300'
+                 : 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-900/60 text-amber-700 dark:text-amber-300'
+             ]">
+          <i :class="temuan.level === 'kritis' ? 'fa-solid fa-circle-xmark text-rose-500' : 'fa-solid fa-circle-exclamation text-amber-500'" class="text-base shrink-0 mt-0.5"></i>
+          <span class="font-medium leading-relaxed">{{ temuan.pesan }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. Rekomendasi Tindakan -->
+    <div v-if="analisaData && analisaData.rekomendasi && analisaData.rekomendasi.length" class="p-5 rounded-3xl bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/60 shadow-sm space-y-3">
+      <div class="flex items-center gap-2">
+        <i class="fa-solid fa-list-check text-emerald-600 dark:text-emerald-400"></i>
+        <h3 class="text-sm font-bold text-slate-800 dark:text-white">Rekomendasi Tindakan Pengembangan</h3>
+      </div>
+      <div class="space-y-2.5">
+        <div v-for="(rekom, idx) in analisaData.rekomendasi" :key="idx" class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 flex items-start gap-3">
+          <!-- Priority Badge -->
+          <span :class="[
+            'px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shrink-0 mt-0.5 border',
+            rekom.prioritas === 'tinggi' ? 'bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-950/80 dark:text-rose-300 dark:border-rose-900' :
+            rekom.prioritas === 'sedang' ? 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950/80 dark:text-amber-300 dark:border-amber-900' :
+            'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950/80 dark:text-emerald-300 dark:border-emerald-900'
+          ]">
+            Prioritas {{ rekom.prioritas }}
+          </span>
+          <p class="text-xs font-medium text-slate-700 dark:text-slate-300 leading-relaxed">{{ rekom.tindakan }}</p>
+        </div>
+      </div>
+    </div>
+
+  </template>
+
+</div>
+
+
+<!-- Partial Halaman A8: Master Data (Kompetensi & SIMPEG) -->
+<!-- ============================================================
+     A8_MasterData.html — Master Data Kompetensi & Referensi SIMPEG
+     Rewrite vs kiriman (F1–F7):
+     F1. scrollbar-none (kebas — bukan utility Tailwind) -> no-scrollbar
+         (custom class, pola A0_Style SILAHAR).
+     F2. + Kolom Status verifikasi + tombol Setujui/Revisi (khusus admin).
+         Tanpa ini admin TAK PUNYA jalan verifikasi di UI manapun!
+     F3. Form + No. Sertifikat & Jumlah JP (skema inti kompetensi; tanpa JP,
+         rekap JP tahunan selalu kosong).
+     F4. Select pegawai hanya untuk admin; non-admin terkunci ke dirinya
+         (selaras guard pemilik backend — anti error misterius).
+     F5. Empty-state colspan 7 -> 8 (ikut kolom Status baru).
+     F6. Form modal + scroll containment (anti jebol di layar kecil).
+     F7. Ikon tautan evidence bila file_url terisi (display-only).
+     ============================================================ -->
+<div v-if="currentPage === 'master_data'" class="space-y-6">
+
+  <!-- Header Halaman -->
+  <div class="p-5 rounded-3xl bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/60 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div>
+      <div class="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold text-xs uppercase tracking-wider">
+        <i class="fa-solid fa-database"></i>
+        <span>Pusat Data System</span>
+      </div>
+      <h2 class="text-xl font-extrabold text-slate-900 dark:text-white mt-1">Master Data & Referensi SIMPEG</h2>
+      <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Kelola riwayat kompetensi dan pantau data entitas pegawai terintegrasi.</p>
+    </div>
+  </div>
+
+  <!-- Tab Navigasi Master Data (Pill Bar Style) -->
+  <div class="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+
+    <!-- Tab 1: Data Kompetensi -->
+    <button @click="activeMasterTab = 'kompetensi'"
+            :class="[
+              'px-4 py-2.5 rounded-2xl font-bold text-xs transition-all duration-200 flex items-center gap-2 shrink-0 border',
+              activeMasterTab === 'kompetensi'
+                ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-600/20'
+                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200/80 dark:border-slate-700/60 hover:bg-slate-50 dark:hover:bg-slate-700'
+            ]">
+      <i class="fa-solid fa-book-bookmark text-sm"></i>
+      <span>Data Kompetensi</span>
+      <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold"
+            :class="activeMasterTab === 'kompetensi' ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'">
+        {{ (kompetensiList || []).length }}
+      </span>
+    </button>
+
+    <!-- Tab 2: Pegawai Referensi -->
+    <button @click="activeMasterTab = 'pegawai'"
+            :class="[
+              'px-4 py-2.5 rounded-2xl font-bold text-xs transition-all duration-200 flex items-center gap-2 shrink-0 border',
+              activeMasterTab === 'pegawai'
+                ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-600/20'
+                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200/80 dark:border-slate-700/60 hover:bg-slate-50 dark:hover:bg-slate-700'
+            ]">
+      <i class="fa-solid fa-users text-sm"></i>
+      <span>Pegawai (SIMPEG)</span>
+      <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold"
+            :class="activeMasterTab === 'pegawai' ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'">
+        {{ (pegawaiList || []).length }}
+      </span>
+    </button>
+
+    <!-- Tab 3: Jabatan Referensi -->
+    <button @click="activeMasterTab = 'jabatan'"
+            :class="[
+              'px-4 py-2.5 rounded-2xl font-bold text-xs transition-all duration-200 flex items-center gap-2 shrink-0 border',
+              activeMasterTab === 'jabatan'
+                ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-600/20'
+                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200/80 dark:border-slate-700/60 hover:bg-slate-50 dark:hover:bg-slate-700'
+            ]">
+      <i class="fa-solid fa-briefcase text-sm"></i>
+      <span>Formasi Jabatan</span>
+      <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold"
+            :class="activeMasterTab === 'jabatan' ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'">
+        {{ (jabatanList || []).length }}
+      </span>
+    </button>
+
+    <!-- Tab 4: Unit Kerja Referensi -->
+    <button @click="activeMasterTab = 'unit'"
+            :class="[
+              'px-4 py-2.5 rounded-2xl font-bold text-xs transition-all duration-200 flex items-center gap-2 shrink-0 border',
+              activeMasterTab === 'unit'
+                ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-600/20'
+                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200/80 dark:border-slate-700/60 hover:bg-slate-50 dark:hover:bg-slate-700'
+            ]">
+      <i class="fa-solid fa-building text-sm"></i>
+      <span>Unit Kerja</span>
+      <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold"
+            :class="activeMasterTab === 'unit' ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'">
+        {{ (unitList || []).length }}
+      </span>
+    </button>
+
+  </div>
+
+  <!-- ====================================================================
+       TAB 1: DATA KOMPETENSI (CRUD APLIKASI)
+       ==================================================================== -->
+  <div v-if="activeMasterTab === 'kompetensi'" class="space-y-4">
+
+    <!-- Filter & Action Controls -->
+    <div class="p-4 rounded-3xl bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/60 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div class="flex items-center gap-2 w-full sm:w-auto">
+        <div class="relative w-full sm:w-64">
+          <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+          <input v-model="kompetensiSearch"
+                 @input="loadKompetensi(1)"
+                 placeholder="Cari kompetensi / penyelenggara..."
+                 class="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500/50 focus:outline-none transition" />
+        </div>
+        <button @click="resetKompetensiFilter" class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 text-xs font-semibold shrink-0">
+          Reset
+        </button>
+      </div>
+
+      <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+        <button @click="exportKompetensiExcel" class="px-3.5 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 text-xs font-semibold flex items-center gap-2">
+          <i class="fa-solid fa-file-excel text-emerald-600"></i> Export Excel
+        </button>
+        <button @click="openKompetensiForm()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-xs font-semibold shadow-md shadow-emerald-600/20 flex items-center gap-2">
+          <i class="fa-solid fa-plus"></i> Tambah Kompetensi
+        </button>
+      </div>
+    </div>
+
+    <!-- Table Kompetensi -->
+    <div class="rounded-3xl bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/60 shadow-sm overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-200/80 dark:border-slate-700/60 text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              <th class="py-3.5 px-4 w-12 text-center">No</th>
+              <th class="py-3.5 px-4">Jenis</th>
+              <th class="py-3.5 px-4">Nama Kompetensi</th>
+              <th class="py-3.5 px-4">Pegawai</th>
+              <th class="py-3.5 px-4">Penyelenggara</th>
+              <th class="py-3.5 px-4">Pelaksanaan</th>
+              <th class="py-3.5 px-4">Status</th>
+              <th class="py-3.5 px-4 text-right">Aksi</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
+            <tr v-for="(item, index) in (kompetensiList || [])" :key="item.id" class="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
+              <td class="py-3.5 px-4 text-center font-bold text-slate-400">{{ (kompetensiPage - 1) * pageSize + index + 1 }}</td>
+              <td class="py-3.5 px-4">
+                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60">
+                  {{ item.jenis_kompetensi || 'Diklat' }}
+                </span>
+              </td>
+              <td class="py-3.5 px-4 font-bold text-slate-800 dark:text-slate-200 max-w-xs truncate">
+                {{ item.nama_kompetensi || '-' }}
+                <a v-if="item.file_url" :href="item.file_url" target="_blank" rel="noopener" title="Buka evidence" class="ml-1.5 text-emerald-600 dark:text-emerald-400 hover:text-emerald-800">
+                  <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                </a>
+              </td>
+              <td class="py-3.5 px-4 text-slate-600 dark:text-slate-300 font-medium">{{ namaPegawai(item.pegawai_id) }}</td>
+              <td class="py-3.5 px-4 text-slate-600 dark:text-slate-400">{{ item.penyelenggara || '-' }}</td>
+              <td class="py-3.5 px-4 text-slate-500 dark:text-slate-400 text-[11px]">
+                {{ formatDateDisplay(item.tanggal_mulai) }} s/d {{ formatDateDisplay(item.tanggal_selesai) }}
+              </td>
+              <!-- F2: Kolom Status Verifikasi -->
+              <td class="py-3.5 px-4">
+                <span :class="[
+                  'px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border',
+                  item.status_verifikasi === 'disetujui' ? 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800'
+                  : item.status_verifikasi === 'revisi' ? 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800'
+                  : 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'
+                ]">
+                  {{ item.status_verifikasi || 'menunggu' }}
+                </span>
+              </td>
+              <td class="py-3.5 px-4 text-right space-x-1">
+                <!-- F2: Tombol verifikasi khusus admin -->
+                <button v-if="isAdmin" @click="verifikasiKompetensi(item, 'disetujui')" class="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 text-emerald-600 dark:text-emerald-400 inline-flex items-center justify-center transition" title="Setujui">
+                  <i class="fa-solid fa-check text-xs"></i>
+                </button>
+                <button v-if="isAdmin" @click="verifikasiKompetensi(item, 'revisi')" class="w-7 h-7 rounded-lg bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 text-amber-600 dark:text-amber-400 inline-flex items-center justify-center transition" title="Minta Revisi">
+                  <i class="fa-solid fa-rotate-left text-xs"></i>
+                </button>
+                <button @click="openKompetensiForm(item)" class="w-7 h-7 rounded-lg bg-sky-50 dark:bg-sky-950/60 hover:bg-sky-100 text-sky-600 dark:text-sky-400 inline-flex items-center justify-center transition" title="Edit">
+                  <i class="fa-solid fa-pen text-xs"></i>
+                </button>
+                <button @click="deleteKompetensi(item)" class="w-7 h-7 rounded-lg bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 text-rose-600 dark:text-rose-400 inline-flex items-center justify-center transition" title="Hapus">
+                  <i class="fa-solid fa-trash text-xs"></i>
+                </button>
+              </td>
+            </tr>
+
+            <!-- Empty State -->
+            <tr v-if="!(kompetensiList || []).length && !kompetensiLoading">
+              <td colspan="8" class="py-12 text-center text-slate-400 dark:text-slate-500">
+                <i class="fa-solid fa-book-open text-4xl block mb-2 opacity-50"></i>
+                <p class="text-xs font-semibold">Belum ada data kompetensi pegawai tersimpan.</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination Controls -->
+      <div class="px-5 py-3.5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 flex items-center justify-between">
+        <span class="text-xs font-medium text-slate-500 dark:text-slate-400">
+          Halaman <span class="font-bold text-slate-800 dark:text-white">{{ kompetensiPage }}</span> dari <span class="font-bold text-slate-800 dark:text-white">{{ kompetensiTotalPages }}</span>
+        </span>
+        <div class="flex items-center gap-1.5">
+          <button @click="loadKompetensi(kompetensiPage - 1)" :disabled="kompetensiPage <= 1" class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-600 dark:text-slate-300 disabled:opacity-40 transition">
+            Prev
+          </button>
+          <button @click="loadKompetensi(kompetensiPage + 1)" :disabled="kompetensiPage >= kompetensiTotalPages" class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-600 dark:text-slate-300 disabled:opacity-40 transition">
+            Next
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       TAB 2: REFERENSI PEGAWAI (SIMPEG READ-ONLY)
+       ==================================================================== -->
+  <div v-if="activeMasterTab === 'pegawai'" class="space-y-4">
+
+    <!-- Info Read-Only SIMPEG Banner -->
+    <div class="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 flex items-center gap-3 text-xs text-amber-800 dark:text-amber-300">
+      <i class="fa-solid fa-lock text-sm shrink-0"></i>
+      <span>Data pegawai disinkronkan secara read-only dari database <strong>SIMPEG Pemkab Trenggalek</strong>.</span>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="p-4 rounded-3xl bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/60 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div class="flex items-center gap-2 w-full sm:w-auto">
+        <div class="relative w-full sm:w-64">
+          <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+          <input v-model="pegawaiSearch" @input="loadPegawai(1)" placeholder="Cari NIP / Nama Pegawai..." class="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500/50 focus:outline-none transition" />
+        </div>
+        <button @click="resetPegawaiFilter" class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 text-xs font-semibold shrink-0">
+          Reset
+        </button>
+      </div>
+
+      <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+        <button @click="exportPegawaiExcel" class="px-3 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 text-xs font-semibold flex items-center gap-1.5">
+          <i class="fa-solid fa-file-excel text-emerald-600"></i> Excel
+        </button>
+        <button @click="exportPegawaiPDF" class="px-3 py-2 rounded-xl bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200/60 text-xs font-semibold flex items-center gap-1.5">
+          <i class="fa-solid fa-file-pdf text-rose-600"></i> PDF
+        </button>
+      </div>
+    </div>
+
+    <!-- Table Pegawai -->
+    <div class="rounded-3xl bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/60 shadow-sm overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-200/80 dark:border-slate-700/60 text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              <th class="py-3.5 px-4 w-12 text-center">No</th>
+              <th class="py-3.5 px-4">NIP</th>
+              <th class="py-3.5 px-4">Nama Lengkap</th>
+              <th class="py-3.5 px-4">Email</th>
+              <th class="py-3.5 px-4">Unit Kerja</th>
+              <th class="py-3.5 px-4">Jabatan</th>
+              <th class="py-3.5 px-4">Status</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
+            <tr v-for="(p, index) in paginatedPegawaiReferensi" :key="p.pegawai_id" class="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
+              <td class="py-3.5 px-4 text-center font-bold text-slate-400">{{ (pegawaiRefPage - 1) * pageSize + index + 1 }}</td>
+              <td class="py-3.5 px-4 font-bold text-slate-800 dark:text-slate-200">{{ p.nip || '-' }}</td>
+              <td class="py-3.5 px-4 font-bold text-slate-900 dark:text-white">{{ p.nama || '-' }}</td>
+              <td class="py-3.5 px-4 text-slate-500 dark:text-slate-400">{{ p.email || '-' }}</td>
+              <td class="py-3.5 px-4 text-slate-600 dark:text-slate-300">{{ namaUnit(p.unit_id) }}</td>
+              <td class="py-3.5 px-4 text-slate-600 dark:text-slate-300">{{ namaJabatan(p.jabatan_id) }}</td>
+              <td class="py-3.5 px-4">
+                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60">
+                  {{ p.status || 'AKTIF' }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination controls -->
+      <div class="px-5 py-3.5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 flex items-center justify-between">
+        <span class="text-xs font-medium text-slate-500 dark:text-slate-400">
+          Halaman <span class="font-bold text-slate-800 dark:text-white">{{ pegawaiRefPage }}</span> dari <span class="font-bold text-slate-800 dark:text-white">{{ pegawaiRefTotalPages }}</span>
+        </span>
+        <div class="flex items-center gap-1.5">
+          <button @click="loadPegawai(pegawaiRefPage - 1)" :disabled="pegawaiRefPage <= 1" class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-600 dark:text-slate-300 disabled:opacity-40 transition">Prev</button>
+          <button @click="loadPegawai(pegawaiRefPage + 1)" :disabled="pegawaiRefPage >= pegawaiRefTotalPages" class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-600 dark:text-slate-300 disabled:opacity-40 transition">Next</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       TAB 3: REFERENSI JABATAN (SIMPEG READ-ONLY)
+       ==================================================================== -->
+  <div v-if="activeMasterTab === 'jabatan'" class="space-y-4">
+
+    <!-- Filter Bar -->
+    <div class="p-4 rounded-3xl bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/60 shadow-sm flex items-center gap-2">
+      <div class="relative w-full sm:w-64">
+        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+        <input v-model="jabatanSearch" @input="loadJabatan(1)" placeholder="Cari Kode / Nama Jabatan..." class="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500/50 focus:outline-none transition" />
+      </div>
+      <button @click="resetJabatanFilter" class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold shrink-0">Reset</button>
+    </div>
+
+    <!-- Table Jabatan -->
+    <div class="rounded-3xl bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/60 shadow-sm overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-200/80 dark:border-slate-700/60 text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              <th class="py-3.5 px-4 w-12 text-center">No</th>
+              <th class="py-3.5 px-4">Kode</th>
+              <th class="py-3.5 px-4">Nama Jabatan</th>
+              <th class="py-3.5 px-4">Unit Kerja</th>
+              <th class="py-3.5 px-4">Jenis Jabatan</th>
+              <th class="py-3.5 px-4">Status Formasi</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
+            <tr v-for="(j, index) in paginatedJabatanReferensi" :key="j.jabatan_id" class="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
+              <td class="py-3.5 px-4 text-center font-bold text-slate-400">{{ (jabatanRefPage - 1) * pageSize + index + 1 }}</td>
+              <td class="py-3.5 px-4 font-bold text-slate-800 dark:text-slate-200">{{ j.kode_jabatan || '-' }}</td>
+              <td class="py-3.5 px-4 font-bold text-slate-900 dark:text-white">{{ j.nama_jabatan || '-' }}</td>
+              <td class="py-3.5 px-4 text-slate-600 dark:text-slate-300">{{ namaUnit(j.unit_id) }}</td>
+              <td class="py-3.5 px-4 text-slate-500 dark:text-slate-400">{{ j.jenis_jabatan || '-' }}</td>
+              <td class="py-3.5 px-4">
+                <span :class="[
+                  'px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border',
+                  j.status_jabatan === 'DEFINITIF' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                  j.status_jabatan === 'PLT' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-rose-50 text-rose-700 border-rose-200'
+                ]">
+                  {{ j.status_jabatan || 'DEFINITIF' }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination Jabatan -->
+      <div class="px-5 py-3.5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 flex items-center justify-between">
+        <span class="text-xs font-medium text-slate-500 dark:text-slate-400">
+          Halaman <span class="font-bold text-slate-800 dark:text-white">{{ jabatanRefPage }}</span> dari <span class="font-bold text-slate-800 dark:text-white">{{ jabatanRefTotalPages }}</span>
+        </span>
+        <div class="flex items-center gap-1.5">
+          <button @click="loadJabatan(jabatanRefPage - 1)" :disabled="jabatanRefPage <= 1" class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-600 dark:text-slate-300 disabled:opacity-40 transition">Prev</button>
+          <button @click="loadJabatan(jabatanRefPage + 1)" :disabled="jabatanRefPage >= jabatanRefTotalPages" class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-600 dark:text-slate-300 disabled:opacity-40 transition">Next</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       TAB 4: REFERENSI UNIT KERJA (SIMPEG READ-ONLY)
+       ==================================================================== -->
+  <div v-if="activeMasterTab === 'unit'" class="space-y-4">
+
+    <!-- Filter Bar -->
+    <div class="p-4 rounded-3xl bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/60 shadow-sm flex items-center gap-2">
+      <div class="relative w-full sm:w-64">
+        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+        <input v-model="unitSearch" @input="loadUnit(1)" placeholder="Cari Kode / Nama Unit..." class="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500/50 focus:outline-none transition" />
+      </div>
+      <button @click="resetUnitFilter" class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold shrink-0">Reset</button>
+    </div>
+
+    <!-- Table Unit -->
+    <div class="rounded-3xl bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/60 shadow-sm overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-200/80 dark:border-slate-700/60 text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              <th class="py-3.5 px-4 w-12 text-center">No</th>
+              <th class="py-3.5 px-4">Kode Unit</th>
+              <th class="py-3.5 px-4">Nama Unit Kerja</th>
+              <th class="py-3.5 px-4">Jenis Unit</th>
+              <th class="py-3.5 px-4">Status</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
+            <tr v-for="(u, index) in paginatedUnitReferensi" :key="u.unit_id" class="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
+              <td class="py-3.5 px-4 text-center font-bold text-slate-400">{{ (unitRefPage - 1) * pageSize + index + 1 }}</td>
+              <td class="py-3.5 px-4 font-bold text-slate-800 dark:text-slate-200">{{ u.kode_unit || '-' }}</td>
+              <td class="py-3.5 px-4 font-bold text-slate-900 dark:text-white">{{ u.nama_unit || '-' }}</td>
+              <td class="py-3.5 px-4 text-slate-500 dark:text-slate-400">{{ u.jenis_unit || '-' }}</td>
+              <td class="py-3.5 px-4">
+                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300">
+                  {{ u.status || 'AKTIF' }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination Unit -->
+      <div class="px-5 py-3.5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 flex items-center justify-between">
+        <span class="text-xs font-medium text-slate-500 dark:text-slate-400">
+          Halaman <span class="font-bold text-slate-800 dark:text-white">{{ unitRefPage }}</span> dari <span class="font-bold text-slate-800 dark:text-white">{{ unitRefTotalPages }}</span>
+        </span>
+        <div class="flex items-center gap-1.5">
+          <button @click="loadUnit(unitRefPage - 1)" :disabled="unitRefPage <= 1" class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-600 dark:text-slate-300 disabled:opacity-40 transition">Prev</button>
+          <button @click="loadUnit(unitRefPage + 1)" :disabled="unitRefPage >= unitRefTotalPages" class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-600 dark:text-slate-300 disabled:opacity-40 transition">Next</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Dialog Input / Edit Data Kompetensi -->
+  <transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0 scale-95" enter-to-class="opacity-100 scale-100" leave-active-class="transition duration-150 ease-in" leave-from-class="opacity-100 scale-100" leave-to-class="opacity-0 scale-95">
+    <div v-if="showKompetensiForm" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+      <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-700/80 max-w-lg w-full p-6 overflow-hidden">
+
+        <div class="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-700/60">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-sm">
+              <i class="fa-solid fa-award"></i>
+            </div>
+            <h3 class="text-base font-extrabold text-slate-900 dark:text-white">
+              {{ kompetensiForm.id ? 'Edit Data Kompetensi' : 'Tambah Kompetensi Baru' }}
+            </h3>
+          </div>
+          <button @click="showKompetensiForm = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition">
+            <i class="fa-solid fa-xmark text-base"></i>
+          </button>
+        </div>
+
+        <form @submit.prevent="saveKompetensi" class="space-y-3.5 mt-4 max-h-[70vh] overflow-y-auto no-scrollbar pr-1">
+
+          <!-- F4: select pegawai hanya admin; non-admin terkunci ke dirinya -->
+          <div v-if="isAdmin">
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Pegawai Bersangkutan *</label>
+            <select v-model="kompetensiForm.pegawai_id" required class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500/50 focus:outline-none">
+              <option value="">-- Pilih Pegawai --</option>
+              <option v-for="p in (pegawaiList || [])" :key="p.pegawai_id" :value="p.pegawai_id">{{ p.nama }} (NIP. {{ p.nip || '-' }})</option>
+            </select>
+          </div>
+          <div v-else class="px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-300">
+            <span class="font-bold">Pegawai:</span> {{ namaPegawai(kompetensiForm.pegawai_id) }}
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Jenis Kompetensi *</label>
+              <select v-model="kompetensiForm.jenis_kompetensi" required class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500/50 focus:outline-none">
+                <option value="diklat">Diklat</option>
+                <option value="sertifikasi">Sertifikasi</option>
+                <option value="pelatihan">Pelatihan / Workshop</option>
+                <option value="bimtek">Bimtek</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Penyelenggara</label>
+              <input v-model="kompetensiForm.penyelenggara" placeholder="Lembaga / Instansi..." class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500/50 focus:outline-none" />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Nama Kompetensi / Pelatihan *</label>
+            <input v-model="kompetensiForm.nama_kompetensi" required placeholder="Judul diklat/sertifikasi..." class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500/50 focus:outline-none" />
+          </div>
+
+          <!-- F3: No. Sertifikat + Jumlah JP (skema inti — wajib ada) -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">No. Sertifikat</label>
+              <input v-model="kompetensiForm.no_sertifikat" placeholder="Nomor sertifikat..." class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500/50 focus:outline-none" />
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Jumlah JP (Jam Pelajaran)</label>
+              <input v-model.number="kompetensiForm.jumlah_jp" type="number" min="0" placeholder="cth: 32" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500/50 focus:outline-none" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Tanggal Mulai</label>
+              <input v-model="kompetensiForm.tanggal_mulai" type="date" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500/50 focus:outline-none" />
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Tanggal Selesai</label>
+              <input v-model="kompetensiForm.tanggal_selesai" type="date" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500/50 focus:outline-none" />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Tautan Sertifikat / File Evidence (Drive URL)</label>
+            <input v-model="kompetensiForm.file_url" placeholder="https://drive.google.com/..." class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500/50 focus:outline-none" />
+          </div>
+
+          <!-- Submit Buttons -->
+          <div class="flex items-center justify-end gap-2 pt-4 border-t border-slate-100 dark:border-slate-700/60">
+            <button type="button" @click="showKompetensiForm = false" class="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-semibold text-xs hover:bg-slate-100 dark:hover:bg-slate-700 transition">
+              Batal
+            </button>
+            <button type="submit" :disabled="kompetensiSaving" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs transition shadow-md shadow-emerald-600/20 disabled:opacity-50 flex items-center gap-2">
+              <i v-if="kompetensiSaving" class="fa-solid fa-spinner animate-spin"></i>
+              <span>{{ kompetensiSaving ? 'Menyimpan...' : 'Simpan Data' }}</span>
+            </button>
+          </div>
+
+        </form>
+
+      </div>
+    </div>
+  </transition>
+
+</div>
+
