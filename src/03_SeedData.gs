@@ -4,7 +4,6 @@
 // ============================================================
 
 function seedInitialData() {
-  var ss = getLocalSpreadsheet_();
   var user = { id: 'SYSTEM_SEED', email: 'system@trenggalekkab.go.id', role: 'super' };
 
   // 1. SEED M_UNIT_KERJA (7 Unit & Pos Wilayah Satpol PP & Damkar)
@@ -17,7 +16,7 @@ function seedInitialData() {
     { id: 'UNT-006', kode_unit: 'DAMKAR-PANGGUL', nama_unit: 'Pos Damkar Wilayah Panggul', kategori_unit: 'Pos Wilayah', lokasi: 'Jl. Raya Panggul, Kec. Panggul', kepala_nip: '199408252020121008', telepon: '113 / 08123456782' },
     { id: 'UNT-007', kode_unit: 'SATPOL-LINMAS', nama_unit: 'Bidang Perlindungan Masyarakat (Linmas)', kategori_unit: 'Bidang', lokasi: 'Mako Jl. Brigjend Soetran', kepala_nip: '198807192011012009', telepon: '(0355) 791115' }
   ];
-  units.forEach(function(u) { CoreLib.saveRecord(ss, LOCAL_SHEET_NAMES.M_UNIT_KERJA, u, user); });
+  units.forEach(function(u) { saveRecord_(LOCAL_SHEET_NAMES.M_UNIT_KERJA, u, user); });
 
   // 2. SEED M_JABATAN (Jabatan Struktural & Fungsional Tertentu)
   var jabatans = [
@@ -32,7 +31,7 @@ function seedInitialData() {
     { id: 'JAB-009', kode_jabatan: 'JAB-DAMKAR-TERAMPIL', nama_jabatan: 'Pemadam Kebakaran Terampil', rumpun_jabatan: 'Fungsional Damkar', jenjang_jabatan: 'Terampil', target_jp_tahunan: 25 },
     { id: 'JAB-010', kode_jabatan: 'JAB-PENGADMIN', nama_jabatan: 'Pengadministrasi Umum & Kepegawaian', rumpun_jabatan: 'Staf Pelaksana', jenjang_jabatan: 'Pelaksana', target_jp_tahunan: 20 }
   ];
-  jabatans.forEach(function(j) { CoreLib.saveRecord(ss, LOCAL_SHEET_NAMES.M_JABATAN, j, user); });
+  jabatans.forEach(function(j) { saveRecord_(LOCAL_SHEET_NAMES.M_JABATAN, j, user); });
 
   // 3. SEED M_KATALOG_DIKLAT (Kamus Resmi Pelatihan Bersertifikat)
   var diklat = [
@@ -45,7 +44,7 @@ function seedInitialData() {
     { id: 'DKL-007', kode_diklat: 'DKL-BIMTEK-LINMAS', nama_diklat: 'Bimtek Tata Kelola Satlinmas & Mitigasi Bencana Daerah', rumpun: 'Bimtek', kategori_keahlian: 'Linmas & Mitigasi', penyelenggara_default: 'Satpol PP & Damkar Trenggalek', default_jp: 32, deskripsi: 'Penguatan kapasitas anggota Satlinmas desa/kelurahan dalam pengamanan TPS dan deteksi dini bencana.' },
     { id: 'DKL-008', kode_diklat: 'DKL-INTEL-TIBUM', nama_diklat: 'Workshop Intelijen Taktis & Negosiasi Penanganan Unjuk Rasa', rumpun: 'Teknis', kategori_keahlian: 'Intelijen Tibum', penyelenggara_default: 'BPSDM Jawa Timur / Ditjen Bina Adwil', default_jp: 45, deskripsi: 'Teknik pengumpulan bahan keterangan, deteksi dini potensi konflik sosial, dan humanis crowd control.' }
   ];
-  diklat.forEach(function(d) { CoreLib.saveRecord(ss, LOCAL_SHEET_NAMES.M_KATALOG_DIKLAT, d, user); });
+  diklat.forEach(function(d) { saveRecord_(LOCAL_SHEET_NAMES.M_KATALOG_DIKLAT, d, user); });
 
   // 4. SEED M_PEGAWAI (10 Pegawai Realistis Satpol PP & Damkar Trenggalek)
   var pegawai = [
@@ -60,7 +59,7 @@ function seedInitialData() {
     { id: 'PEG-009', nip: '199806152023011004', nik: '3503011506980009', nama_lengkap: 'Budi Santoso', gelar_depan: '', gelar_belakang: '', email: 'budi.s@trenggalekkab.go.id', pangkat_gol: 'Pengatur (II/c)', jabatan_id: 'JAB-009', unit_id: 'UNT-004', regu_pleton: 'Regu Siaga Kota B', is_ppns: 'Tidak', no_sk_ppns: '-', kualifikasi_damkar: 'Fire I', status_aktif: 'aktif' },
     { id: 'PEG-010', nip: '199512302020122011', nik: '3503013012950010', nama_lengkap: 'Anisa Kusuma', gelar_depan: '', gelar_belakang: 'S.M.', email: 'anisa.k@trenggalekkab.go.id', pangkat_gol: 'Penata Muda (III/a)', jabatan_id: 'JAB-010', unit_id: 'UNT-001', regu_pleton: 'Sekretariat', is_ppns: 'Tidak', no_sk_ppns: '-', kualifikasi_damkar: '-', status_aktif: 'aktif' }
   ];
-  pegawai.forEach(function(p) { CoreLib.saveRecord(ss, LOCAL_SHEET_NAMES.M_PEGAWAI, p, user); });
+  pegawai.forEach(function(p) { saveRecord_(LOCAL_SHEET_NAMES.M_PEGAWAI, p, user); });
 
   // 5. SEED T_KOMPETENSI_PEGAWAI (Riwayat Diklat & JP)
   var riwayat = [
@@ -73,7 +72,7 @@ function seedInitialData() {
     { id: 'KMP-007', pegawai_id: 'PEG-005', diklat_id: 'DKL-007', nama_kegiatan: 'Bimtek Tata Kelola Satlinmas & Mitigasi Bencana Daerah', rumpun: 'Bimtek', penyelenggara: 'Satpol PP & Damkar Trenggalek', no_sertifikat: 'BIMTEK/LINMAS/2026/01', tgl_terbit: '2026-01-20', tgl_mulai: '2026-01-15', tgl_selesai: '2026-01-18', tgl_kedaluwarsa: '', jumlah_jp: 32, metode: 'Klasikal', file_url: '', status_verifikasi: 'disetujui', catatan_verifikator: 'Disetujui untuk pemenuhan 20 JP TA 2026.', verifikator_id: 'miftachurrochim@trenggalekkab.go.id', tanggal_verifikasi: '2026-01-22T09:00:00.000Z' },
     { id: 'KMP-008', pegawai_id: 'PEG-008', diklat_id: 'DKL-008', nama_kegiatan: 'Workshop Intelijen Taktis & Negosiasi Penanganan Unjuk Rasa', rumpun: 'Teknis', penyelenggara: 'BPSDM Jawa Timur', no_sertifikat: 'WS-INTEL/2026/02', tgl_terbit: '2026-02-18', tgl_mulai: '2026-02-15', tgl_selesai: '2026-02-17', tgl_kedaluwarsa: '', jumlah_jp: 45, metode: 'Klasikal', file_url: '', status_verifikasi: 'menunggu', catatan_verifikator: '', verifikator_id: '', tanggal_verifikasi: '' }
   ];
-  riwayat.forEach(function(r) { CoreLib.saveRecord(ss, LOCAL_SHEET_NAMES.T_KOMPETENSI_PEGAWAI, r, user); });
+  riwayat.forEach(function(r) { saveRecord_(LOCAL_SHEET_NAMES.T_KOMPETENSI_PEGAWAI, r, user); });
 
   // 6. SEED T_USULAN_DIKLAT (Usulan Bottom-Up dari Personel Satpol PP & Damkar)
   var usulan = [
@@ -81,7 +80,7 @@ function seedInitialData() {
     { id: 'USL-002', pegawai_id: 'PEG-008', diklat_id: 'DKL-002', nama_diklat_usulan: 'Diklat Lanjutan PPNS Penyidikan Tindak Pidana Ringan Tipiring Perda', rumpun: 'Teknis', target_penyelenggara: 'Lemdiklat Polri / Kemendagri', alasan_usulan: 'Memperkuat kapasitas penegakan hukum yustisial dan penuntutan denda pelanggaran perda tata ruang.', urgensi: 'Sedang', estimasi_biaya: 5000000, status_usulan: 'diajukan', catatan_pimpinan: '', tgl_pengajuan: '2026-02-10' },
     { id: 'USL-003', pegawai_id: 'PEG-006', diklat_id: 'DKL-004', nama_diklat_usulan: 'Pelatihan Sertifikasi Selam Search & Rescue (SAR) Pantai Prigi', rumpun: 'Teknis', target_penyelenggara: 'BASARNAS Jawa Timur', alasan_usulan: 'Menunjang keselamatan wisatawan dan evakuasi kecelakaan laut di kawasan pesisir Watulimo.', urgensi: 'Tinggi', estimasi_biaya: 4000000, status_usulan: 'direkomendasikan_bkpsdm', catatan_pimpinan: 'Rekomendasi beasiswa diklat kedinasan telah dikirim ke BKPSDM Trenggalek.', tgl_pengajuan: '2026-02-15' }
   ];
-  usulan.forEach(function(u) { CoreLib.saveRecord(ss, LOCAL_SHEET_NAMES.T_USULAN_DIKLAT, u, user); });
+  usulan.forEach(function(u) { saveRecord_(LOCAL_SHEET_NAMES.T_USULAN_DIKLAT, u, user); });
 
   Logger.log('✅ Berhasil inisialisasi basis data 6 Sheet Opsi B untuk SI-KOMPETENSI Satpol PP & Damkar Trenggalek!');
 }

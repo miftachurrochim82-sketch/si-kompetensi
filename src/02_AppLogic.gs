@@ -1,6 +1,7 @@
 // ============================================================
 // SI-KOMPETENSI - 02_AppLogic.gs (v2.4.0 — Opsi B 6-Sheet)
-// Backend Routing, Business Logic & API Dispatcher
+// Backend Routing, Business Logic & Standalone API Dispatcher
+// Satpol PP & Pemadam Kebakaran Kab. Trenggalek
 // ============================================================
 
 /**
@@ -33,11 +34,11 @@ function doPost(e) {
       body = JSON.parse(e.postData.contents);
     }
   } catch (err) {
-    return CoreLib.jsonResponse({ success: false, code: 'BAD_REQUEST', error: 'Format JSON payload tidak valid.' });
+    return jsonResponse_({ success: false, code: 'BAD_REQUEST', error: 'Format JSON payload tidak valid.' });
   }
 
   var result = handleAction(body);
-  return CoreLib.jsonResponse(result);
+  return jsonResponse_(result);
 }
 
 function include(filename) {
@@ -74,31 +75,166 @@ function localPreSaveHook_(sheetName, record, isNew, sessionUser) {
 }
 
 /**
- * Dispatcher lokal SI-KOMPETENSI
+ * Dispatcher Utama SI-KOMPETENSI (Bekerja secara Mandiri & Terhubung SSO)
  */
 function handleAction(payload) {
-  var cfg = getAppConfig_();
-  cfg.preSaveHook = localPreSaveHook_;
-  cfg.localHandlers = {
-    'dashboard': typeof apiDashboard_ === 'function' ? apiDashboard_ : null,
-    'get_kompetensi_list': typeof getKompetensiList_ === 'function' ? getKompetensiList_ : null,
-    'save_kompetensi': typeof saveKompetensiHandler_ === 'function' ? saveKompetensiHandler_ : null,
-    'delete_kompetensi': typeof deleteKompetensiHandler_ === 'function' ? deleteKompetensiHandler_ : null,
-    'verifikasi_kompetensi': typeof verifikasiKompetensiHandler_ === 'function' ? verifikasiKompetensiHandler_ : null,
-    'get_usulan_list': typeof getUsulanList_ === 'function' ? getUsulanList_ : null,
-    'save_usulan': typeof saveUsulanHandler_ === 'function' ? saveUsulanHandler_ : null,
-    'review_usulan': typeof reviewUsulanHandler_ === 'function' ? reviewUsulanHandler_ : null,
-    'delete_usulan': typeof deleteUsulanHandler_ === 'function' ? deleteUsulanHandler_ : null,
-    'analytics': typeof getAnalytics_ === 'function' ? getAnalytics_ : null,
-    'get_master_simpeg': typeof getMasterSIMPEG_ === 'function' ? getMasterSIMPEG_ : null,
-    'get_master_pegawai': typeof getMasterPegawai_ === 'function' ? getMasterPegawai_ : null,
-    'get_master_unit': typeof getMasterUnit_ === 'function' ? getMasterUnit_ : null,
-    'get_master_jabatan': typeof getMasterJabatan_ === 'function' ? getMasterJabatan_ : null,
-    'get_katalog_diklat': typeof getKatalogDiklat_ === 'function' ? getKatalogDiklat_ : null,
-    'get_my_profile': typeof getMyProfile_ === 'function' ? getMyProfile_ : null,
-    'save_my_profile': typeof saveMyProfile_ === 'function' ? saveMyProfile_ : null
-  };
-  return CoreLib.dispatch(payload, cfg);
+  if (!payload || typeof payload !== 'object') {
+    return { success: false, code: 'BAD_REQUEST', error: 'Payload tidak valid.' };
+  }
+
+  var action = payload.action || '';
+  var data = payload.data || {};
+  var token = payload.token || '';
+  var ticket = payload.ticket || '';
+  var sessionUser = payload.user || { id: 'GUEST', role: 'viewer', email: '' };
+
+  // 1. SSO Ticket Exchange
+  if (action === 'exchange_ticket' || action === 'sso_login') {
+    return handleTicketExchange_(ticket || data.ticket || token);
+  }
+
+  // 2. Ping / Health check
+  if (action === 'ping') {
+    return { success: true, message: 'SI-KOMPETENSI API is online', timestamp: new Date().toISOString() };
+  }
+
+  // 3. Routing Aksi Modul Kompetensi
+  try {
+    switch (action) {
+      case 'dashboard':
+        return apiDashboard_(data, sessionUser);
+
+      case 'get_kompetensi_list':
+        return getKompetensiList_(data, sessionUser);
+
+      case 'save_kompetensi':
+        return saveKompetensiHandler_(data, sessionUser);
+
+      case 'delete_kompetensi':
+        return deleteKompetensiHandler_(data, sessionUser);
+
+      case 'verifikasi_kompetensi':
+        return verifikasiKompetensiHandler_(data, sessionUser);
+
+      case 'get_usulan_list':
+        return getUsulanList_(data, sessionUser);
+
+      case 'save_usulan':
+        return saveUsulanHandler_(data, sessionUser);
+
+      case 'review_usulan':
+        return reviewUsulanHandler_(data, sessionUser);
+
+      case 'delete_usulan':
+        return deleteUsulanHandler_(data, sessionUser);
+
+      case 'analytics':
+        return getAnalytics_(data, sessionUser);
+
+      case 'get_master_simpeg':
+        return getMasterSIMPEG_();
+
+      case 'get_master_pegawai':
+        return getMasterPegawai_();
+
+      case 'get_master_unit':
+        return getMasterUnit_();
+
+      case 'get_master_jabatan':
+        return getMasterJabatan_();
+
+      case 'get_katalog_diklat':
+        return getKatalogDiklat_();
+
+      case 'get_my_profile':
+        return getMyProfile_(data, sessionUser);
+
+      case 'save_my_profile':
+        return saveMyProfile_(data, sessionUser);
+
+      case 'setup_app':
+      case 'init_database':
+        return setupApp();
+
+      case 'api_get':
+        var sName = data.sheetName || LOCAL_SHEET_NAMES.T_KOMPETENSI_PEGAWAI;
+        return { success: true, data: getSheetData_(sName) };
+
+      case 'api_save':
+        var saveSheet = data.sheetName || LOCAL_SHEET_NAMES.T_KOMPETENSI_PEGAWAI;
+        var rec = localPreSaveHook_(saveSheet, data.record || {}, !data.record || !data.record.id, sessionUser);
+        return { success: true, data: saveRecord_(saveSheet, rec, sessionUser) };
+
+      case 'api_delete':
+        var delSheet = data.sheetName || LOCAL_SHEET_NAMES.T_KOMPETENSI_PEGAWAI;
+        return { success: true, data: softDeleteRecord_(delSheet, data.id, sessionUser) };
+
+      default:
+        // Jika CoreLib tersedia di library, delegasikan sebagai fallback
+        if (typeof CoreLib !== 'undefined' && typeof CoreLib.dispatch === 'function') {
+          var cfg = getAppConfig_();
+          cfg.preSaveHook = localPreSaveHook_;
+          return CoreLib.dispatch(payload, cfg);
+        }
+        return { success: false, code: 'UNKNOWN_ACTION', error: 'Action "' + action + '" tidak dikenali.' };
+    }
+  } catch (err) {
+    Logger.log('[ERROR handleAction] ' + err.stack || err.message);
+    return { success: false, error: err.message || 'Terjadi kesalahan pemrosesan server.' };
+  }
+}
+
+/**
+ * Handle SSO Ticket Exchange dengan Portal Pusat SI-PLATFORM
+ */
+function handleTicketExchange_(ticket) {
+  if (!ticket) {
+    return { success: false, code: 'INVALID_TICKET', error: 'Ticket SSO tidak boleh kosong.' };
+  }
+
+  // Jika CoreLib tersedia
+  if (typeof CoreLib !== 'undefined' && typeof CoreLib.exchangePlatformTicket === 'function') {
+    try {
+      return CoreLib.exchangePlatformTicket(ticket, {
+        platformApiUrl: PLATFORM_API_URL,
+        appCode: APP_CODE,
+        sessionPrefix: SESSION_PREFIX,
+        sessionTtlSeconds: SESSION_TTL_SECONDS
+      });
+    } catch(e) {}
+  }
+
+  // Native HTTP Call ke SI-PLATFORM SSO
+  try {
+    var resp = UrlFetchApp.fetch(PLATFORM_API_URL, {
+      method: 'post',
+      contentType: 'application/json',
+      payload: JSON.stringify({
+        action: 'validate_ticket',
+        data: { ticket: ticket, app_code: APP_CODE }
+      }),
+      muteHttpExceptions: true
+    });
+
+    var resObj = JSON.parse(resp.getContentText());
+    if (resObj && resObj.success && resObj.data && resObj.data.user) {
+      var user = resObj.data.user;
+      var token = SESSION_PREFIX + Utilities.getUuid();
+      try {
+        CacheService.getUserCache().put(token, JSON.stringify(user), SESSION_TTL_SECONDS);
+      } catch(e) {}
+      return {
+        success: true,
+        data: {
+          token: token,
+          user: user
+        }
+      };
+    }
+    return { success: false, error: (resObj && resObj.error) || 'Validasi tiket SSO gagal.' };
+  } catch (err) {
+    return { success: false, error: 'Gagal menghubungi SSO SI-PLATFORM: ' + err.message };
+  }
 }
 
 // ==================== HANDLER BUSINESS LOGIC ====================
@@ -107,11 +243,10 @@ function handleAction(payload) {
  * 1. Dashboard Executive Handler
  */
 function apiDashboard_(data, sessionUser) {
-  var ss = getLocalSpreadsheet_();
-  var kompetensiRows = CoreLib.getSheetDataAsJson(ss, LOCAL_SHEET_NAMES.T_KOMPETENSI_PEGAWAI) || [];
-  var pegawaiRows = CoreLib.getSheetDataAsJson(ss, LOCAL_SHEET_NAMES.M_PEGAWAI) || [];
-  var unitRows = CoreLib.getSheetDataAsJson(ss, LOCAL_SHEET_NAMES.M_UNIT_KERJA) || [];
-  var usulanRows = CoreLib.getSheetDataAsJson(ss, LOCAL_SHEET_NAMES.T_USULAN_DIKLAT) || [];
+  var kompetensiRows = getSheetData_(LOCAL_SHEET_NAMES.T_KOMPETENSI_PEGAWAI);
+  var pegawaiRows = getSheetData_(LOCAL_SHEET_NAMES.M_PEGAWAI);
+  var unitRows = getSheetData_(LOCAL_SHEET_NAMES.M_UNIT_KERJA);
+  var usulanRows = getSheetData_(LOCAL_SHEET_NAMES.T_USULAN_DIKLAT);
 
   var currentYear = new Date().getFullYear();
   var targetTahun = Number(data && data.tahun) || currentYear;
@@ -210,8 +345,7 @@ function apiDashboard_(data, sessionUser) {
  * 2. Get Kompetensi List Handler (Search, Filter, Paging)
  */
 function getKompetensiList_(data, sessionUser) {
-  var ss = getLocalSpreadsheet_();
-  var rows = CoreLib.getSheetDataAsJson(ss, LOCAL_SHEET_NAMES.T_KOMPETENSI_PEGAWAI) || [];
+  var rows = getSheetData_(LOCAL_SHEET_NAMES.T_KOMPETENSI_PEGAWAI);
 
   var search = String((data && data.search) || '').toLowerCase().trim();
   var filters = (data && data.filters) || {};
@@ -264,11 +398,10 @@ function saveKompetensiHandler_(data, sessionUser) {
   var record = data && (data.record || data);
   if (!record) return { success: false, error: 'Data kompetensi wajib diisi.' };
 
-  var ss = getLocalSpreadsheet_();
   var isNew = !record.id;
   record = localPreSaveHook_(LOCAL_SHEET_NAMES.T_KOMPETENSI_PEGAWAI, record, isNew, sessionUser);
 
-  var saved = CoreLib.saveRecord(ss, LOCAL_SHEET_NAMES.T_KOMPETENSI_PEGAWAI, record, sessionUser);
+  var saved = saveRecord_(LOCAL_SHEET_NAMES.T_KOMPETENSI_PEGAWAI, record, sessionUser);
   return { success: true, data: saved };
 }
 
@@ -276,11 +409,10 @@ function saveKompetensiHandler_(data, sessionUser) {
  * 4. Delete Kompetensi Handler
  */
 function deleteKompetensiHandler_(data, sessionUser) {
-  var id = data && (data.id || (data.record && data.record.id));
-  if (!id) return { success: false, error: 'ID data kompetensi wajib diisi.' };
+  var id = data && data.id;
+  if (!id) return { success: false, error: 'ID data wajib disertakan.' };
 
-  var ss = getLocalSpreadsheet_();
-  var deleted = CoreLib.softDeleteRecord(ss, LOCAL_SHEET_NAMES.T_KOMPETENSI_PEGAWAI, id, sessionUser);
+  var deleted = softDeleteRecord_(LOCAL_SHEET_NAMES.T_KOMPETENSI_PEGAWAI, id, sessionUser);
   return { success: true, data: deleted };
 }
 
@@ -290,61 +422,84 @@ function deleteKompetensiHandler_(data, sessionUser) {
 function verifikasiKompetensiHandler_(data, sessionUser) {
   var role = String((sessionUser && sessionUser.role) || '').toLowerCase();
   if (role !== 'admin' && role !== 'super' && role !== 'verifikator') {
-    return { success: false, error: 'Akses ditolak: Hanya verifikator dan administrator yang dapat memverifikasi.' };
+    return { success: false, error: 'Akses ditolak: Hanya verifikator atau admin yang berhak melakukan verifikasi.' };
   }
 
   var id = data && data.id;
-  var status = data && (data.status_verifikasi || data.status || 'disetujui');
+  var status = data && data.status_verifikasi;
   var catatan = (data && data.catatan_verifikator) || '';
 
-  if (!id) return { success: false, error: 'ID kompetensi wajib diisi.' };
+  if (!id || !status) return { success: false, error: 'ID dan status verifikasi wajib diisi.' };
 
-  var ss = getLocalSpreadsheet_();
-  var existing = CoreLib.findRecordById(ss, LOCAL_SHEET_NAMES.T_KOMPETENSI_PEGAWAI, id);
+  var existing = findRecordById_(LOCAL_SHEET_NAMES.T_KOMPETENSI_PEGAWAI, id);
   if (!existing) return { success: false, error: 'Data kompetensi tidak ditemukan.' };
 
   existing.status_verifikasi = status;
   existing.catatan_verifikator = catatan;
-  existing.verifikator_id = sessionUser.email || sessionUser.id || 'admin';
+  existing.verifikator_id = sessionUser.email || sessionUser.id;
   existing.tanggal_verifikasi = new Date().toISOString();
 
-  var updated = CoreLib.saveRecord(ss, LOCAL_SHEET_NAMES.T_KOMPETENSI_PEGAWAI, existing, sessionUser);
+  var updated = saveRecord_(LOCAL_SHEET_NAMES.T_KOMPETENSI_PEGAWAI, existing, sessionUser);
   return { success: true, data: updated };
 }
 
 /**
- * 6. Get Usulan Diklat List
+ * 6. Get Usulan Diklat List Handler
  */
 function getUsulanList_(data, sessionUser) {
-  var ss = getLocalSpreadsheet_();
-  var rows = CoreLib.getSheetDataAsJson(ss, LOCAL_SHEET_NAMES.T_USULAN_DIKLAT) || [];
+  var rows = getSheetData_(LOCAL_SHEET_NAMES.T_USULAN_DIKLAT);
 
-  var userRole = String((sessionUser && sessionUser.role) || '').toLowerCase();
-  var isAdmin = (userRole === 'admin' || userRole === 'super' || userRole === 'verifikator');
+  var search = String((data && data.search) || '').toLowerCase().trim();
+  var filters = (data && data.filters) || {};
+  var page = Math.max(1, Number(data && data.page) || 1);
+  var limit = Math.max(1, Number(data && data.limit) || 10);
 
-  if (!isAdmin && sessionUser && sessionUser.id) {
-    rows = rows.filter(function(r) { return String(r.pegawai_id) === String(sessionUser.id); });
-  }
-
-  rows.sort(function(a, b) {
-    return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+  var filtered = rows.filter(function(r) {
+    if (search) {
+      var match = String(r.nama_diklat_usulan || '').toLowerCase().includes(search) ||
+                  String(r.target_penyelenggara || '').toLowerCase().includes(search);
+      if (!match) return false;
+    }
+    if (filters.status && String(r.status_usulan || '').toLowerCase() !== String(filters.status).toLowerCase()) {
+      return false;
+    }
+    if (filters.pegawai_id && String(r.pegawai_id || '') !== String(filters.pegawai_id)) {
+      return false;
+    }
+    return true;
   });
 
-  return { success: true, data: rows };
+  filtered.sort(function(a, b) {
+    return new Date(b.tgl_pengajuan || b.created_at || 0) - new Date(a.tgl_pengajuan || a.created_at || 0);
+  });
+
+  var total = filtered.length;
+  var start = (page - 1) * limit;
+  var paginated = filtered.slice(start, start + limit);
+
+  return {
+    success: true,
+    data: paginated,
+    meta: {
+      total: total,
+      page: page,
+      limit: limit,
+      totalPages: Math.max(1, Math.ceil(total / limit))
+    }
+  };
 }
 
 /**
- * 7. Save Usulan Diklat
+ * 7. Save Usulan Diklat Handler
  */
 function saveUsulanHandler_(data, sessionUser) {
   var record = data && (data.record || data);
   if (!record) return { success: false, error: 'Data usulan diklat wajib diisi.' };
 
-  var ss = getLocalSpreadsheet_();
   var isNew = !record.id;
   record = localPreSaveHook_(LOCAL_SHEET_NAMES.T_USULAN_DIKLAT, record, isNew, sessionUser);
 
-  var saved = CoreLib.saveRecord(ss, LOCAL_SHEET_NAMES.T_USULAN_DIKLAT, record, sessionUser);
+  var saved = saveRecord_(LOCAL_SHEET_NAMES.T_USULAN_DIKLAT, record, sessionUser);
   return { success: true, data: saved };
 }
 
@@ -361,14 +516,13 @@ function reviewUsulanHandler_(data, sessionUser) {
   var status = data && data.status_usulan;
   var catatan = (data && data.catatan_pimpinan) || '';
 
-  var ss = getLocalSpreadsheet_();
-  var existing = CoreLib.findRecordById(ss, LOCAL_SHEET_NAMES.T_USULAN_DIKLAT, id);
+  var existing = findRecordById_(LOCAL_SHEET_NAMES.T_USULAN_DIKLAT, id);
   if (!existing) return { success: false, error: 'Data usulan tidak ditemukan.' };
 
   existing.status_usulan = status;
   existing.catatan_pimpinan = catatan;
 
-  var updated = CoreLib.saveRecord(ss, LOCAL_SHEET_NAMES.T_USULAN_DIKLAT, existing, sessionUser);
+  var updated = saveRecord_(LOCAL_SHEET_NAMES.T_USULAN_DIKLAT, existing, sessionUser);
   return { success: true, data: updated };
 }
 
@@ -377,8 +531,7 @@ function reviewUsulanHandler_(data, sessionUser) {
  */
 function deleteUsulanHandler_(data, sessionUser) {
   var id = data && data.id;
-  var ss = getLocalSpreadsheet_();
-  var deleted = CoreLib.softDeleteRecord(ss, LOCAL_SHEET_NAMES.T_USULAN_DIKLAT, id, sessionUser);
+  var deleted = softDeleteRecord_(LOCAL_SHEET_NAMES.T_USULAN_DIKLAT, id, sessionUser);
   return { success: true, data: deleted };
 }
 
@@ -386,10 +539,9 @@ function deleteUsulanHandler_(data, sessionUser) {
  * 10. Deep Analytics & Gap Report
  */
 function getAnalytics_(data, sessionUser) {
-  var ss = getLocalSpreadsheet_();
-  var kompetensi = CoreLib.getSheetDataAsJson(ss, LOCAL_SHEET_NAMES.T_KOMPETENSI_PEGAWAI) || [];
-  var pegawai = CoreLib.getSheetDataAsJson(ss, LOCAL_SHEET_NAMES.M_PEGAWAI) || [];
-  var unit = CoreLib.getSheetDataAsJson(ss, LOCAL_SHEET_NAMES.M_UNIT_KERJA) || [];
+  var kompetensi = getSheetData_(LOCAL_SHEET_NAMES.T_KOMPETENSI_PEGAWAI);
+  var pegawai = getSheetData_(LOCAL_SHEET_NAMES.M_PEGAWAI);
+  var unit = getSheetData_(LOCAL_SHEET_NAMES.M_UNIT_KERJA);
 
   var currentYear = Number(data && data.tahun) || new Date().getFullYear();
 
@@ -445,30 +597,28 @@ function getAnalytics_(data, sessionUser) {
  * 11. Get Master Data SIMPEG & Katalog Diklat
  */
 function getMasterSIMPEG_() {
-  var ss = getLocalSpreadsheet_();
   return {
     success: true,
     data: {
-      pegawai: CoreLib.getSheetDataAsJson(ss, LOCAL_SHEET_NAMES.M_PEGAWAI) || [],
-      unit: CoreLib.getSheetDataAsJson(ss, LOCAL_SHEET_NAMES.M_UNIT_KERJA) || [],
-      jabatan: CoreLib.getSheetDataAsJson(ss, LOCAL_SHEET_NAMES.M_JABATAN) || [],
-      katalog_diklat: CoreLib.getSheetDataAsJson(ss, LOCAL_SHEET_NAMES.M_KATALOG_DIKLAT) || []
+      pegawai: getSheetData_(LOCAL_SHEET_NAMES.M_PEGAWAI),
+      unit: getSheetData_(LOCAL_SHEET_NAMES.M_UNIT_KERJA),
+      jabatan: getSheetData_(LOCAL_SHEET_NAMES.M_JABATAN),
+      katalog_diklat: getSheetData_(LOCAL_SHEET_NAMES.M_KATALOG_DIKLAT)
     }
   };
 }
 
-function getMasterPegawai_() { return { success: true, data: CoreLib.getSheetDataAsJson(getLocalSpreadsheet_(), LOCAL_SHEET_NAMES.M_PEGAWAI) || [] }; }
-function getMasterUnit_() { return { success: true, data: CoreLib.getSheetDataAsJson(getLocalSpreadsheet_(), LOCAL_SHEET_NAMES.M_UNIT_KERJA) || [] }; }
-function getMasterJabatan_() { return { success: true, data: CoreLib.getSheetDataAsJson(getLocalSpreadsheet_(), LOCAL_SHEET_NAMES.M_JABATAN) || [] }; }
-function getKatalogDiklat_() { return { success: true, data: CoreLib.getSheetDataAsJson(getLocalSpreadsheet_(), LOCAL_SHEET_NAMES.M_KATALOG_DIKLAT) || [] }; }
+function getMasterPegawai_() { return { success: true, data: getSheetData_(LOCAL_SHEET_NAMES.M_PEGAWAI) }; }
+function getMasterUnit_() { return { success: true, data: getSheetData_(LOCAL_SHEET_NAMES.M_UNIT_KERJA) }; }
+function getMasterJabatan_() { return { success: true, data: getSheetData_(LOCAL_SHEET_NAMES.M_JABATAN) }; }
+function getKatalogDiklat_() { return { success: true, data: getSheetData_(LOCAL_SHEET_NAMES.M_KATALOG_DIKLAT) }; }
 
 /**
  * 12. Profil Pengguna
  */
 function getMyProfile_(data, sessionUser) {
   if (!sessionUser || !sessionUser.email) return { success: false, error: 'Sesi tidak valid.' };
-  var ss = getLocalSpreadsheet_();
-  var pegawai = CoreLib.getSheetDataAsJson(ss, LOCAL_SHEET_NAMES.M_PEGAWAI) || [];
+  var pegawai = getSheetData_(LOCAL_SHEET_NAMES.M_PEGAWAI);
   var match = pegawai.find(function(p) { return String(p.email).toLowerCase() === String(sessionUser.email).toLowerCase(); });
   return { success: true, data: match || sessionUser };
 }
@@ -476,8 +626,7 @@ function getMyProfile_(data, sessionUser) {
 function saveMyProfile_(data, sessionUser) {
   if (!sessionUser || !sessionUser.email) return { success: false, error: 'Sesi tidak valid.' };
   var record = data && (data.record || data);
-  var ss = getLocalSpreadsheet_();
-  var saved = CoreLib.saveRecord(ss, LOCAL_SHEET_NAMES.M_PEGAWAI, record, sessionUser);
+  var saved = saveRecord_(LOCAL_SHEET_NAMES.M_PEGAWAI, record, sessionUser);
   return { success: true, data: saved };
 }
 
@@ -558,7 +707,6 @@ function setupApp() {
   }
 
   // 4. Set Konfigurasi Sistem di Sheet KONFIGURASI
-  var ss = getLocalSpreadsheet_();
   var defaultConfigs = [
     { key: 'app_name', value: APP_TITLE, keterangan: 'Nama Aplikasi' },
     { key: 'app_version', value: '2.4.0', keterangan: 'Versi Aplikasi' },
@@ -569,7 +717,7 @@ function setupApp() {
   ];
   var systemUser = { id: 'SYSTEM_SETUP', email: 'system@trenggalekkab.go.id', role: 'super' };
   defaultConfigs.forEach(function(c) {
-    CoreLib.saveRecord(ss, LOCAL_SHEET_NAMES.KONFIGURASI, c, systemUser);
+    saveRecord_(LOCAL_SHEET_NAMES.KONFIGURASI, c, systemUser);
   });
 
   Logger.log('🎉 ============================================================');
