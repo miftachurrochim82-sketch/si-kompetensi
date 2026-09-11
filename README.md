@@ -1,21 +1,59 @@
 # SI-KOMPETENSI — Pemkab Trenggalek
-### Sistem Informasi Pengembangan Kompetensi Pegawai (Satpol PP & Damkar)
+### Sistem Informasi Pengembangan Kompetensi Pegawai (Satpol PP & Damkar Trenggalek — Opsi B 6-Sheet)
 
-Aplikasi web modern berbasis **Google Apps Script (GAS)**, **Vue 3**, dan **Tailwind CSS** untuk pengelolaan data pengembangan kompetensi pegawai, diklat teknis/fungsional, angka kredit Jam Pelajaran (JP), verifikasi berkas sertifikat, dan analisis kesenjangan kompetensi ASN di lingkungan Satuan Polisi Pamong Praja & Kebakaran Pemerintah Kabupaten Trenggalek.
+Aplikasi web modern berbasis **Google Apps Script (GAS)**, **Vue 3**, dan **Tailwind CSS** untuk pengelolaan portofolio pengembangan kompetensi pegawai, pemenuhan kewajiban minimal **20 Jam Pelajaran (JP)/Tahun** (PP No. 17/2020), manajemen kualifikasi personel **PPNS Penegak Perda** & **Fire Rescue Operator**, serta pengajuan **Usulan Diklat Bottom-Up** di lingkungan Satuan Polisi Pamong Praja & Kebakaran Pemerintah Kabupaten Trenggalek.
 
 ---
 
-## 🏛️ Identitas Aplikasi
+## 🏛️ Identitas Aplikasi & Arsitektur Database
 
 | Properti | Nilai | Keterangan |
 |---|---|---|
 | **App Code** | `SIKOMPETENSI` | Kode identitas aplikasi |
+| **Arsitektur Database** | `Opsi B (6 Sheet Spesifik Korps)` | Mengakomodasi kekhususan profesi PPNS & Damkar Wilayah Trenggalek |
 | **Arsitektur Tampilan** | `2-File HTML System (Single Include)` | `Index.html` (Shell & Bootloader) + `V_Layout.html` (Seluruh Modul Tampilan) |
 | **Integrasi SSO** | `SI-PLATFORM` | Tiket SSO otomatis & validasi token terpusat |
 | **Frontend Framework** | `Vue 3 + Tailwind CSS` | Single Page Application (SPA) responsif |
 | **Shared CDN** | `frontend-cdn@main` | Komponen Navigasi, Sidebar, Pustaka Profil & Settings |
 | **Runtime** | `V8 (GAS)` | Modern JavaScript ES6+ Engine |
 | **TimeZone** | `Asia/Jakarta` | WIB (Waktu Indonesia Barat) |
+
+---
+
+## 🗄️ Skema Database 6 Sheet (Opsi B)
+
+```text
+┌─────────────────────────┐      ┌─────────────────────────┐      ┌─────────────────────────┐
+│       M_PEGAWAI         │      │      M_UNIT_KERJA       │      │        M_JABATAN        │
+│ ─────────────────────── │      │ ─────────────────────── │      │ ─────────────────────── │
+│ • id (PK)               │      │ • id (PK)               │      │ • id (PK)               │
+│ • nip, nik              │◄────┐│ • kode_unit             │      │ • kode_jabatan          │
+│ • nama_lengkap, gelar   │     ││ • nama_unit             │      │ • nama_jabatan          │
+│ • pangkat_gol           │     ││ • kategori_unit         │      │ • rumpun_jabatan        │
+│ • unit_id (FK) ─────────┼─────┘│ • lokasi, telepon       │      │ • jenjang_jabatan       │
+│ • jabatan_id (FK)       │      │ • kepala_nip            │      │ • target_jp_tahunan     │
+│ • regu_pleton           │      └─────────────────────────┘      └─────────────────────────┘
+│ • is_ppns, no_sk_ppns   │
+│ • kualifikasi_damkar    │
+└────────────┬────────────┘
+             │
+             ├──────────────────────────────────────────────────────┐
+             ▼                                                      ▼
+┌─────────────────────────┐      ┌─────────────────────────┐      ┌─────────────────────────┐
+│  T_KOMPETENSI_PEGAWAI   │      │    M_KATALOG_DIKLAT     │      │     T_USULAN_DIKLAT     │
+│ ─────────────────────── │      │ ─────────────────────── │      │ ─────────────────────── │
+│ • id (PK)               │      │ • id (PK)               │      │ • id (PK)               │
+│ • pegawai_id (FK)       │      │ • kode_diklat           │      │ • pegawai_id (FK)       │
+│ • diklat_id (FK) ───────┼─────>│ • nama_diklat           │<─────┼── • diklat_id (FK)      │
+│ • nama_kegiatan         │      │ • rumpun (Manaj/Teknis) │      │ • nama_diklat_usulan    │
+│ • jumlah_jp             │      │ • kategori_keahlian     │      │ • target_penyelenggara  │
+│ • tgl_mulai, tgl_selesai│      │ • penyelenggara_default │      │ • alasan_usulan         │
+│ • tgl_kedaluwarsa       │      │ • default_jp            │      │ • urgensi (Tinggi/Sedang│
+│ • status_verifikasi     │      │ • deskripsi             │      │ • estimasi_biaya (Rp)   │
+│ • catatan_verifikator   │      └─────────────────────────┘      │ • status_usulan         │
+│ • file_url (Drive)      │                                       │ • catatan_pimpinan      │
+└─────────────────────────┘                                       └─────────────────────────┘
+```
 
 ---
 
@@ -36,33 +74,35 @@ si-kompetensi/
 │
 └── 📁 src/                         # SELURUH SUMBER KODE RESMI (BACKEND & FRONTEND)
     ├── appsscript.json             # Manifest GAS & OAuth Scopes
-    ├── 01_ConfigAndBridge.gs       # Konfigurasi konstanta, bridge CoreLib & skema sheet
-    ├── 02_AppLogic.gs              # Backend routing, CRUD kompetensi, verifikasi & dashboard
-    ├── 03_SeedData.gs              # Seeder data kompetensi dummy Satpol PP & Damkar
-    ├── 99_TestSuite.gs             # Unit & integration test suite
+    ├── 01_ConfigAndBridge.gs       # Skema 6 Sheet, konfigurasi & bridge CoreLib
+    ├── 02_AppLogic.gs              # Business logic: Dashboard JP, Portofolio, Usulan, Verifikasi & Analytics
+    ├── 03_SeedData.gs              # Seeder data realistis Satpol PP & Pos Damkar Wilayah Trenggalek
+    ├── 99_TestSuite.gs             # Unit & integration test suite 6 Sheet
     │
     ├── Index.html                  # [HTML 1] Entry point SPA Vue 3, SSO splash & single include
-    └── V_Layout.html               # [HTML 2] Seluruh Modul UI (Dashboard KPI, Riwayat, Analisa & Master Data)
+    └── V_Layout.html               # [HTML 2] Seluruh Modul UI (Dashboard 20 JP, Portofolio, Usulan, Analisa & Master)
 ```
 
 ---
 
-## 📋 Fitur Utama
+## 📋 Modul & Fitur Unggulan
 
-1. **Single Sign-On (SSO) Terpadu**:
-   - Otomatis menukar tiket dari `SI-PLATFORM` menjadi sesi aktif pengguna tanpa login ulang.
-2. **Dashboard Eksekutif & Visualisasi Grafik**:
-   - Menampilkan total pengembangan kompetensi, distribusi jenis diklat (Manajerial, Teknis, Fungsional, Bimtek), dan grafik sebaran per divisi Eselon III.
-3. **Pengelolaan Riwayat Laporan Kompetensi**:
-   - Pencatatan berkas laporan pengembangan kompetensi per periode, lengkap dengan filter status dan unit kerja.
-4. **Master Data Pengembangan Kompetensi**:
-   - Pencatatan judul pelatihan, instansi penyelenggara, nomor sertifikat, jumlah JP, tanggal pelaksanaan, dan tautan berkas.
-5. **Alur Verifikasi Bertingkat**:
-   - Status: *Draft*, *Menunggu Verifikasi*, *Disetujui*, atau *Ditolak* khusus oleh verifikator/administrator.
-6. **Analisis Kesenjangan & Rekomendasi Diklat**:
-   - Laporan ringkasan kebutuhan pelatihan tahunan/bulanan, temuan pemenuhan standar 20 JP, dan rekomendasi otomatis.
-7. **Pustaka Ekspor Dokumen**:
-   - Unduh laporan hasil analisis dalam format **PDF (.pdf)** dan **Excel (.xlsx)** secara instan dari browser.
+1. **Dashboard & Barometer 20 JP OPD**:
+   - Indikator real-time persentase pemenuhan 20 JP per ASN.
+   - Grafik sebaran diklat di 7 unit/pos: Sekretariat, Bidang Gakda, Bidang Tibum, Pos Induk Kota, Pos Watulimo (Prigi), Pos Panggul, dan Bidang Linmas.
+   - Rekapitulasi personel bersertifikasi **PPNS** & **Damkar/Rescue**.
+2. **Portofolio & Riwayat Sertifikasi**:
+   - Input berkas diklat dengan pilihan cepat dari Kamus Diklat Resmi (otomatis mengisi JP dan penyelenggara).
+   - Pencatatan **masa berlaku lisensi** (peringatan kedaluwarsa untuk sertifikasi Fire Rescue / Water Rescue).
+   - Filter pintar berdasarkan rumpun (Manajerial, Teknis, Fungsional, Sosio-Kultural, Bimtek) dan status verifikasi.
+3. **Pengajuan Usulan Diklat (Bottom-Up)**:
+   - Staf dan komandan regu dapat mengusulkan pelatihan lapangan yang dibutuhkan.
+   - Alur persetujuan oleh Kepala Satuan (*Disetujui Kasat*, *Direkomendasikan ke BKPSDM*, *Ditolak*) dengan catatan penganggaran DPA.
+4. **Analisis Kesenjangan & Rencana Kebutuhan Diklat**:
+   - Deteksi otomatis gap kompetensi di lapangan dan rekomendasi prioritas diklat tahun anggaran berikutnya.
+   - Ekspor laporan analisis resmi dalam format **PDF (.pdf)**.
+5. **Ekspor Data Portofolio Excel (.xlsx)**:
+   - Rekapitulasi portofolio sertifikat dan JP pegawai dalam format spreadsheet siap cetak.
 
 ---
 
