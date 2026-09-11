@@ -15,13 +15,11 @@
     } catch(e) {}
   </script>
 
-  <!-- Resource Pre-connect & DNS Prefetch Hints -->
+  <!-- Resource Hints -->
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
   <link rel="preconnect" href="https://cdnjs.cloudflare.com">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
-  <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
 
   <!-- CDN Dependencies -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -30,10 +28,10 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
 
-  <!-- 1. FRONTEND CDN SHARED CSS (v2.4.0) -->
+  <!-- Shared CDN Stylesheet -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/miftachurrochim82-sketch/frontend-cdn@main/frontend/app-common.min.css">
 
-  <!-- Synchronous Initial SSO Ticket Detection -->
+  <!-- SSO Ticket Detection -->
   <script>
     window.__SSO_TICKET__ = "<?= ticket ?>";
     window.__IS_SSO_ENTRY__ = "<?= isSsoEntry ?>" === "true";
@@ -41,19 +39,16 @@
 </head>
 <body>
   <div id="app" v-cloak>
-    <!-- ===== 1. ANIMATED SSO SPLASH TRANSITION SCREEN ===== -->
+    <!-- 1. SPLASH SCREEN TRANSISI SSO -->
     <div v-if="!token && (isProcessing || isSsoLoading || hasSsoTicket)"
-         class="fixed inset-0 z-50 flex flex-col items-center justify-center p-6 bg-slate-950 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-emerald-950/70 via-slate-950 to-black text-white selection:bg-emerald-500 selection:text-white">
+         class="fixed inset-0 z-50 flex flex-col items-center justify-center p-6 bg-slate-950 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-emerald-950/70 via-slate-950 to-black text-white">
       
       <div class="absolute w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none animate-pulse"></div>
-      <div class="absolute -bottom-20 -right-20 w-80 h-80 bg-teal-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
-      <div class="relative z-10 w-full max-w-md bg-slate-900/80 backdrop-blur-2xl p-8 rounded-3xl border border-emerald-500/20 shadow-2xl shadow-emerald-950/50 text-center flex flex-col items-center">
+      <div class="relative z-10 w-full max-w-md bg-slate-900/80 backdrop-blur-2xl p-8 rounded-3xl border border-emerald-500/20 shadow-2xl text-center flex flex-col items-center">
         <div class="relative mb-6">
-          <div class="absolute -inset-2 bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-600 rounded-3xl blur-md opacity-40 animate-pulse"></div>
           <div class="relative w-24 h-24 rounded-3xl bg-gradient-to-tr from-slate-900 via-emerald-950 to-slate-900 border border-emerald-500/30 flex items-center justify-center text-4xl shadow-2xl">
-            <img v-if="brand && brand.logoSvg" :src="brand.logoSvg" class="w-16 h-16 object-contain drop-shadow-md transform transition-transform duration-500 hover:scale-110">
-            <i v-else class="fa-solid fa-graduation-cap text-emerald-400 text-3xl"></i>
+            <i class="fa-solid fa-graduation-cap text-emerald-400 text-3xl"></i>
           </div>
           <div class="absolute -inset-3.5 border-2 border-emerald-500/20 border-t-emerald-400 rounded-full animate-spin"></div>
         </div>
@@ -62,7 +57,7 @@
           <span>SI-KOMPETENSI</span>
           <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30">SSO</span>
         </h1>
-        <p class="text-xs font-semibold text-emerald-400 uppercase tracking-widest mt-1">Satpol PP & Pemadam Kebakaran Trenggalek</p>
+        <p class="text-xs font-semibold text-emerald-400 uppercase tracking-widest mt-1">Satpol PP & Damkar Trenggalek</p>
 
         <div class="mt-8 w-full space-y-3">
           <div class="p-3.5 rounded-2xl bg-slate-950/60 border border-slate-800 flex items-center gap-3 text-left">
@@ -74,31 +69,19 @@
               <p class="text-[11px] text-emerald-400/90 truncate animate-pulse">{{ ssoStatusMessage || 'Memvalidasi tiket keamanan terpadu...' }}</p>
             </div>
           </div>
-
-          <div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden p-0.5">
-            <div class="bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-300 h-full rounded-full animate-pulse w-full origin-left"></div>
-          </div>
         </div>
 
         <div v-if="errorMessage" class="mt-6 p-4 rounded-2xl bg-rose-950/60 border border-rose-500/30 text-rose-300 text-xs w-full text-left">
-          <div class="flex items-center gap-2 font-bold text-rose-200 mb-1">
-            <i class="fa-solid fa-triangle-exclamation text-rose-400"></i>
-            <span>Validasi Tiket Gagal</span>
-          </div>
+          <p class="font-bold text-rose-200 mb-1"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Validasi Gagal</p>
           <p class="text-[11px] text-rose-300/90 mb-3">{{ errorMessage }}</p>
-          <button @click="goToPlatform" class="w-full py-2 px-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs transition-all shadow-lg flex items-center justify-center gap-2">
+          <button @click="goToPlatform" class="w-full py-2 px-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs transition-all flex items-center justify-center gap-2">
             <i class="fa-solid fa-arrow-left"></i> Kembali ke Portal SI-PLATFORM
           </button>
         </div>
-
-        <p v-else class="text-[11px] text-slate-400 mt-6 flex items-center justify-center gap-1.5">
-          <i class="fa-solid fa-shield-halved text-emerald-400"></i>
-          <span>Autentikasi Terenkripsi Terpadu ASN Trenggalek</span>
-        </p>
       </div>
     </div>
 
-    <!-- ===== 2. LAYAR LOGIN MANDIRI ===== -->
+    <!-- 2. LAYAR LOGIN MANDIRI -->
     <app-login v-else-if="!token && !isProcessing && !isSsoLoading && !hasSsoTicket"
                :is-processing="isProcessing"
                :error-message="errorMessage"
@@ -108,7 +91,7 @@
                @login="goToPlatform">
     </app-login>
 
-    <!-- ===== 3. SHELL UTAMA APLIKASI ===== -->
+    <!-- 3. SHELL UTAMA APLIKASI -->
     <div v-if="token" class="flex h-screen overflow-hidden bg-slate-100 dark:bg-slate-900">
       <!-- Sidebar Navigasi -->
       <app-sidebar :collapsed="sidebarCollapsed"
@@ -144,10 +127,8 @@
         <main class="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-6">
           <?!= include('V_Layout'); ?>
 
-          <!-- Modul Mandiri CDN: Profil SIMPEG -->
+          <!-- Modul Mandiri Profil & Pengaturan -->
           <app-profile v-if="currentPage === 'profil'"></app-profile>
-
-          <!-- Modul Mandiri CDN: Pengaturan Sistem (Admin) -->
           <app-settings v-if="currentPage === 'pengaturan' && isAdmin"></app-settings>
         </main>
       </div>
@@ -161,12 +142,12 @@
     </div>
   </div>
 
-  <!-- 2. FRONTEND CDN SHARED JAVASCRIPT (v2.4.0 High-Performance Core) -->
+  <!-- Shared Frontend CDN Scripts -->
   <script src="https://cdn.jsdelivr.net/gh/miftachurrochim82-sketch/frontend-cdn@main/frontend/app-components.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/miftachurrochim82-sketch/frontend-cdn@main/frontend/app-modules.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/miftachurrochim82-sketch/frontend-cdn@main/frontend/app-core.min.js"></script>
 
-  <!-- Inisialisasi SI-KOMPETENSI via AppCore -->
+  <!-- Inisialisasi SI-KOMPETENSI via AppCore Mixin -->
   <script>
     const SIKompetensiMixin = {
       data() {
@@ -176,7 +157,7 @@
           showPanduan: false,
           pageSize: 10,
 
-          // State Dashboard (Opsi B 6-Sheet)
+          // State Dashboard
           dashboardData: {
             total_kompetensi: 0,
             total_jp_tahun: 0,
@@ -188,374 +169,192 @@
             total_usulan_diklat: 0,
             status_count: { disetujui: 0, menunggu: 0, ditolak: 0 },
             jenis_count: {},
-            divisi_distribution: {},
             terbaru: []
           },
-          dashboardChart: null,
 
-          // State Portofolio / Riwayat Kompetensi (T_KOMPETENSI_PEGAWAI)
+          // State Riwayat / Portofolio (T_RIWAYAT_KOMPETENSI)
           kompetensiList: [],
-          kompetensiTotal: 0,
-          kompetensiPage: 1,
           kompetensiLoading: false,
           kompetensiSearch: '',
           filterRumpun: '',
           filterStatusVerif: '',
-          filterUnit: '',
           showKompetensiForm: false,
           kompetensiSaving: false,
           kompetensiForm: {
-            id: '',
-            pegawai_id: '',
-            diklat_id: '',
-            nama_kegiatan: '',
-            rumpun: 'Teknis',
-            penyelenggara: '',
-            no_sertifikat: '',
-            tgl_terbit: '',
-            tgl_mulai: '',
-            tgl_selesai: '',
-            tgl_kedaluwarsa: '',
-            jumlah_jp: 20,
-            metode: 'Klasikal',
-            file_url: '',
-            status_verifikasi: 'menunggu'
+            id: '', pegawai_id: '', diklat_id: '', nama_kegiatan: '', rumpun: 'Teknis Pemadam & Rescue',
+            penyelenggara: '', no_sertifikat: '', tgl_mulai: '', tgl_selesai: '', tgl_kedaluwarsa: '',
+            jumlah_jp: 20, metode: 'Klasikal', file_url: '', status_verifikasi: 'menunggu'
           },
 
-          // Modal Verifikasi (Admin)
+          // Verifikasi Berkas
           showVerifModal: false,
           selectedKompetensi: null,
-          verifForm: { status: 'disetujui', catatan: '' },
           verifSaving: false,
+          verifForm: { status: 'disetujui', catatan: '' },
 
-          // State Usulan Diklat Bottom-Up (T_USULAN_DIKLAT)
+          // State Usulan Diklat (T_USULAN_DIKLAT)
           usulanList: [],
           usulanLoading: false,
           showUsulanForm: false,
           usulanSaving: false,
           usulanForm: {
-            id: '',
-            pegawai_id: '',
-            diklat_id: '',
-            nama_diklat_usulan: '',
-            rumpun: 'Teknis',
-            target_penyelenggara: '',
-            alasan_usulan: '',
-            urgensi: 'Tinggi',
-            estimasi_biaya: 0,
-            status_usulan: 'diajukan'
+            id: '', pegawai_id: '', diklat_id: '', nama_diklat_usulan: '', rumpun: 'Teknis Pemadam & Rescue',
+            target_penyelenggara: 'BPSDM Jawa Timur', alasan_usulan: '', urgensi: 'Sangat Mendesak (Prioritas 1)',
+            estimasi_biaya: 0, status_usulan: 'diajukan'
           },
           showReviewUsulanModal: false,
           selectedUsulan: null,
-          reviewUsulanForm: { status: 'disetujui_kasat', catatan: '' },
           reviewUsulanSaving: false,
+          reviewUsulanForm: { status: 'disetujui_kasat', catatan: '' },
 
-          // State Analisa & Gap Kebutuhan (A6)
-          analisaData: {
-            total_data: 0,
-            ringkasan: '',
-            by_jenis: {},
-            by_divisi: {},
-            by_bulan: {},
-            temuan: [],
-            rekomendasi: []
-          },
+          // State Analisa
+          analisaTahun: 2026,
           analisaLoading: false,
-          analisaTahun: new Date().getFullYear(),
+          analisaData: { ringkasan: '', gap_count: 0, gap_details: [], temuan: [], rekomendasi: [] },
 
-          // State Master Data & SIMPEG (A8)
+          // Master Satelit (3 Tab)
           activeMasterTab: 'katalog_diklat',
-          katalogDiklatList: [],
+          katalogList: [],
+          standarList: [],
+          referensiList: [],
           katalogSearch: '',
-          pegawaiSearch: '',
-          unitSearch: '',
-          jabatanSearch: '',
-          pegawaiRefPage: 1,
-          unitRefPage: 1,
-          jabatanRefPage: 1
+          filterKategoriRef: '',
+
+          // SIMPEG Lookup (Pegawai, Unit, Jabatan)
+          simpegLookup: { pegawai: [], unit: [], jabatan: [] },
+
+          // Modal Forms Master Satelit
+          showKatalogModal: false,
+          katalogSaving: false,
+          katalogForm: { id: '', kode_diklat: '', nama_diklat: '', rumpun: 'Teknis Pemadam & Rescue', kategori_keahlian: '', penyelenggara_default: '', default_jp: 20, estimasi_biaya_default: 0 },
+
+          showStandarModal: false,
+          standarSaving: false,
+          standarForm: { id: '', jabatan_id: '', diklat_id: '', tingkat_kebutuhan: 'WAJIB', minimal_jp: 20, keterangan: '' },
+
+          showReferensiModal: false,
+          referensiSaving: false,
+          referensiForm: { id: '', kategori: 'RUMPUN_KOMPETENSI', kode: '', nama_nilai: '', urutan: 1, status_aktif: 'true', keterangan: '' }
         };
       },
 
       computed: {
-        hasSsoTicket() {
-          try {
-            const urlParams = new URLSearchParams(window.location.search);
-            return Boolean(window.__SSO_TICKET__ || urlParams.get('ticket'));
-          } catch(e) {
-            return false;
-          }
-        },
-        kompetensiTotalPages() {
-          return Math.max(1, Math.ceil((this.kompetensiTotal || this.kompetensiList.length) / this.pageSize));
-        },
         filteredKatalogDiklat() {
           const q = String(this.katalogSearch || '').toLowerCase().trim();
-          if (!q) return this.katalogDiklatList || [];
-          return (this.katalogDiklatList || []).filter(d =>
+          if (!q) return this.katalogList;
+          return this.katalogList.filter(d =>
             String(d.nama_diklat || '').toLowerCase().includes(q) ||
-            String(d.kategori_keahlian || '').toLowerCase().includes(q) ||
-            String(d.rumpun || '').toLowerCase().includes(q)
+            String(d.kode_diklat || '').toLowerCase().includes(q) ||
+            String(d.kategori_keahlian || '').toLowerCase().includes(q)
           );
         },
-        filteredPegawaiReferensi() {
-          const q = String(this.pegawaiSearch || '').toLowerCase().trim();
-          if (!q) return this.masterPegawaiList || [];
-          return (this.masterPegawaiList || []).filter(p =>
-            String(p.nip || '').toLowerCase().includes(q) ||
-            String(p.nama_lengkap || p.nama || '').toLowerCase().includes(q) ||
-            String(p.pangkat_gol || '').toLowerCase().includes(q)
-          );
+
+        filteredReferensi() {
+          if (!this.filterKategoriRef) return this.referensiList;
+          return this.referensiList.filter(r => String(r.kategori).toUpperCase() === String(this.filterKategoriRef).toUpperCase());
         },
-        filteredUnitReferensi() {
-          const q = String(this.unitSearch || '').toLowerCase().trim();
-          if (!q) return this.masterUnitList || [];
-          return (this.masterUnitList || []).filter(u =>
-            String(u.kode_unit || '').toLowerCase().includes(q) ||
-            String(u.nama_unit || '').toLowerCase().includes(q)
-          );
+
+        optionsRumpun() {
+          const res = this.referensiList.filter(r => r.kategori === 'RUMPUN_KOMPETENSI');
+          return res.length > 0 ? res : [
+            { id: '1', nama_nilai: 'Manajerial & Kepemimpinan' },
+            { id: '2', nama_nilai: 'Teknis Penegakan Perda (PPNS)' },
+            { id: '3', nama_nilai: 'Teknis Pemadam & Rescue' },
+            { id: '4', nama_nilai: 'Jabatan Fungsional Pol PP & Damkar' },
+            { id: '5', nama_nilai: 'Bimbingan Teknis & Workshop' }
+          ];
         },
-        filteredJabatanReferensi() {
-          const q = String(this.jabatanSearch || '').toLowerCase().trim();
-          if (!q) return this.masterJabatanList || [];
-          return (this.masterJabatanList || []).filter(j =>
-            String(j.kode_jabatan || '').toLowerCase().includes(q) ||
-            String(j.nama_jabatan || '').toLowerCase().includes(q)
-          );
+
+        optionsUrgensi() {
+          const res = this.referensiList.filter(r => r.kategori === 'URGENSI_USULAN');
+          return res.length > 0 ? res : [
+            { id: '1', nama_nilai: 'Sangat Mendesak (Prioritas 1)' },
+            { id: '2', nama_nilai: 'Kebutuhan Berkala (Prioritas 2)' }
+          ];
         }
       },
 
       methods: {
-        // ================= HELPER & LOOKUP =================
-        formatDate(isoStr) {
-          if (!isoStr) return '-';
-          try {
-            const d = new Date(isoStr);
-            if (isNaN(d.getTime())) return isoStr;
-            return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
-          } catch (e) {
-            return isoStr;
-          }
-        },
-
+        // ================= LOOKUP NAMES =================
         namaPegawai(id) {
           if (!id) return '-';
-          const p = (this.masterPegawaiList || []).find(x => String(x.id || x.pegawai_id) === String(id));
-          return p ? (p.nama_lengkap || p.nama || p.display_name || id) : id;
-        },
-
-        namaUnit(id) {
-          if (!id) return '-';
-          const u = (this.masterUnitList || []).find(x => String(x.id || x.unit_id) === String(id));
-          return u ? (u.nama_unit || u.nama || id) : id;
+          const p = (this.simpegLookup.pegawai || []).find(x => String(x.id) === String(id));
+          return p ? (p.nama_lengkap || p.nama || p.id) : id;
         },
 
         namaJabatan(id) {
           if (!id) return '-';
-          const j = (this.masterJabatanList || []).find(x => String(x.id || x.jabatan_id) === String(id));
-          return j ? (j.nama_jabatan || j.nama || id) : id;
+          const j = (this.simpegLookup.jabatan || []).find(x => String(x.id) === String(id));
+          return j ? (j.nama_jabatan || j.kode_jabatan || j.id) : id;
         },
 
-        onKatalogSelected() {
-          const dkl = (this.katalogDiklatList || []).find(k => String(k.id) === String(this.kompetensiForm.diklat_id));
-          if (dkl) {
-            this.kompetensiForm.nama_kegiatan = dkl.nama_diklat || '';
-            this.kompetensiForm.rumpun = dkl.rumpun || 'Teknis';
-            this.kompetensiForm.penyelenggara = dkl.penyelenggara_default || '';
-            this.kompetensiForm.jumlah_jp = dkl.default_jp || 20;
-          }
+        namaUnit(id) {
+          if (!id) return '-';
+          const u = (this.simpegLookup.unit || []).find(x => String(x.id) === String(id));
+          return u ? (u.nama_unit || u.kode_unit || u.id) : id;
         },
 
-        // ================= DASHBOARD =================
-        async loadDashboard() {
-          this.loading = true;
+        namaDiklat(id) {
+          if (!id) return '-';
+          const d = (this.katalogList || []).find(x => String(x.id) === String(id));
+          return d ? d.nama_diklat : id;
+        },
+
+        formatDate(val) {
+          if (!val) return '-';
           try {
-            const res = await this.callServer('dashboard', { tahun: this.analisaTahun });
+            const d = new Date(val);
+            if (isNaN(d.getTime())) return val;
+            return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+          } catch(e) { return val; }
+        },
+
+        // ================= DATA LOADERS =================
+        async loadDashboard() {
+          try {
+            const res = await this.callServer('dashboard');
             if (res && res.success) {
               this.dashboardData = Object.assign(this.dashboardData, res.data || {});
             }
-          } catch (e) {
-            console.error('Gagal load dashboard:', e);
-          } finally {
-            this.loading = false;
-          }
+          } catch(e) { console.error('Gagal load dashboard:', e); }
         },
 
-        async renderDashboardCharts() {
-          this.$nextTick(() => {
-            const ctx = document.getElementById('chartKompetensiDivisi');
-            if (!ctx) return;
-            if (typeof Chart === 'undefined') {
-              AppCore.loadScript('https://cdn.jsdelivr.net/npm/chart.js').then(() => {
-                this.renderDashboardCharts();
-              });
-              return;
+        async loadMasterSatelit() {
+          try {
+            const res = await this.callServer('get_master_satelit');
+            if (res && res.success && res.data) {
+              this.katalogList = res.data.katalog || [];
+              this.standarList = res.data.standar_kompetensi || [];
+              this.referensiList = res.data.referensi || [];
             }
-            if (this.dashboardChart) this.dashboardChart.destroy();
-
-            const isDark = this.isDarkMode;
-            const dist = (this.dashboardData && this.dashboardData.divisi_distribution) || {};
-            const labels = Object.keys(dist).length > 0 ? Object.keys(dist) : [
-              'Sekretariat',
-              'Bid. Gakda & PPNS',
-              'Bid. Tibum & Pengawalan',
-              'Damkar Pos Induk Kota',
-              'Damkar Pos Watulimo',
-              'Damkar Pos Panggul',
-              'Bid. Linmas'
-            ];
-            const dataValues = Object.keys(dist).length > 0 ? Object.values(dist) : [14, 22, 28, 30, 16, 12, 10];
-
-            this.dashboardChart = new Chart(ctx, {
-              type: 'bar',
-              data: {
-                labels: labels,
-                datasets: [{
-                  label: 'Kegiatan Diklat & Sertifikasi',
-                  data: dataValues,
-                  backgroundColor: isDark ? 'rgba(16, 185, 129, 0.8)' : 'rgba(5, 150, 105, 0.85)',
-                  borderColor: isDark ? '#10b981' : '#059669',
-                  borderWidth: 1.5,
-                  borderRadius: 8
-                }]
-              },
-              options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                  y: {
-                    beginAtZero: true,
-                    ticks: { precision: 0, color: isDark ? '#94a3b8' : '#64748b' },
-                    grid: { color: isDark ? 'rgba(148, 163, 184, 0.1)' : 'rgba(100, 116, 139, 0.1)' }
-                  },
-                  x: {
-                    ticks: { color: isDark ? '#94a3b8' : '#64748b' },
-                    grid: { display: false }
-                  }
-                }
-              }
-            });
-          });
+          } catch(e) { console.error('Gagal load master satelit:', e); }
         },
 
-        // ================= CRUD KOMPETENSI =================
+        async loadSimpegLookup() {
+          try {
+            const res = await this.callServer('get_simpeg_lookup');
+            if (res && res.success && res.data) {
+              this.simpegLookup = res.data;
+            }
+          } catch(e) { console.error('Gagal load simpeg lookup:', e); }
+        },
+
         async loadKompetensi(page = 1) {
           this.kompetensiLoading = true;
-          this.kompetensiPage = page;
           try {
-            const res = await this.callServer('get_kompetensi_list', {
-              page: this.kompetensiPage,
-              limit: this.pageSize,
+            const res = await this.callServer('get_riwayat_list', {
+              page: page,
+              limit: 50,
               search: this.kompetensiSearch,
-              filters: {
-                rumpun: this.filterRumpun,
-                status: this.filterStatusVerif,
-                unit_id: this.filterUnit
-              }
+              filters: { rumpun: this.filterRumpun, status: this.filterStatusVerif }
             });
             if (res && res.success) {
               this.kompetensiList = res.data || [];
-              this.kompetensiTotal = (res.meta && res.meta.total) || this.kompetensiList.length;
             }
-          } catch (e) {
-            this.showToast('Gagal memuat portofolio: ' + e.message, 'error');
-          } finally {
-            this.kompetensiLoading = false;
-          }
+          } catch(e) { console.error('Gagal load riwayat:', e); }
+          finally { this.kompetensiLoading = false; }
         },
 
-        openKompetensiForm(item = null) {
-          if (item) {
-            this.kompetensiForm = Object.assign({}, item);
-          } else {
-            this.kompetensiForm = {
-              id: '',
-              pegawai_id: (this.currentUser && this.currentUser.id) || '',
-              diklat_id: '',
-              nama_kegiatan: '',
-              rumpun: 'Teknis',
-              penyelenggara: '',
-              no_sertifikat: '',
-              tgl_terbit: this.todayIso_(),
-              tgl_mulai: this.todayIso_(),
-              tgl_selesai: this.todayIso_(),
-              tgl_kedaluwarsa: '',
-              jumlah_jp: 20,
-              metode: 'Klasikal',
-              file_url: '',
-              status_verifikasi: 'menunggu'
-            };
-          }
-          this.showKompetensiForm = true;
-        },
-
-        async saveKompetensi() {
-          this.kompetensiSaving = true;
-          try {
-            const res = await this.callServer('save_kompetensi', { record: this.kompetensiForm });
-            if (res && res.success) {
-              this.showToast('Data pengembangan kompetensi berhasil disimpan', 'success');
-              this.showKompetensiForm = false;
-              await this.loadKompetensi(this.kompetensiPage);
-              this.loadDashboard();
-            } else {
-              this.showToast((res && res.error) || 'Gagal menyimpan', 'error');
-            }
-          } catch (e) {
-            this.showToast('Terjadi kesalahan: ' + e.message, 'error');
-          } finally {
-            this.kompetensiSaving = false;
-          }
-        },
-
-        async deleteKompetensi(item) {
-          if (!confirm(`Hapus berkas kompetensi "${item.nama_kegiatan || item.nama_kompetensi || item.id}"?`)) return;
-          try {
-            const res = await this.callServer('delete_kompetensi', { id: item.id });
-            if (res && res.success) {
-              this.showToast('Berkas berhasil dihapus', 'success');
-              await this.loadKompetensi(this.kompetensiPage);
-              this.loadDashboard();
-            }
-          } catch (e) {
-            this.showToast('Gagal menghapus: ' + e.message, 'error');
-          }
-        },
-
-        openVerifikasiModal(item) {
-          this.selectedKompetensi = item;
-          this.verifForm = {
-            status: 'disetujui',
-            catatan: item.catatan_verifikator || ''
-          };
-          this.showVerifModal = true;
-        },
-
-        async submitVerifikasi() {
-          if (!this.selectedKompetensi) return;
-          this.verifSaving = true;
-          try {
-            const res = await this.callServer('verifikasi_kompetensi', {
-              id: this.selectedKompetensi.id,
-              status_verifikasi: this.verifForm.status,
-              catatan_verifikator: this.verifForm.catatan
-            });
-            if (res && res.success) {
-              this.showToast(`Status berkas diperbarui: ${this.verifForm.status}`, 'success');
-              this.showVerifModal = false;
-              await this.loadKompetensi(this.kompetensiPage);
-              this.loadDashboard();
-            } else {
-              this.showToast((res && res.error) || 'Gagal verifikasi', 'error');
-            }
-          } catch (e) {
-            this.showToast('Kesalahan sistem: ' + e.message, 'error');
-          } finally {
-            this.verifSaving = false;
-          }
-        },
-
-        // ================= USULAN DIKLAT =================
         async loadUsulan() {
           this.usulanLoading = true;
           try {
@@ -563,23 +362,125 @@
             if (res && res.success) {
               this.usulanList = res.data || [];
             }
-          } catch (e) {
-            console.error('Gagal load usulan:', e);
-          } finally {
-            this.usulanLoading = false;
+          } catch(e) { console.error('Gagal load usulan:', e); }
+          finally { this.usulanLoading = false; }
+        },
+
+        async loadAnalisa() {
+          this.analisaLoading = true;
+          try {
+            const res = await this.callServer('analytics', { tahun: this.analisaTahun });
+            if (res && res.success) {
+              this.analisaData = Object.assign(this.analisaData, res.data || {});
+            }
+          } catch(e) { console.error('Gagal load analisa:', e); }
+          finally { this.analisaLoading = false; }
+        },
+
+        // ================= RIWAYAT / PORTOFOLIO =================
+        openKompetensiForm() {
+          this.kompetensiForm = {
+            id: '',
+            pegawai_id: (this.simpegLookup.pegawai && this.simpegLookup.pegawai[0] && this.simpegLookup.pegawai[0].id) || '',
+            diklat_id: '',
+            nama_kegiatan: '',
+            rumpun: 'Teknis Pemadam & Rescue',
+            penyelenggara: '',
+            no_sertifikat: '',
+            tgl_mulai: '',
+            tgl_selesai: '',
+            tgl_kedaluwarsa: '',
+            jumlah_jp: 20,
+            metode: 'Klasikal',
+            file_url: '',
+            status_verifikasi: 'menunggu'
+          };
+          this.showKompetensiForm = true;
+        },
+
+        openEditKompetensi(item) {
+          this.kompetensiForm = Object.assign({}, item);
+          this.showKompetensiForm = true;
+        },
+
+        onKatalogSelected() {
+          if (!this.kompetensiForm.diklat_id) return;
+          const k = this.katalogList.find(x => x.id === this.kompetensiForm.diklat_id);
+          if (k) {
+            this.kompetensiForm.nama_kegiatan = k.nama_diklat;
+            this.kompetensiForm.rumpun = k.rumpun || this.kompetensiForm.rumpun;
+            this.kompetensiForm.penyelenggara = k.penyelenggara_default || this.kompetensiForm.penyelenggara;
+            this.kompetensiForm.jumlah_jp = Number(k.default_jp) || this.kompetensiForm.jumlah_jp;
           }
         },
 
+        async saveKompetensi() {
+          this.kompetensiSaving = true;
+          try {
+            const res = await this.callServer('save_riwayat', { record: this.kompetensiForm });
+            if (res && res.success) {
+              this.showToast('Sertifikat kompetensi berhasil disimpan', 'success');
+              this.showKompetensiForm = false;
+              await this.loadKompetensi(1);
+              await this.loadDashboard();
+            } else {
+              this.showToast((res && res.error) || 'Gagal menyimpan', 'error');
+            }
+          } catch(e) {
+            this.showToast('Terjadi kesalahan: ' + e.message, 'error');
+          } finally {
+            this.kompetensiSaving = false;
+          }
+        },
+
+        async deleteKompetensi(id) {
+          if (!confirm('Apakah Anda yakin ingin menghapus data sertifikat ini?')) return;
+          try {
+            const res = await this.callServer('delete_riwayat', { id: id });
+            if (res && res.success) {
+              this.showToast('Sertifikat berhasil dihapus', 'success');
+              await this.loadKompetensi(1);
+              await this.loadDashboard();
+            }
+          } catch(e) { this.showToast('Gagal hapus: ' + e.message, 'error'); }
+        },
+
+        openVerifModal(item) {
+          this.selectedKompetensi = item;
+          this.verifForm = { status: item.status_verifikasi === 'menunggu' ? 'disetujui' : item.status_verifikasi, catatan: item.catatan_verifikator || '' };
+          this.showVerifModal = true;
+        },
+
+        async submitVerifikasi() {
+          if (!this.selectedKompetensi) return;
+          this.verifSaving = true;
+          try {
+            const res = await this.callServer('verifikasi_riwayat', {
+              id: this.selectedKompetensi.id,
+              status_verifikasi: this.verifForm.status,
+              catatan_verifikator: this.verifForm.catatan
+            });
+            if (res && res.success) {
+              this.showToast('Verifikasi sertifikat berhasil disimpan', 'success');
+              this.showVerifModal = false;
+              await this.loadKompetensi(1);
+              await this.loadDashboard();
+            }
+          } catch(e) { this.showToast('Gagal verifikasi: ' + e.message, 'error'); }
+          finally { this.verifSaving = false; }
+        },
+
+        // ================= USULAN DIKLAT =================
         openUsulanForm() {
           this.usulanForm = {
             id: '',
-            pegawai_id: (this.currentUser && this.currentUser.id) || '',
+            pegawai_id: (this.simpegLookup.pegawai && this.simpegLookup.pegawai[0] && this.simpegLookup.pegawai[0].id) || '',
             diklat_id: '',
             nama_diklat_usulan: '',
-            rumpun: 'Teknis',
+            rumpun: 'Teknis Pemadam & Rescue',
             target_penyelenggara: 'BPSDM Jawa Timur',
             alasan_usulan: '',
-            urgensi: 'Tinggi',
+            urgensi: 'Sangat Mendesak (Prioritas 1)',
             estimasi_biaya: 0,
             status_usulan: 'diajukan'
           };
@@ -591,25 +492,17 @@
           try {
             const res = await this.callServer('save_usulan', { record: this.usulanForm });
             if (res && res.success) {
-              this.showToast('Usulan diklat berhasil diajukan ke pimpinan', 'success');
+              this.showToast('Usulan diklat berhasil diajukan', 'success');
               this.showUsulanForm = false;
               await this.loadUsulan();
-            } else {
-              this.showToast((res && res.error) || 'Gagal mengajukan usulan', 'error');
             }
-          } catch (e) {
-            this.showToast('Terjadi kesalahan: ' + e.message, 'error');
-          } finally {
-            this.usulanSaving = false;
-          }
+          } catch(e) { this.showToast('Gagal usulan: ' + e.message, 'error'); }
+          finally { this.usulanSaving = false; }
         },
 
         openReviewUsulanModal(item) {
           this.selectedUsulan = item;
-          this.reviewUsulanForm = {
-            status: item.status_usulan || 'disetujui_kasat',
-            catatan: item.catatan_pimpinan || ''
-          };
+          this.reviewUsulanForm = { status: item.status_usulan || 'disetujui_kasat', catatan: item.catatan_pimpinan || '' };
           this.showReviewUsulanModal = true;
         },
 
@@ -626,29 +519,156 @@
               this.showToast('Status usulan diklat diperbarui', 'success');
               this.showReviewUsulanModal = false;
               await this.loadUsulan();
-            } else {
-              this.showToast((res && res.error) || 'Gagal mereview', 'error');
             }
-          } catch (e) {
-            this.showToast('Kesalahan sistem: ' + e.message, 'error');
-          } finally {
-            this.reviewUsulanSaving = false;
-          }
+          } catch(e) { this.showToast('Gagal review: ' + e.message, 'error'); }
+          finally { this.reviewUsulanSaving = false; }
         },
 
-        // ================= ANALISA & GAP =================
-        async loadAnalisa() {
-          this.analisaLoading = true;
+        async deleteUsulan(id) {
+          if (!confirm('Hapus usulan diklat ini?')) return;
           try {
-            const res = await this.callServer('analytics', { tahun: this.analisaTahun });
+            const res = await this.callServer('delete_usulan', { id: id });
             if (res && res.success) {
-              this.analisaData = Object.assign(this.analisaData, res.data || {});
+              this.showToast('Usulan dihapus', 'success');
+              await this.loadUsulan();
             }
-          } catch (e) {
-            console.error('Gagal load analisa:', e);
-          } finally {
-            this.analisaLoading = false;
+          } catch(e) { this.showToast('Gagal: ' + e.message, 'error'); }
+        },
+
+        // ================= MASTER SATELIT 1: KATALOG =================
+        openKatalogForm() {
+          this.katalogForm = { id: '', kode_diklat: '', nama_diklat: '', rumpun: 'Teknis Pemadam & Rescue', kategori_keahlian: '', penyelenggara_default: '', default_jp: 20, estimasi_biaya_default: 0 };
+          this.showKatalogModal = true;
+        },
+
+        openEditKatalog(item) {
+          this.katalogForm = Object.assign({}, item);
+          this.showKatalogModal = true;
+        },
+
+        async saveKatalog() {
+          this.katalogSaving = true;
+          try {
+            const res = await this.callServer('save_katalog', { record: this.katalogForm });
+            if (res && res.success) {
+              this.showToast('Program diklat berhasil disimpan', 'success');
+              this.showKatalogModal = false;
+              await this.loadMasterSatelit();
+            }
+          } catch(e) { this.showToast('Gagal: ' + e.message, 'error'); }
+          finally { this.katalogSaving = false; }
+        },
+
+        async deleteKatalog(id) {
+          if (!confirm('Hapus program diklat ini dari katalog?')) return;
+          try {
+            const res = await this.callServer('delete_katalog', { id: id });
+            if (res && res.success) {
+              this.showToast('Diklat dihapus dari katalog', 'success');
+              await this.loadMasterSatelit();
+            }
+          } catch(e) { this.showToast('Gagal: ' + e.message, 'error'); }
+        },
+
+        // ================= MASTER SATELIT 2: STANDAR KOMPETENSI =================
+        openStandarForm() {
+          this.standarForm = {
+            id: '',
+            jabatan_id: (this.simpegLookup.jabatan && this.simpegLookup.jabatan[0] && this.simpegLookup.jabatan[0].id) || '',
+            diklat_id: (this.katalogList && this.katalogList[0] && this.katalogList[0].id) || '',
+            tingkat_kebutuhan: 'WAJIB',
+            minimal_jp: 20,
+            keterangan: ''
+          };
+          this.showStandarModal = true;
+        },
+
+        openEditStandar(item) {
+          this.standarForm = Object.assign({}, item);
+          this.showStandarModal = true;
+        },
+
+        async saveStandar() {
+          this.standarSaving = true;
+          try {
+            const res = await this.callServer('save_standar_kompetensi', { record: this.standarForm });
+            if (res && res.success) {
+              this.showToast('Standar kompetensi jabatan disimpan', 'success');
+              this.showStandarModal = false;
+              await this.loadMasterSatelit();
+            }
+          } catch(e) { this.showToast('Gagal: ' + e.message, 'error'); }
+          finally { this.standarSaving = false; }
+        },
+
+        async deleteStandar(id) {
+          if (!confirm('Hapus standar jabatan ini?')) return;
+          try {
+            const res = await this.callServer('delete_standar_kompetensi', { id: id });
+            if (res && res.success) {
+              this.showToast('Standar jabatan dihapus', 'success');
+              await this.loadMasterSatelit();
+            }
+          } catch(e) { this.showToast('Gagal: ' + e.message, 'error'); }
+        },
+
+        // ================= MASTER SATELIT 3: REFERENSI GABUNGAN =================
+        openReferensiForm() {
+          this.referensiForm = { id: '', kategori: 'RUMPUN_KOMPETENSI', kode: '', nama_nilai: '', urutan: 1, status_aktif: 'true', keterangan: '' };
+          this.showReferensiModal = true;
+        },
+
+        openEditReferensi(item) {
+          this.referensiForm = Object.assign({}, item);
+          this.showReferensiModal = true;
+        },
+
+        async saveReferensi() {
+          this.referensiSaving = true;
+          try {
+            const res = await this.callServer('save_referensi', { record: this.referensiForm });
+            if (res && res.success) {
+              this.showToast('Opsi referensi berhasil disimpan', 'success');
+              this.showReferensiModal = false;
+              await this.loadMasterSatelit();
+            }
+          } catch(e) { this.showToast('Gagal: ' + e.message, 'error'); }
+          finally { this.referensiSaving = false; }
+        },
+
+        async deleteReferensi(id) {
+          if (!confirm('Hapus item referensi ini?')) return;
+          try {
+            const res = await this.callServer('delete_referensi', { id: id });
+            if (res && res.success) {
+              this.showToast('Referensi dihapus', 'success');
+              await this.loadMasterSatelit();
+            }
+          } catch(e) { this.showToast('Gagal: ' + e.message, 'error'); }
+        },
+
+        // ================= EKSPOR LAPORAN =================
+        async exportKompetensiExcel() {
+          if (typeof XLSX === 'undefined') {
+            this.showToast('Memuat pustaka Excel...', 'info');
+            await AppCore.loadScript('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js');
           }
+          const dataToExport = this.kompetensiList.map((k, i) => ({
+            'No': i + 1,
+            'Nama Pegawai': this.namaPegawai(k.pegawai_id),
+            'Kegiatan Diklat': k.nama_kegiatan || '',
+            'Rumpun': k.rumpun || '',
+            'Penyelenggara': k.penyelenggara || '',
+            'No. Sertifikat': k.no_sertifikat || '',
+            'Jumlah JP': k.jumlah_jp || 0,
+            'Tgl Mulai': this.formatDate(k.tgl_mulai),
+            'Tgl Selesai': this.formatDate(k.tgl_selesai),
+            'Status': k.status_verifikasi || 'menunggu'
+          }));
+          const ws = XLSX.utils.json_to_sheet(dataToExport);
+          const wb = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(wb, ws, 'Data_Kompetensi');
+          XLSX.writeFile(wb, `Kompetensi_SatpolPP_${new Date().getFullYear()}.xlsx`);
         },
 
         async downloadAnalisaPDF() {
@@ -660,44 +680,13 @@
           const { jsPDF } = jspdf;
           const doc = new jsPDF();
           doc.setFontSize(14);
-          doc.text('Analisis Pengembangan Kompetensi Satpol PP & Damkar Trenggalek', 14, 16);
+          doc.text('Analisis Kebutuhan Kompetensi Satpol PP & Damkar Trenggalek', 14, 16);
           doc.setFontSize(10);
-          const ringkas = doc.splitTextToSize(String(this.analisaData.ringkasan || '-'), 180);
-          doc.text(ringkas, 14, 24);
-          let y = 24 + ringkas.length * 5 + 4;
-          const byJenis = this.analisaData.by_jenis || {};
-          doc.autoTable({ startY: y, head: [['Rumpun Kompetensi', 'Jumlah JP Terkumpul']], body: Object.keys(byJenis).map(k => [k, byJenis[k] + ' JP']) });
-          y = doc.lastAutoTable.finalY + 6;
-          const temuan = (this.analisaData.temuan || []).map(t => `[${t.level}] ${t.pesan}`);
-          const rekom = (this.analisaData.rekomendasi || []).map(r => `[${r.prioritas}] ${r.tindakan}`);
-          doc.autoTable({ startY: y, head: [['Temuan Kesenjangan Kompetensi']], body: temuan.map(t => [t]) });
-          y = doc.lastAutoTable.finalY + 6;
-          doc.autoTable({ startY: y, head: [['Rekomendasi Rencana Diklat']], body: rekom.map(r => [r]) });
-          doc.save(`Analisa_Kompetensi_SatpolPP_${this.analisaTahun}.pdf`);
-        },
-
-        // ================= EKSPOR EXCEL & PDF =================
-        async exportKompetensiExcel() {
-          if (typeof XLSX === 'undefined') {
-            this.showToast('Memuat pustaka Excel...', 'info');
-            await AppCore.loadScript('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js');
-          }
-          const dataToExport = this.kompetensiList.map((k, i) => ({
-            'No': i + 1,
-            'Nama Pegawai': this.namaPegawai(k.pegawai_id),
-            'Kegiatan Diklat': k.nama_kegiatan || k.nama_kompetensi || '',
-            'Rumpun': k.rumpun || 'Teknis',
-            'Penyelenggara': k.penyelenggara || '',
-            'No. Sertifikat': k.no_sertifikat || '',
-            'Jumlah JP': k.jumlah_jp || 0,
-            'Tgl Mulai': this.formatDate(k.tgl_mulai),
-            'Tgl Selesai': this.formatDate(k.tgl_selesai),
-            'Status': k.status_verifikasi || 'menunggu'
-          }));
-          const ws = XLSX.utils.json_to_sheet(dataToExport);
-          const wb = XLSX.utils.book_new();
-          XLSX.utils.book_append_sheet(wb, ws, 'Data_Kompetensi');
-          XLSX.writeFile(wb, `Kompetensi_SatpolPP_Trenggalek_${this.todayIso_()}.xlsx`);
+          const temuan = (this.analisaData.temuan || []).map(t => [t.level, t.pesan]);
+          doc.autoTable({ startY: 24, head: [['Level', 'Temuan Analisis Lapangan']], body: temuan });
+          const rekom = (this.analisaData.rekomendasi || []).map(r => [r.prioritas, r.tindakan]);
+          doc.autoTable({ startY: doc.lastAutoTable.finalY + 6, head: [['Prioritas', 'Rekomendasi Rencana Diklat']], body: rekom });
+          doc.save(`Analisis_Kompetensi_SatpolPP_${this.analisaTahun}.pdf`);
         }
       },
 
@@ -708,20 +697,12 @@
           if (t) {
             this.isSsoLoading = true;
             this.ssoStatusMessage = 'Memvalidasi tiket Single Sign-On...';
-            setTimeout(() => {
-              if (!this.token) this.ssoStatusMessage = 'Menyinkronkan profil pegawai & kualifikasi korps...';
-            }, 800);
-            setTimeout(() => {
-              if (!this.token) this.ssoStatusMessage = 'Mempersiapkan dashboard SI-KOMPETENSI...';
-            }, 1600);
           }
         } catch (e) {}
       }
     };
 
-    /* =========================================================
-       Bootstrap aplikasi via AppCore
-       ========================================================= */
+    /* Bootstrap aplikasi via AppCore */
     const app = AppCore.create({
       appTitle: 'SI-KOMPETENSI',
       storagePrefix: 'sikompetensi',
@@ -732,8 +713,7 @@
         title: 'SI-KOMPETENSI',
         subtitle: 'Satpol PP & Damkar Trenggalek',
         logoChar: 'K',
-        logoIcon: 'fa-solid fa-graduation-cap',
-        logoSvg: "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 120' width='100' height='120'%3E%3Cpath d='M50 5 L90 25 V65 C90 90 50 115 50 115 C50 115 10 90 10 65 V25 Z' fill='%23065f46' stroke='%2334d399' stroke-width='4'/%3E%3Cpath d='M50 15 L80 32 V62 C80 82 50 102 50 102 C50 102 20 82 20 62 V32 Z' fill='%23047857'/%3E%3Ccircle cx='50' cy='55' r='18' fill='%2310b981'/%3E%3Cpath d='M50 40 L54 50 L64 50 L56 56 L59 66 L50 60 L41 66 L44 56 L36 50 L46 50 Z' fill='%23fbbf24'/%3E%3Ctext x='50' y='93' font-family='Arial, sans-serif' font-size='9' font-weight='bold' fill='%23ffffff' text-anchor='middle'%3ETRENGGALEK%3E%3C/text%3E%3C/svg%3E"
+        logoIcon: 'fa-solid fa-graduation-cap'
       },
 
       menu: [
@@ -743,8 +723,8 @@
           { id: 'usulan_diklat', label: 'Usulan Diklat', icon: 'fa-solid fa-paper-plane' },
           { id: 'analisa', label: 'Analisa Kebutuhan', icon: 'fa-solid fa-chart-pie' }
         ]},
-        { name: 'Data Master', items: [
-          { id: 'master_data', label: 'Katalog & SIMPEG', icon: 'fa-solid fa-database' },
+        { name: 'Master Satelit', items: [
+          { id: 'master_data', label: 'Master Data Satelit', icon: 'fa-solid fa-database' },
           { id: 'profil', label: 'Profil Saya', icon: 'fa-solid fa-user-tie' }
         ]},
         { name: 'Sistem', items: [
@@ -764,30 +744,29 @@
 
       onNavigate(vm, page) {
         if (page === 'dashboard') {
-          vm.renderDashboardCharts();
+          vm.loadDashboard();
         } else if (page === 'riwayat_laporan') {
           vm.loadKompetensi(1);
         } else if (page === 'usulan_diklat') {
           vm.loadUsulan();
         } else if (page === 'analisa') {
           vm.loadAnalisa();
+        } else if (page === 'master_data') {
+          vm.loadMasterSatelit();
+          vm.loadSimpegLookup();
         }
-      },
-
-      onDarkToggle(vm) {
-        if (vm.currentPage === 'dashboard') vm.renderDashboardCharts();
       },
 
       async initApp(vm) {
         if (vm.dataLoaded) return;
         await Promise.all([
           vm.loadDashboard(),
-          vm.loadMasterSIMPEG(),
+          vm.loadMasterSatelit(),
+          vm.loadSimpegLookup(),
           vm.loadKompetensi(1),
           vm.loadUsulan(),
           vm.loadAnalisa()
         ]);
-        vm.renderDashboardCharts();
       },
 
       mixins: [SIKompetensiMixin]

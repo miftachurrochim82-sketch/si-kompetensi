@@ -1,5 +1,5 @@
 <!-- ============================================================
-     V_Layout.html — Seluruh Tampilan Antarmuka SI-KOMPETENSI (Opsi B 6-Sheet)
+     V_Layout.html — Seluruh Tampilan Antarmuka SI-KOMPETENSI (v3.0.0 — 5 Sheet)
      Satuan Polisi Pamong Praja & Pemadam Kebakaran Kab. Trenggalek
      ============================================================ -->
 
@@ -103,7 +103,7 @@
         <div class="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full transition-all duration-500" :style="{ width: (dashboardData.persen_capaian_20jp || 0) + '%' }"></div>
       </div>
       <p class="text-xs text-slate-500 leading-relaxed">
-        Sesuai PP No. 17/2020 jo. PP No. 11/2017, setiap ASN wajib memenuhi hak & kewajiban minimal 20 JP pengembangan kompetensi dalam 1 tahun anggaran.
+        Sesuai PP No. 17/2020 jo. PP No. 11/2017, setiap ASN berhak & wajib memenuhi minimal 20 JP pengembangan kompetensi per tahun anggaran.
       </p>
     </div>
 
@@ -116,77 +116,63 @@
       <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
         <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-center">
           <p class="text-[11px] font-bold text-slate-500">Manajerial</p>
-          <p class="text-lg font-black text-emerald-600 mt-0.5">{{ (dashboardData.jenis_count || {})['Manajerial'] || 0 }}</p>
+          <p class="text-lg font-black text-emerald-600 mt-0.5">{{ (dashboardData.jenis_count || {})['Manajerial & Kepemimpinan'] || (dashboardData.jenis_count || {})['Manajerial'] || 0 }}</p>
         </div>
         <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-center">
-          <p class="text-[11px] font-bold text-slate-500">Teknis</p>
-          <p class="text-lg font-black text-teal-600 mt-0.5">{{ (dashboardData.jenis_count || {})['Teknis'] || 0 }}</p>
+          <p class="text-[11px] font-bold text-slate-500">Teknis Gakda</p>
+          <p class="text-lg font-black text-teal-600 mt-0.5">{{ (dashboardData.jenis_count || {})['Teknis Penegakan Perda (PPNS)'] || 0 }}</p>
+        </div>
+        <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-center">
+          <p class="text-[11px] font-bold text-slate-500">Teknis Damkar</p>
+          <p class="text-lg font-black text-amber-600 mt-0.5">{{ (dashboardData.jenis_count || {})['Teknis Pemadam & Rescue'] || 0 }}</p>
         </div>
         <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-center">
           <p class="text-[11px] font-bold text-slate-500">Fungsional</p>
-          <p class="text-lg font-black text-indigo-600 mt-0.5">{{ (dashboardData.jenis_count || {})['Fungsional'] || 0 }}</p>
-        </div>
-        <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-center">
-          <p class="text-[11px] font-bold text-slate-500">Sosio-Kultural</p>
-          <p class="text-lg font-black text-amber-600 mt-0.5">{{ (dashboardData.jenis_count || {})['Sosio-Kultural'] || 0 }}</p>
+          <p class="text-lg font-black text-indigo-600 mt-0.5">{{ (dashboardData.jenis_count || {})['Jabatan Fungsional Pol PP & Damkar'] || (dashboardData.jenis_count || {})['Fungsional'] || 0 }}</p>
         </div>
         <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-center">
           <p class="text-[11px] font-bold text-slate-500">Bimtek</p>
-          <p class="text-lg font-black text-rose-600 mt-0.5">{{ (dashboardData.jenis_count || {})['Bimtek'] || 0 }}</p>
+          <p class="text-lg font-black text-rose-600 mt-0.5">{{ (dashboardData.jenis_count || {})['Bimbingan Teknis & Workshop'] || (dashboardData.jenis_count || {})['Bimtek'] || 0 }}</p>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Grafik Distribusi Per Bidang & Pos Damkar Wilayah -->
-  <div class="p-6 rounded-3xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 shadow-sm space-y-4">
-    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-      <div>
-        <h3 class="text-sm font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
-          <i class="fa-solid fa-chart-column text-emerald-500"></i>
-          <span>Sebaran Pengembangan Kompetensi per Bidang & Pos Damkar</span>
-        </h3>
-        <p class="text-xs text-slate-500">Sekretariat, Bidang Penegakan Perda, Bidang Tibum, Pos Induk Kota, Pos Watulimo, Pos Panggul, & Linmas.</p>
-      </div>
-    </div>
-    <div class="h-64 sm:h-72 w-full relative">
-      <canvas id="chartKompetensiDivisi"></canvas>
-    </div>
-  </div>
-
-  <!-- 5 Berkas Sertifikat Diklat Terbaru -->
+  <!-- Tabel 5 Riwayat Sertifikasi Terbaru -->
   <div class="p-6 rounded-3xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 shadow-sm space-y-4">
     <div class="flex items-center justify-between">
       <h3 class="text-sm font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
         <i class="fa-solid fa-clock-rotate-left text-emerald-500"></i>
-        <span>Pengembangan Kompetensi Terbaru</span>
+        <span>Riwayat Sertifikasi Terbaru</span>
       </h3>
-      <button @click="navigateTo('riwayat_laporan')" class="text-xs font-bold text-emerald-600 hover:underline">Lihat Semua &rarr;</button>
+      <button @click="navigateTo('riwayat_laporan')" class="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1">
+        <span>Lihat Semua</span> <i class="fa-solid fa-arrow-right"></i>
+      </button>
     </div>
 
     <div class="overflow-x-auto">
       <table class="w-full text-left text-xs">
         <thead class="bg-slate-50 dark:bg-slate-900/50 text-slate-500 uppercase font-bold border-b border-slate-100 dark:border-slate-800">
           <tr>
-            <th class="p-3">Pegawai</th>
-            <th class="p-3">Nama Diklat / Pelatihan</th>
+            <th class="p-3">Nama Pegawai</th>
+            <th class="p-3">Kegiatan Pelatihan</th>
             <th class="p-3">Rumpun</th>
-            <th class="p-3">JP</th>
             <th class="p-3">Penyelenggara</th>
+            <th class="p-3">Jam Pelajaran</th>
             <th class="p-3">Status</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-          <tr v-for="t in (dashboardData.terbaru || [])" :key="t.id" class="hover:bg-slate-50/50 dark:hover:bg-slate-800/50">
-            <td class="p-3 font-bold text-slate-800 dark:text-slate-200">{{ namaPegawai(t.pegawai_id) }}</td>
-            <td class="p-3 font-semibold">{{ t.nama_kegiatan || t.nama_kompetensi }}</td>
-            <td class="p-3"><span class="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 font-bold text-[10px]">{{ t.rumpun || 'Teknis' }}</span></td>
-            <td class="p-3 font-bold text-emerald-600">{{ t.jumlah_jp || 0 }} JP</td>
-            <td class="p-3 text-slate-500">{{ t.penyelenggara || '-' }}</td>
+          <tr v-for="r in (dashboardData.terbaru || [])" :key="r.id">
+            <td class="p-3 font-bold text-slate-900 dark:text-white">{{ namaPegawai(r.pegawai_id) }}</td>
+            <td class="p-3 font-semibold">{{ r.nama_kegiatan }}</td>
+            <td class="p-3"><span class="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 font-bold text-[10px]">{{ r.rumpun }}</span></td>
+            <td class="p-3 text-slate-500">{{ r.penyelenggara }}</td>
+            <td class="p-3 font-black text-emerald-600">{{ r.jumlah_jp }} JP</td>
             <td class="p-3">
-              <span v-if="t.status_verifikasi === 'disetujui'" class="badge badge-success">Disetujui</span>
-              <span v-else-if="t.status_verifikasi === 'menunggu'" class="badge badge-warning">Menunggu</span>
-              <span v-else class="badge badge-danger">Ditolak</span>
+              <span v-if="r.status_verifikasi === 'disetujui'" class="badge badge-success"><i class="fa-solid fa-circle-check mr-1"></i> Disetujui</span>
+              <span v-else-if="r.status_verifikasi === 'ditolak'" class="badge badge-danger"><i class="fa-solid fa-circle-xmark mr-1"></i> Ditolak</span>
+              <span v-else class="badge badge-warning"><i class="fa-solid fa-hourglass-half mr-1"></i> Menunggu</span>
             </td>
           </tr>
         </tbody>
@@ -197,255 +183,243 @@
 </div>
 
 
-<!-- ==================== 2. TAB PORTOFOLIO & RIWAYAT DIKLAT ==================== -->
+<!-- ==================== 2. TAB PORTOFOLIO & RIWAYAT KOMPETENSI ==================== -->
 <div v-else-if="currentPage === 'riwayat_laporan'" class="space-y-6">
 
-  <!-- Header & Toolbar -->
-  <div class="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-200 dark:border-slate-700/80 shadow-sm space-y-4">
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-      <div>
-        <h2 class="text-lg font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
-          <i class="fa-solid fa-certificate text-emerald-500"></i>
-          <span>Portofolio & Riwayat Sertifikasi Kompetensi</span>
-        </h2>
-        <p class="text-xs text-slate-500 mt-0.5">Daftar rekaman keikutsertaan pelatihan, bimtek, jam pelajaran, dan berkas sertifikat dinas.</p>
-      </div>
-
-      <div class="flex flex-wrap items-center gap-2.5">
-        <button @click="exportKompetensiExcel"
-                class="px-3.5 py-2 rounded-xl bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 font-bold text-xs transition-all flex items-center gap-2">
-          <i class="fa-solid fa-file-excel text-emerald-600"></i>
-          <span>Export Excel</span>
-        </button>
-        <button @click="openKompetensiForm()"
-                class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-extrabold text-xs shadow-lg transition-all flex items-center gap-2">
-          <i class="fa-solid fa-plus"></i>
-          <span>Tambah Sertifikat</span>
-        </button>
-      </div>
+  <!-- Header Modul & Aksi -->
+  <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div>
+      <h2 class="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+        <i class="fa-solid fa-certificate text-emerald-500"></i>
+        <span>Portofolio & Riwayat Pelatihan ASN</span>
+      </h2>
+      <p class="text-xs text-slate-500">Catatan sertifikat terverifikasi, jam pelajaran (JP), dan dokumen pendukung.</p>
     </div>
+    <div class="flex flex-wrap items-center gap-2">
+      <button @click="exportKompetensiExcel()" class="btn btn-secondary text-xs">
+        <i class="fa-solid fa-file-excel text-emerald-600"></i>
+        <span>Ekspor Excel</span>
+      </button>
+      <button @click="openKompetensiForm()" class="btn btn-primary text-xs">
+        <i class="fa-solid fa-plus"></i>
+        <span>Input Sertifikat</span>
+      </button>
+    </div>
+  </div>
 
-    <!-- Filter Bar -->
-    <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-2">
-      <input v-model="kompetensiSearch" @input="loadKompetensi(1)" type="text" placeholder="Cari kegiatan / sertifikat..." class="form-input text-xs">
-      
-      <select v-model="filterRumpun" @change="loadKompetensi(1)" class="form-input text-xs">
-        <option value="">Semua Rumpun Diklat</option>
-        <option value="Manajerial">Manajerial</option>
-        <option value="Teknis">Teknis</option>
-        <option value="Fungsional">Fungsional</option>
-        <option value="Sosio-Kultural">Sosio-Kultural</option>
-        <option value="Bimtek">Bimtek</option>
+  <!-- Filter & Pencarian -->
+  <div class="p-4 rounded-3xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 shadow-sm flex flex-col md:flex-row items-center gap-3">
+    <div class="relative flex-1 w-full">
+      <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+      <input v-model="kompetensiSearch" @input="loadKompetensi(1)" type="text" placeholder="Cari nama kegiatan, nomor sertifikat, atau penyelenggara..." class="form-input pl-9 text-xs">
+    </div>
+    <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
+      <select v-model="filterRumpun" @change="loadKompetensi(1)" class="form-input text-xs w-full sm:w-40">
+        <option value="">Semua Rumpun</option>
+        <option value="Manajerial & Kepemimpinan">Manajerial</option>
+        <option value="Teknis Penegakan Perda (PPNS)">Teknis Gakda</option>
+        <option value="Teknis Pemadam & Rescue">Teknis Damkar</option>
+        <option value="Jabatan Fungsional Pol PP & Damkar">Fungsional</option>
+        <option value="Bimbingan Teknis & Workshop">Bimtek</option>
       </select>
-
-      <select v-model="filterStatusVerif" @change="loadKompetensi(1)" class="form-input text-xs">
-        <option value="">Semua Status Verifikasi</option>
+      <select v-model="filterStatusVerif" @change="loadKompetensi(1)" class="form-input text-xs w-full sm:w-36 font-bold">
+        <option value="">Semua Status</option>
         <option value="disetujui">Disetujui</option>
-        <option value="menunggu">Menunggu Verifikasi</option>
+        <option value="menunggu">Menunggu</option>
         <option value="ditolak">Ditolak</option>
-      </select>
-
-      <select v-model="filterUnit" @change="loadKompetensi(1)" class="form-input text-xs">
-        <option value="">Semua Unit & Pos Wilayah</option>
-        <option v-for="u in masterUnitList" :key="u.id" :value="u.id">{{ u.nama_unit }}</option>
       </select>
     </div>
   </div>
 
-  <!-- Table Portofolio -->
+  <!-- Tabel Data Portofolio -->
   <div class="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700/80 shadow-sm overflow-hidden">
     <div class="overflow-x-auto">
       <table class="w-full text-left text-xs">
-        <thead class="bg-slate-50 dark:bg-slate-900/50 text-slate-600 dark:text-slate-400 font-bold uppercase border-b border-slate-100 dark:border-slate-800">
+        <thead class="bg-slate-50 dark:bg-slate-900/50 text-slate-500 uppercase font-bold border-b border-slate-100 dark:border-slate-800">
           <tr>
-            <th class="p-4">Pegawai</th>
-            <th class="p-4">Kegiatan Pelatihan</th>
-            <th class="p-4">Rumpun</th>
-            <th class="p-4">Penyelenggara</th>
-            <th class="p-4">No. Sertifikat</th>
-            <th class="p-4">JP</th>
-            <th class="p-4">Status</th>
-            <th class="p-4 text-center">Aksi</th>
+            <th class="p-3.5">Nama Pegawai</th>
+            <th class="p-3.5">Kegiatan Pelatihan</th>
+            <th class="p-3.5">Rumpun</th>
+            <th class="p-3.5">No. Sertifikat</th>
+            <th class="p-3.5">JP</th>
+            <th class="p-3.5">Status</th>
+            <th class="p-3.5">Bukti</th>
+            <th class="p-3.5 text-right">Aksi</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
           <tr v-if="kompetensiLoading">
-            <td colspan="8" class="p-8 text-center text-slate-400">
-              <i class="fa-solid fa-spinner animate-spin text-xl text-emerald-500 mb-2"></i>
-              <p>Memuat portofolio kompetensi...</p>
+            <td colspan="8" class="p-8 text-center text-slate-500">
+              <i class="fa-solid fa-spinner animate-spin mr-2"></i> Memuat data portofolio...
             </td>
           </tr>
           <tr v-else-if="kompetensiList.length === 0">
-            <td colspan="8" class="p-8 text-center text-slate-400">Belum ada data sertifikasi pengembangan kompetensi.</td>
+            <td colspan="8" class="p-8 text-center text-slate-400">
+              <i class="fa-solid fa-inbox text-3xl mb-2"></i>
+              <p>Belum ada data pelatihan yang sesuai filter.</p>
+            </td>
           </tr>
-          <tr v-for="k in kompetensiList" :key="k.id" class="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
-            <td class="p-4 font-bold text-slate-800 dark:text-slate-200">{{ namaPegawai(k.pegawai_id) }}</td>
-            <td class="p-4 font-semibold text-slate-900 dark:text-white">
-              {{ k.nama_kegiatan || k.nama_kompetensi }}
-              <span v-if="k.tgl_kedaluwarsa" class="block text-[10px] text-amber-600 dark:text-amber-400 mt-0.5">
-                <i class="fa-solid fa-shield-halved"></i> Berlaku s/d {{ formatDate(k.tgl_kedaluwarsa) }}
-              </span>
+          <tr v-for="k in kompetensiList" :key="k.id" class="hover:bg-slate-50/60 dark:hover:bg-slate-900/30">
+            <td class="p-3.5 font-bold text-slate-900 dark:text-white">{{ namaPegawai(k.pegawai_id) }}</td>
+            <td class="p-3.5 font-semibold text-slate-800 dark:text-slate-200">
+              {{ k.nama_kegiatan }}
+              <p class="text-[11px] text-slate-400 mt-0.5">{{ k.penyelenggara }} ({{ formatDate(k.tgl_mulai) }})</p>
             </td>
-            <td class="p-4"><span class="px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-700 font-bold text-[10px]">{{ k.rumpun || 'Teknis' }}</span></td>
-            <td class="p-4 text-slate-500">{{ k.penyelenggara || '-' }}</td>
-            <td class="p-4 font-mono text-[11px] text-slate-600 dark:text-slate-400">{{ k.no_sertifikat || '-' }}</td>
-            <td class="p-4 font-black text-emerald-600">{{ k.jumlah_jp || 0 }} JP</td>
-            <td class="p-4">
-              <span v-if="k.status_verifikasi === 'disetujui'" class="badge badge-success">Disetujui</span>
-              <span v-else-if="k.status_verifikasi === 'menunggu'" class="badge badge-warning">Menunggu</span>
-              <span v-else class="badge badge-danger">Ditolak</span>
+            <td class="p-3.5"><span class="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 font-bold text-[10px]">{{ k.rumpun }}</span></td>
+            <td class="p-3.5 font-mono text-[11px]">{{ k.no_sertifikat || '-' }}</td>
+            <td class="p-3.5 font-black text-emerald-600">{{ k.jumlah_jp }} JP</td>
+            <td class="p-3.5">
+              <span v-if="k.status_verifikasi === 'disetujui'" class="badge badge-success"><i class="fa-solid fa-circle-check mr-1"></i> Disetujui</span>
+              <span v-else-if="k.status_verifikasi === 'ditolak'" class="badge badge-danger"><i class="fa-solid fa-circle-xmark mr-1"></i> Ditolak</span>
+              <span v-else class="badge badge-warning"><i class="fa-solid fa-hourglass-half mr-1"></i> Menunggu</span>
             </td>
-            <td class="p-4 text-center">
-              <div class="inline-flex items-center gap-1.5">
-                <a v-if="k.file_url" :href="k.file_url" target="_blank" class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-200 transition-colors" title="Buka Sertifikat">
-                  <i class="fa-solid fa-arrow-up-right-from-square"></i>
-                </a>
-                <button v-if="isAdmin || isVerifikator" @click="openVerifikasiModal(k)" class="p-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 font-bold transition-colors" title="Verifikasi">
-                  <i class="fa-solid fa-user-check"></i>
-                </button>
-                <button @click="openKompetensiForm(k)" class="p-2 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 font-bold transition-colors" title="Edit">
-                  <i class="fa-solid fa-pen"></i>
-                </button>
-                <button @click="deleteKompetensi(k)" class="p-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 font-bold transition-colors" title="Hapus">
-                  <i class="fa-solid fa-trash"></i>
-                </button>
-              </div>
+            <td class="p-3.5">
+              <a v-if="k.file_url" :href="k.file_url" target="_blank" class="text-blue-500 hover:text-blue-600 font-bold flex items-center gap-1">
+                <i class="fa-solid fa-arrow-up-right-from-square"></i> <span>Berkas</span>
+              </a>
+              <span v-else class="text-slate-400">-</span>
+            </td>
+            <td class="p-3.5 text-right space-x-1">
+              <button v-if="isAdmin || isVerifikator" @click="openVerifModal(k)" class="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-xs" title="Verifikasi">
+                <i class="fa-solid fa-user-check"></i>
+              </button>
+              <button @click="openEditKompetensi(k)" class="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs" title="Edit">
+                <i class="fa-solid fa-pen-to-square"></i>
+              </button>
+              <button @click="deleteKompetensi(k.id)" class="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs" title="Hapus">
+                <i class="fa-solid fa-trash"></i>
+              </button>
             </td>
           </tr>
         </tbody>
       </table>
     </div>
-
-    <!-- Pagination -->
-    <div class="p-4 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center text-xs text-slate-500">
-      <span>Total {{ kompetensiTotal }} sertifikat terdaftar</span>
-      <div class="flex items-center gap-2">
-        <button :disabled="kompetensiPage <= 1" @click="loadKompetensi(kompetensiPage - 1)" class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 disabled:opacity-40">Sebelumnya</button>
-        <span class="font-bold text-slate-700 dark:text-slate-300">Hal {{ kompetensiPage }} dari {{ kompetensiTotalPages }}</span>
-        <button :disabled="kompetensiPage >= kompetensiTotalPages" @click="loadKompetensi(kompetensiPage + 1)" class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 disabled:opacity-40">Selanjutnya</button>
-      </div>
-    </div>
   </div>
 
 </div>
 
 
-<!-- ==================== 3. TAB USULAN DIKLAT (BOTTOM-UP) ==================== -->
+<!-- ==================== 3. TAB USULAN DIKLAT (AKD) ==================== -->
 <div v-else-if="currentPage === 'usulan_diklat'" class="space-y-6">
 
-  <div class="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-200 dark:border-slate-700/80 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-    <div class="space-y-1">
-      <h2 class="text-lg font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
+  <!-- Header & Action -->
+  <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div>
+      <h2 class="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
         <i class="fa-solid fa-paper-plane text-emerald-500"></i>
-        <span>Pengajuan Usulan Pelatihan (Bottom-Up)</span>
+        <span>Pengajuan Usulan Pelatihan (AKD Bottom-Up)</span>
       </h2>
-      <p class="text-xs text-slate-500">Personel dan regu dapat mengusulkan pelatihan/diklat spesifik untuk peningkatan kapasitas tugas kedinasan.</p>
+      <p class="text-xs text-slate-500">Usulan pengembangan kompetensi personel untuk bahan DPA/RKA Satpol PP & BKPSDM.</p>
     </div>
-
-    <button @click="openUsulanForm()"
-            class="px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-extrabold text-xs shadow-lg transition-all flex items-center gap-2">
+    <button @click="openUsulanForm()" class="btn btn-primary text-xs">
       <i class="fa-solid fa-plus"></i>
-      <span>Ajukan Usulan Diklat</span>
+      <span>Ajukan Usulan Baru</span>
     </button>
   </div>
 
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-    <div v-for="u in usulanList" :key="u.id" class="p-6 rounded-3xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 shadow-sm space-y-4 flex flex-col justify-between">
-      <div class="space-y-3">
-        <div class="flex items-center justify-between">
-          <span class="px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold text-[10px]">
-            {{ u.rumpun || 'Teknis' }}
-          </span>
-          <span v-if="u.status_usulan === 'disetujui_kasat'" class="badge badge-success">Disetujui Kasat</span>
-          <span v-else-if="u.status_usulan === 'direkomendasikan_bkpsdm'" class="badge badge-info">Rekomendasi BKPSDM</span>
-          <span v-else-if="u.status_usulan === 'ditolak'" class="badge badge-danger">Ditolak</span>
-          <span v-else class="badge badge-warning">Diajukan</span>
-        </div>
-
-        <h3 class="font-extrabold text-sm text-slate-900 dark:text-white leading-snug">{{ u.nama_diklat_usulan }}</h3>
-        <p class="text-xs text-slate-500"><i class="fa-solid fa-user text-emerald-500 mr-1"></i> Pengusul: <strong class="text-slate-700 dark:text-slate-300">{{ namaPegawai(u.pegawai_id) }}</strong></p>
-        <p class="text-xs text-slate-500"><i class="fa-solid fa-building text-teal-500 mr-1"></i> Penyelenggara: {{ u.target_penyelenggara }}</p>
-        
-        <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-400 italic leading-relaxed">
-          "{{ u.alasan_usulan }}"
-        </div>
-
-        <div v-if="u.catatan_pimpinan" class="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/40 text-xs text-emerald-800 dark:text-emerald-300">
-          <strong>Catatan Pimpinan:</strong> {{ u.catatan_pimpinan }}
-        </div>
-      </div>
-
-      <div class="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-        <span class="text-xs font-bold text-slate-500">Estimasi: {{ formatRupiah(u.estimasi_biaya) }}</span>
-        <div class="flex items-center gap-2">
-          <button v-if="isAdmin" @click="openReviewUsulanModal(u)" class="px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 font-bold text-xs transition-colors">
-            Review
-          </button>
-          <button @click="deleteUsulan(u)" class="p-2 rounded-xl text-slate-400 hover:text-rose-500 transition-colors">
-            <i class="fa-solid fa-trash"></i>
-          </button>
-        </div>
-      </div>
+  <!-- Tabel Usulan -->
+  <div class="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700/80 shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-xs">
+        <thead class="bg-slate-50 dark:bg-slate-900/50 text-slate-500 uppercase font-bold border-b border-slate-100 dark:border-slate-800">
+          <tr>
+            <th class="p-3.5">Nama Pegawai</th>
+            <th class="p-3.5">Usulan Pelatihan</th>
+            <th class="p-3.5">Lembaga Target</th>
+            <th class="p-3.5">Urgensi</th>
+            <th class="p-3.5">Estimasi Biaya</th>
+            <th class="p-3.5">Status Persetujuan</th>
+            <th class="p-3.5 text-right">Aksi</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+          <tr v-if="usulanLoading">
+            <td colspan="7" class="p-8 text-center text-slate-500"><i class="fa-solid fa-spinner animate-spin mr-2"></i> Memuat daftar usulan...</td>
+          </tr>
+          <tr v-else-if="usulanList.length === 0">
+            <td colspan="7" class="p-8 text-center text-slate-400">Belum ada usulan pelatihan yang diajukan.</td>
+          </tr>
+          <tr v-for="u in usulanList" :key="u.id" class="hover:bg-slate-50/60 dark:hover:bg-slate-900/30">
+            <td class="p-3.5 font-bold text-slate-900 dark:text-white">{{ namaPegawai(u.pegawai_id) }}</td>
+            <td class="p-3.5 font-semibold">
+              {{ u.nama_diklat_usulan }}
+              <p class="text-[11px] text-slate-400 mt-0.5">{{ u.alasan_usulan }}</p>
+            </td>
+            <td class="p-3.5 text-slate-500">{{ u.target_penyelenggara }}</td>
+            <td class="p-3.5">
+              <span v-if="u.urgensi === 'Sangat Mendesak (Prioritas 1)' || u.urgensi === 'Tinggi'" class="badge badge-danger">Prioritas 1</span>
+              <span v-else class="badge badge-info">Prioritas 2</span>
+            </td>
+            <td class="p-3.5 font-black text-slate-700 dark:text-slate-300">Rp {{ Number(u.estimasi_biaya || 0).toLocaleString('id-ID') }}</td>
+            <td class="p-3.5">
+              <span v-if="u.status_usulan === 'disetujui_kasat'" class="badge badge-success"><i class="fa-solid fa-check-double mr-1"></i> Disetujui Kasat</span>
+              <span v-else-if="u.status_usulan === 'direkomendasikan_bkpsdm'" class="badge badge-info"><i class="fa-solid fa-share mr-1"></i> Rekom BKPSDM</span>
+              <span v-else class="badge badge-warning"><i class="fa-solid fa-paper-plane mr-1"></i> Diajukan</span>
+            </td>
+            <td class="p-3.5 text-right space-x-1">
+              <button v-if="isAdmin" @click="openReviewUsulanModal(u)" class="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-xs" title="Review Pimpinan">
+                <i class="fa-solid fa-clipboard-check"></i>
+              </button>
+              <button @click="deleteUsulan(u.id)" class="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs" title="Hapus">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 
 </div>
 
 
-<!-- ==================== 4. TAB ANALISA & GAP KEBUTUHAN DIKLAT ==================== -->
-<div v-else-if="currentPage === 'analisa'" class="space-y-6">
+<!-- ==================== 4. TAB ANALISA KEBUTUHAN & GAP ==================== -->
+<div v-if="currentPage === 'analisa'" class="space-y-6">
 
-  <div class="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-200 dark:border-slate-700/80 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+  <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
     <div>
-      <h2 class="text-lg font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
+      <h2 class="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
         <i class="fa-solid fa-chart-pie text-emerald-500"></i>
-        <span>Analisis Kesenjangan & Rencana Kebutuhan Diklat</span>
+        <span>Analisis Kesenjangan Kompetensi Jabatan (SKJ)</span>
       </h2>
-      <p class="text-xs text-slate-500 mt-0.5">Laporan evaluasi pemenuhan target 20 JP per ASN dan rekomendasi prioritas diklat kedinasan.</p>
+      <p class="text-xs text-slate-500">Deteksi otomatis kesesuaian keahlian personel terhadap standar kompetensi jabatan.</p>
     </div>
-
-    <div class="flex items-center gap-2.5">
-      <select v-model="analisaTahun" @change="loadAnalisa" class="form-input text-xs w-32 font-bold">
+    <div class="flex items-center gap-2">
+      <select v-model="analisaTahun" @change="loadAnalisa()" class="form-input text-xs font-bold w-32">
         <option :value="2026">Tahun 2026</option>
         <option :value="2025">Tahun 2025</option>
-        <option :value="2024">Tahun 2024</option>
       </select>
-      <button @click="downloadAnalisaPDF"
-              class="px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-extrabold text-xs shadow-lg transition-all flex items-center gap-2">
+      <button @click="downloadAnalisaPDF()" class="btn btn-primary text-xs">
         <i class="fa-solid fa-file-pdf"></i>
-        <span>Unduh Laporan PDF</span>
+        <span>Unduh Laporan</span>
       </button>
     </div>
   </div>
 
   <!-- Temuan & Rekomendasi Grid -->
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    <!-- Temuan Kesenjangan -->
-    <div class="p-6 rounded-3xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 shadow-sm space-y-4">
+    <div class="p-6 rounded-3xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 shadow-sm space-y-3">
       <h3 class="text-sm font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
-        <i class="fa-solid fa-triangle-exclamation text-amber-500"></i>
-        <span>Temuan Evaluasi Kompetensi Satpol PP & Damkar</span>
+        <i class="fa-solid fa-magnifying-glass-chart text-emerald-500"></i>
+        <span>Temuan Analisis Lapangan</span>
       </h3>
-      <div class="space-y-3">
-        <div v-for="(t, idx) in (analisaData.temuan || [])" :key="idx" class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 flex items-start gap-3">
-          <span :class="t.level === 'WARNING' ? 'text-amber-500 bg-amber-500/10' : 'text-blue-500 bg-blue-500/10'" class="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 text-xs font-bold">
-            <i :class="t.level === 'WARNING' ? 'fa-solid fa-triangle-exclamation' : 'fa-solid fa-info'"></i>
-          </span>
-          <p class="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">{{ t.pesan }}</p>
+      <div class="space-y-2">
+        <div v-for="(t, idx) in (analisaData.temuan || [])" :key="idx" class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 flex items-start gap-3 text-xs">
+          <span :class="t.level === 'WARNING' ? 'text-amber-500' : 'text-emerald-500'"><i class="fa-solid fa-circle-info mt-0.5"></i></span>
+          <p class="text-slate-700 dark:text-slate-300">{{ t.pesan }}</p>
         </div>
       </div>
     </div>
 
-    <!-- Rekomendasi Rencana Diklat -->
-    <div class="p-6 rounded-3xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 shadow-sm space-y-4">
+    <div class="p-6 rounded-3xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 shadow-sm space-y-3">
       <h3 class="text-sm font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
-        <i class="fa-solid fa-lightbulb text-emerald-500"></i>
-        <span>Rekomendasi Rencana Prioritas Diklat OPD</span>
+        <i class="fa-solid fa-lightbulb text-amber-500"></i>
+        <span>Rekomendasi Tindak Lanjut</span>
       </h3>
-      <div class="space-y-3">
-        <div v-for="(r, idx) in (analisaData.rekomendasi || [])" :key="idx" class="p-4 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-800/40 flex items-start gap-3">
-          <span class="px-2 py-0.5 rounded-full bg-emerald-600 text-white font-extrabold text-[10px] shrink-0 uppercase tracking-wider">{{ r.prioritas }}</span>
-          <p class="text-xs text-emerald-950 dark:text-emerald-200 leading-relaxed font-medium">{{ r.tindakan }}</p>
+      <div class="space-y-2">
+        <div v-for="(r, idx) in (analisaData.rekomendasi || [])" :key="idx" class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 flex items-start gap-3 text-xs">
+          <span class="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 font-extrabold text-[10px] shrink-0">{{ r.prioritas }}</span>
+          <p class="text-slate-700 dark:text-slate-300">{{ r.tindakan }}</p>
         </div>
       </div>
     </div>
@@ -454,36 +428,44 @@
 </div>
 
 
-<!-- ==================== 5. TAB MASTER DATA & KATALOG DIKLAT ==================== -->
+<!-- ==================== 5. TAB MASTER DATA SATELIT (3 TAB UTAMA) ==================== -->
 <div v-else-if="currentPage === 'master_data'" class="space-y-6">
 
-  <!-- Navigasi Sub-Tab Master -->
+  <!-- Navigasi 3 Sub-Tab Master Satelit -->
   <div class="flex flex-wrap gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
     <button @click="activeMasterTab = 'katalog_diklat'"
             :class="activeMasterTab === 'katalog_diklat' ? 'bg-emerald-600 text-white shadow-md' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400'"
             class="px-4 py-2 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 border border-slate-200 dark:border-slate-700">
       <i class="fa-solid fa-book-bookmark"></i>
-      <span>Katalog Diklat Bersertifikat</span>
+      <span>1. Katalog Program Diklat</span>
     </button>
-    <button @click="activeMasterTab = 'pegawai'"
-            :class="activeMasterTab === 'pegawai' ? 'bg-emerald-600 text-white shadow-md' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400'"
+    <button @click="activeMasterTab = 'standar_kompetensi'"
+            :class="activeMasterTab === 'standar_kompetensi' ? 'bg-emerald-600 text-white shadow-md' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400'"
             class="px-4 py-2 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 border border-slate-200 dark:border-slate-700">
-      <i class="fa-solid fa-users"></i>
-      <span>Data Personel Korps</span>
+      <i class="fa-solid fa-id-card-clip"></i>
+      <span>2. Standar Kompetensi Jabatan (SKJ)</span>
     </button>
-    <button @click="activeMasterTab = 'unit'"
-            :class="activeMasterTab === 'unit' ? 'bg-emerald-600 text-white shadow-md' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400'"
+    <button @click="activeMasterTab = 'referensi'"
+            :class="activeMasterTab === 'referensi' ? 'bg-emerald-600 text-white shadow-md' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400'"
             class="px-4 py-2 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 border border-slate-200 dark:border-slate-700">
-      <i class="fa-solid fa-building-shield"></i>
-      <span>Bidang & Pos Wilayah</span>
+      <i class="fa-solid fa-list-check"></i>
+      <span>3. Master Referensi Gabungan</span>
     </button>
   </div>
 
-  <!-- Sub-Tab 1: Katalog Diklat -->
+  <!-- Sub-Tab 1: Katalog Diklat (M_KATALOG_DIKLAT) -->
   <div v-if="activeMasterTab === 'katalog_diklat'" class="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700/80 shadow-sm p-6 space-y-4">
-    <div class="flex justify-between items-center gap-4">
-      <h3 class="text-sm font-black text-slate-800 dark:text-slate-100">Kamus Standar Kompetensi & Diklat Kedinasan</h3>
-      <input v-model="katalogSearch" type="text" placeholder="Cari diklat..." class="form-input text-xs w-64">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+      <div>
+        <h3 class="text-sm font-black text-slate-800 dark:text-slate-100">Kamus Program Pelatihan & Standar JP Kedinasan</h3>
+        <p class="text-xs text-slate-500">Kelola daftar program pelatihan resmi, rumpun, dan standar JP default.</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <input v-model="katalogSearch" type="text" placeholder="Cari program diklat..." class="form-input text-xs w-48 sm:w-64">
+        <button v-if="isAdmin" @click="openKatalogForm()" class="btn btn-primary text-xs shrink-0">
+          <i class="fa-solid fa-plus"></i> <span>Tambah Diklat</span>
+        </button>
+      </div>
     </div>
 
     <div class="overflow-x-auto">
@@ -496,77 +478,129 @@
             <th class="p-3">Keahlian Khusus</th>
             <th class="p-3">Penyelenggara Default</th>
             <th class="p-3">Standar JP</th>
+            <th class="p-3 text-right" v-if="isAdmin">Aksi</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-          <tr v-for="d in filteredKatalogDiklat" :key="d.id">
+          <tr v-for="d in filteredKatalogDiklat" :key="d.id" class="hover:bg-slate-50/60 dark:hover:bg-slate-900/30">
             <td class="p-3 font-mono text-[11px] font-bold text-slate-500">{{ d.kode_diklat }}</td>
             <td class="p-3 font-bold text-slate-900 dark:text-white">{{ d.nama_diklat }}</td>
             <td class="p-3"><span class="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 font-bold text-[10px]">{{ d.rumpun }}</span></td>
             <td class="p-3 font-semibold text-emerald-600">{{ d.kategori_keahlian }}</td>
             <td class="p-3 text-slate-500">{{ d.penyelenggara_default }}</td>
             <td class="p-3 font-black text-slate-700 dark:text-slate-300">{{ d.default_jp }} JP</td>
+            <td class="p-3 text-right space-x-1" v-if="isAdmin">
+              <button @click="openEditKatalog(d)" class="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs"><i class="fa-solid fa-pen-to-square"></i></button>
+              <button @click="deleteKatalog(d.id)" class="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs"><i class="fa-solid fa-trash"></i></button>
+            </td>
           </tr>
         </tbody>
       </table>
     </div>
   </div>
 
-  <!-- Sub-Tab 2: Data Personel -->
-  <div v-else-if="activeMasterTab === 'pegawai'" class="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700/80 shadow-sm p-6 space-y-4">
-    <div class="flex justify-between items-center gap-4">
-      <h3 class="text-sm font-black text-slate-800 dark:text-slate-100">Daftar Personel Satpol PP & Pemadam Kebakaran Trenggalek</h3>
-      <input v-model="pegawaiSearch" type="text" placeholder="Cari NIP / Nama..." class="form-input text-xs w-64">
+  <!-- Sub-Tab 2: Standar Kompetensi Jabatan (M_STANDAR_KOMPETENSI) -->
+  <div v-else-if="activeMasterTab === 'standar_kompetensi'" class="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700/80 shadow-sm p-6 space-y-4">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+      <div>
+        <h3 class="text-sm font-black text-slate-800 dark:text-slate-100">Matriks Standar Kualifikasi Kompetensi per Jabatan</h3>
+        <p class="text-xs text-slate-500">Menentukan pelatihan wajib/disarankan untuk tiap jenjang jabatan dalam analisis kesenjangan.</p>
+      </div>
+      <button v-if="isAdmin" @click="openStandarForm()" class="btn btn-primary text-xs shrink-0">
+        <i class="fa-solid fa-plus"></i> <span>Tambah Standar Jabatan</span>
+      </button>
     </div>
 
     <div class="overflow-x-auto">
       <table class="w-full text-left text-xs">
         <thead class="bg-slate-50 dark:bg-slate-900/50 text-slate-500 uppercase font-bold border-b border-slate-100 dark:border-slate-800">
           <tr>
-            <th class="p-3">NIP</th>
-            <th class="p-3">Nama Lengkap</th>
-            <th class="p-3">Pangkat / Gol</th>
-            <th class="p-3">Unit / Pos</th>
-            <th class="p-3">Status PPNS</th>
-            <th class="p-3">Kualifikasi Damkar</th>
+            <th class="p-3">Jabatan (SIMPEG)</th>
+            <th class="p-3">Syarat Program Diklat</th>
+            <th class="p-3">Tingkat Kebutuhan</th>
+            <th class="p-3">Minimal JP</th>
+            <th class="p-3">Keterangan</th>
+            <th class="p-3 text-right" v-if="isAdmin">Aksi</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-          <tr v-for="p in filteredPegawaiReferensi" :key="p.id">
-            <td class="p-3 font-mono text-[11px] font-bold">{{ p.nip }}</td>
-            <td class="p-3 font-bold text-slate-900 dark:text-white">{{ p.nama_lengkap || p.nama }}</td>
-            <td class="p-3 text-slate-500">{{ p.pangkat_gol || '-' }}</td>
-            <td class="p-3">{{ namaUnit(p.unit_id) }}</td>
+          <tr v-for="s in standarList" :key="s.id" class="hover:bg-slate-50/60 dark:hover:bg-slate-900/30">
+            <td class="p-3 font-bold text-slate-900 dark:text-white">{{ namaJabatan(s.jabatan_id) }}</td>
+            <td class="p-3 font-semibold text-emerald-600">{{ namaDiklat(s.diklat_id) }}</td>
             <td class="p-3">
-              <span v-if="p.is_ppns === 'Ya'" class="badge badge-success">PPNS</span>
-              <span v-else class="text-slate-400">-</span>
+              <span v-if="s.tingkat_kebutuhan === 'WAJIB'" class="badge badge-danger">Wajib</span>
+              <span v-else class="badge badge-info">Disarankan</span>
             </td>
-            <td class="p-3 font-semibold text-amber-600">{{ p.kualifikasi_damkar || '-' }}</td>
+            <td class="p-3 font-mono font-bold">{{ s.minimal_jp }} JP</td>
+            <td class="p-3 text-slate-500">{{ s.keterangan || '-' }}</td>
+            <td class="p-3 text-right space-x-1" v-if="isAdmin">
+              <button @click="openEditStandar(s)" class="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs"><i class="fa-solid fa-pen-to-square"></i></button>
+              <button @click="deleteStandar(s.id)" class="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs"><i class="fa-solid fa-trash"></i></button>
+            </td>
           </tr>
         </tbody>
       </table>
     </div>
   </div>
 
-  <!-- Sub-Tab 3: Unit & Pos Wilayah -->
-  <div v-else-if="activeMasterTab === 'unit'" class="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700/80 shadow-sm p-6 space-y-4">
-    <h3 class="text-sm font-black text-slate-800 dark:text-slate-100">Struktur Bidang & Pos Wilayah Pemadam Kebakaran</h3>
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      <div v-for="u in masterUnitList" :key="u.id" class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 space-y-2">
-        <span class="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 font-bold text-[10px]">{{ u.kode_unit }}</span>
-        <h4 class="font-extrabold text-sm text-slate-900 dark:text-white">{{ u.nama_unit }}</h4>
-        <p class="text-xs text-slate-500"><i class="fa-solid fa-location-dot text-rose-500 mr-1"></i> {{ u.lokasi }}</p>
-        <p class="text-xs text-slate-500"><i class="fa-solid fa-phone text-blue-500 mr-1"></i> {{ u.telepon }}</p>
+  <!-- Sub-Tab 3: Master Referensi Gabungan (M_REFERENSI) -->
+  <div v-else-if="activeMasterTab === 'referensi'" class="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700/80 shadow-sm p-6 space-y-4">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+      <div>
+        <h3 class="text-sm font-black text-slate-800 dark:text-slate-100">Master Data Referensi Gabungan (Dropdown Opsi)</h3>
+        <p class="text-xs text-slate-500">Kelola opsi dropdown sistem: Rumpun, Metode Diklat, Tingkat Urgensi, dan Penyelenggara.</p>
       </div>
+      <div class="flex items-center gap-2">
+        <select v-model="filterKategoriRef" class="form-input text-xs w-44 font-bold">
+          <option value="">Semua Kategori</option>
+          <option value="RUMPUN_KOMPETENSI">Rumpun Kompetensi</option>
+          <option value="METODE_PELATIHAN">Metode Pelatihan</option>
+          <option value="URGENSI_USULAN">Urgensi Usulan</option>
+          <option value="PENYELENGGARA">Penyelenggara</option>
+        </select>
+        <button v-if="isAdmin" @click="openReferensiForm()" class="btn btn-primary text-xs shrink-0">
+          <i class="fa-solid fa-plus"></i> <span>Tambah Opsi</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-xs">
+        <thead class="bg-slate-50 dark:bg-slate-900/50 text-slate-500 uppercase font-bold border-b border-slate-100 dark:border-slate-800">
+          <tr>
+            <th class="p-3">Kategori</th>
+            <th class="p-3">Kode</th>
+            <th class="p-3">Nama Nilai (Label Dropdown)</th>
+            <th class="p-3">Urutan</th>
+            <th class="p-3">Status</th>
+            <th class="p-3">Keterangan</th>
+            <th class="p-3 text-right" v-if="isAdmin">Aksi</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+          <tr v-for="r in filteredReferensi" :key="r.id" class="hover:bg-slate-50/60 dark:hover:bg-slate-900/30">
+            <td class="p-3 font-bold text-emerald-600">{{ r.kategori }}</td>
+            <td class="p-3 font-mono text-[11px]">{{ r.kode }}</td>
+            <td class="p-3 font-extrabold text-slate-900 dark:text-white">{{ r.nama_nilai }}</td>
+            <td class="p-3 font-bold">{{ r.urutan }}</td>
+            <td class="p-3"><span class="badge badge-success">Aktif</span></td>
+            <td class="p-3 text-slate-500">{{ r.keterangan || '-' }}</td>
+            <td class="p-3 text-right space-x-1" v-if="isAdmin">
+              <button @click="openEditReferensi(r)" class="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs"><i class="fa-solid fa-pen-to-square"></i></button>
+              <button @click="deleteReferensi(r.id)" class="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs"><i class="fa-solid fa-trash"></i></button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 
 </div>
 
 
-<!-- ==================== MODALS ==================== -->
+<!-- ==================== MODALS INTERAKTIF ==================== -->
 
-<!-- 1. Modal Input Portofolio Kompetensi -->
+<!-- 1. Modal Form Input / Edit Riwayat Diklat -->
 <div v-if="showKompetensiForm" class="modal-overlay" @click.self="showKompetensiForm = false">
   <div class="modal-box max-w-xl">
     <div class="modal-header">
@@ -578,12 +612,23 @@
     </div>
 
     <form @submit.prevent="saveKompetensi" class="p-6 space-y-4 overflow-y-auto max-h-[75vh]">
+      <!-- Pilih Pegawai dari SIMPEG Lookup -->
+      <div>
+        <label class="form-label">Nama Pegawai (SIMPEG)</label>
+        <select v-model="kompetensiForm.pegawai_id" class="form-input text-xs font-bold" required>
+          <option value="">-- Pilih Personel --</option>
+          <option v-for="p in simpegLookup.pegawai" :key="p.id" :value="p.id">
+            {{ p.nama_lengkap || p.nama }} ({{ p.nip }})
+          </option>
+        </select>
+      </div>
+
       <!-- Pilih dari Kamus Diklat -->
       <div>
         <label class="form-label">Katalog Pelatihan Bersertifikat (Pilihan Cepat)</label>
         <select v-model="kompetensiForm.diklat_id" @change="onKatalogSelected" class="form-input text-xs">
           <option value="">-- Pilih dari Kamus Diklat Resmi (Opsional) --</option>
-          <option v-for="d in katalogDiklatList" :key="d.id" :value="d.id">{{ d.nama_diklat }} ({{ d.default_jp }} JP)</option>
+          <option v-for="d in katalogList" :key="d.id" :value="d.id">{{ d.nama_diklat }} ({{ d.default_jp }} JP)</option>
         </select>
       </div>
 
@@ -596,11 +641,7 @@
         <div>
           <label class="form-label">Rumpun Kompetensi</label>
           <select v-model="kompetensiForm.rumpun" class="form-input text-xs" required>
-            <option value="Manajerial">Manajerial</option>
-            <option value="Teknis">Teknis</option>
-            <option value="Fungsional">Fungsional</option>
-            <option value="Sosio-Kultural">Sosio-Kultural</option>
-            <option value="Bimtek">Bimtek</option>
+            <option v-for="r in optionsRumpun" :key="r.id" :value="r.nama_nilai">{{ r.nama_nilai }}</option>
           </select>
         </div>
 
@@ -632,7 +673,7 @@
         </div>
         <div>
           <label class="form-label">Masa Berlaku Lisensi</label>
-          <input v-model="kompetensiForm.tgl_kedaluwarsa" type="date" class="form-input text-xs" placeholder="Opsional (Khusus Rescue/PPNS)">
+          <input v-model="kompetensiForm.tgl_kedaluwarsa" type="date" class="form-input text-xs" placeholder="Opsional (PPNS/Rescue)">
         </div>
       </div>
 
@@ -706,7 +747,15 @@
 
     <form @submit.prevent="saveUsulan" class="p-6 space-y-4">
       <div>
-        <label class="form-label">Nama Pelatihan / Diklat yang Diusulkan</label>
+        <label class="form-label">Pegawai Pengusul (SIMPEG)</label>
+        <select v-model="usulanForm.pegawai_id" class="form-input text-xs font-bold" required>
+          <option value="">-- Pilih Pegawai --</option>
+          <option v-for="p in simpegLookup.pegawai" :key="p.id" :value="p.id">{{ p.nama_lengkap || p.nama }}</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="form-label">Nama Pelatihan yang Diusulkan</label>
         <input v-model="usulanForm.nama_diklat_usulan" type="text" class="form-input" placeholder="Contoh: Diklat Water Rescue Sertifikasi BASARNAS" required>
       </div>
 
@@ -714,30 +763,26 @@
         <div>
           <label class="form-label">Rumpun</label>
           <select v-model="usulanForm.rumpun" class="form-input text-xs">
-            <option value="Teknis">Teknis</option>
-            <option value="Manajerial">Manajerial</option>
-            <option value="Fungsional">Fungsional</option>
-            <option value="Bimtek">Bimtek</option>
+            <option v-for="r in optionsRumpun" :key="r.id" :value="r.nama_nilai">{{ r.nama_nilai }}</option>
           </select>
         </div>
 
         <div>
           <label class="form-label">Tingkat Urgensi</label>
           <select v-model="usulanForm.urgensi" class="form-input text-xs font-bold">
-            <option value="Tinggi">Tinggi (Mendesak Tugas Operasional)</option>
-            <option value="Sedang">Sedang (Peningkatan Rutin)</option>
+            <option v-for="u in optionsUrgensi" :key="u.id" :value="u.nama_nilai">{{ u.nama_nilai }}</option>
           </select>
         </div>
       </div>
 
       <div>
         <label class="form-label">Target Lembaga Penyelenggara</label>
-        <input v-model="usulanForm.target_penyelenggara" type="text" class="form-input text-xs" placeholder="Contoh: BPSDM Jatim / BASARNAS / Ciracas Fire" required>
+        <input v-model="usulanForm.target_penyelenggara" type="text" class="form-input text-xs" placeholder="Contoh: BPSDM Jatim / BASARNAS" required>
       </div>
 
       <div>
         <label class="form-label">Alasan & Urgensi Kebutuhan Tugas</label>
-        <textarea v-model="usulanForm.alasan_usulan" rows="3" class="form-input text-xs" placeholder="Jelaskan mengapa pelatihan ini penting bagi pelaksanaan tugas..." required></textarea>
+        <textarea v-model="usulanForm.alasan_usulan" rows="3" class="form-input text-xs" placeholder="Jelaskan alasan usulan pelatihan..." required></textarea>
       </div>
 
       <div>
@@ -784,7 +829,7 @@
 
       <div>
         <label class="form-label">Catatan / Arahan Kasatpol PP & Damkar</label>
-        <textarea v-model="reviewUsulanForm.catatan" rows="3" class="form-input text-xs" placeholder="Masukkan arahan atau catatan penganggaran..."></textarea>
+        <textarea v-model="reviewUsulanForm.catatan" rows="3" class="form-input text-xs" placeholder="Masukkan arahan atau catatan..."></textarea>
       </div>
 
       <div class="modal-footer px-0 pb-0">
@@ -798,7 +843,190 @@
   </div>
 </div>
 
-<!-- 5. Modal Panduan 20 JP -->
+<!-- 5. Modal Tambah / Edit Program Diklat (M_KATALOG_DIKLAT) -->
+<div v-if="showKatalogModal" class="modal-overlay" @click.self="showKatalogModal = false">
+  <div class="modal-box max-w-lg">
+    <div class="modal-header">
+      <h3 class="font-black text-sm text-slate-800 dark:text-white flex items-center gap-2">
+        <i class="fa-solid fa-book-bookmark text-emerald-500"></i>
+        <span>{{ katalogForm.id ? 'Edit Program Diklat' : 'Tambah Program Diklat Baru' }}</span>
+      </h3>
+      <button @click="showKatalogModal = false" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <form @submit.prevent="saveKatalog" class="p-6 space-y-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="form-label">Kode Diklat</label>
+          <input v-model="katalogForm.kode_diklat" type="text" class="form-input" placeholder="Contoh: DKL-FIRE-1" required>
+        </div>
+        <div>
+          <label class="form-label">Standar Default JP</label>
+          <input v-model.number="katalogForm.default_jp" type="number" min="1" class="form-input font-bold" required>
+        </div>
+      </div>
+
+      <div>
+        <label class="form-label">Nama Program Pelatihan / Diklat</label>
+        <input v-model="katalogForm.nama_diklat" type="text" class="form-input" placeholder="Contoh: Diklat Kualifikasi Pemadam I" required>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="form-label">Rumpun</label>
+          <select v-model="katalogForm.rumpun" class="form-input text-xs" required>
+            <option v-for="r in optionsRumpun" :key="r.id" :value="r.nama_nilai">{{ r.nama_nilai }}</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Keahlian Khusus</label>
+          <input v-model="katalogForm.kategori_keahlian" type="text" class="form-input" placeholder="Contoh: Fire Rescue Operasional">
+        </div>
+      </div>
+
+      <div>
+        <label class="form-label">Penyelenggara Default</label>
+        <input v-model="katalogForm.penyelenggara_default" type="text" class="form-input text-xs" placeholder="Contoh: Ciracas Fire Safety Academy DKI">
+      </div>
+
+      <div>
+        <label class="form-label">Estimasi Biaya Default (Rp)</label>
+        <input v-model.number="katalogForm.estimasi_biaya_default" type="number" min="0" class="form-input text-xs font-bold" placeholder="0">
+      </div>
+
+      <div class="modal-footer px-0 pb-0">
+        <button type="button" @click="showKatalogModal = false" class="btn btn-secondary">Batal</button>
+        <button type="submit" :disabled="katalogSaving" class="btn btn-primary">
+          <i v-if="katalogSaving" class="fa-solid fa-spinner animate-spin"></i>
+          <span>Simpan Program Diklat</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 6. Modal Tambah / Edit Standar Kompetensi Jabatan (M_STANDAR_KOMPETENSI) -->
+<div v-if="showStandarModal" class="modal-overlay" @click.self="showStandarModal = false">
+  <div class="modal-box max-w-lg">
+    <div class="modal-header">
+      <h3 class="font-black text-sm text-slate-800 dark:text-white flex items-center gap-2">
+        <i class="fa-solid fa-id-card-clip text-emerald-500"></i>
+        <span>{{ standarForm.id ? 'Edit Standar Jabatan' : 'Tambah Standar Jabatan Baru' }}</span>
+      </h3>
+      <button @click="showStandarModal = false" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <form @submit.prevent="saveStandar" class="p-6 space-y-4">
+      <div>
+        <label class="form-label">Jabatan (SIMPEG Master)</label>
+        <select v-model="standarForm.jabatan_id" class="form-input text-xs font-bold" required>
+          <option value="">-- Pilih Jabatan --</option>
+          <option v-for="j in simpegLookup.jabatan" :key="j.id" :value="j.id">{{ j.nama_jabatan }} ({{ j.jenjang_jabatan || j.kode_jabatan }})</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="form-label">Program Diklat yang Dipersyaratkan</label>
+        <select v-model="standarForm.diklat_id" class="form-input text-xs font-bold" required>
+          <option value="">-- Pilih Program Diklat --</option>
+          <option v-for="d in katalogList" :key="d.id" :value="d.id">{{ d.nama_diklat }} ({{ d.default_jp }} JP)</option>
+        </select>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="form-label">Tingkat Kebutuhan</label>
+          <select v-model="standarForm.tingkat_kebutuhan" class="form-input font-bold" required>
+            <option value="WAJIB">WAJIB</option>
+            <option value="DISARANKAN">DISARANKAN</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Minimal Standar JP</label>
+          <input v-model.number="standarForm.minimal_jp" type="number" min="1" class="form-input font-bold" required>
+        </div>
+      </div>
+
+      <div>
+        <label class="form-label">Keterangan / Dasar Penetapan</label>
+        <textarea v-model="standarForm.keterangan" rows="2" class="form-input text-xs" placeholder="Contoh: Standar wajib kualifikasi Danru Pemadam"></textarea>
+      </div>
+
+      <div class="modal-footer px-0 pb-0">
+        <button type="button" @click="showStandarModal = false" class="btn btn-secondary">Batal</button>
+        <button type="submit" :disabled="standarSaving" class="btn btn-primary">
+          <i v-if="standarSaving" class="fa-solid fa-spinner animate-spin"></i>
+          <span>Simpan Standar Jabatan</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 7. Modal Tambah / Edit Item Referensi (M_REFERENSI) -->
+<div v-if="showReferensiModal" class="modal-overlay" @click.self="showReferensiModal = false">
+  <div class="modal-box max-w-lg">
+    <div class="modal-header">
+      <h3 class="font-black text-sm text-slate-800 dark:text-white flex items-center gap-2">
+        <i class="fa-solid fa-list-check text-emerald-500"></i>
+        <span>{{ referensiForm.id ? 'Edit Item Referensi' : 'Tambah Item Referensi Baru' }}</span>
+      </h3>
+      <button @click="showReferensiModal = false" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <form @submit.prevent="saveReferensi" class="p-6 space-y-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="form-label">Kategori Referensi</label>
+          <select v-model="referensiForm.kategori" class="form-input font-bold" required>
+            <option value="RUMPUN_KOMPETENSI">RUMPUN_KOMPETENSI</option>
+            <option value="METODE_PELATIHAN">METODE_PELATIHAN</option>
+            <option value="URGENSI_USULAN">URGENSI_USULAN</option>
+            <option value="PENYELENGGARA">PENYELENGGARA</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Kode Singkat</label>
+          <input v-model="referensiForm.kode" type="text" class="form-input uppercase" placeholder="Contoh: TEKNIS_DAMKAR" required>
+        </div>
+      </div>
+
+      <div>
+        <label class="form-label">Nama Nilai (Teks Dropdown)</label>
+        <input v-model="referensiForm.nama_nilai" type="text" class="form-input font-bold" placeholder="Contoh: Teknis Pemadam & Rescue" required>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="form-label">Urutan Tampil</label>
+          <input v-model.number="referensiForm.urutan" type="number" min="1" class="form-input font-bold" required>
+        </div>
+        <div>
+          <label class="form-label">Status</label>
+          <select v-model="referensiForm.status_aktif" class="form-input font-bold">
+            <option value="true">Aktif</option>
+            <option value="false">Nonaktif</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label class="form-label">Keterangan Tambahan</label>
+        <textarea v-model="referensiForm.keterangan" rows="2" class="form-input text-xs" placeholder="Deskripsi opsi referensi..."></textarea>
+      </div>
+
+      <div class="modal-footer px-0 pb-0">
+        <button type="button" @click="showReferensiModal = false" class="btn btn-secondary">Batal</button>
+        <button type="submit" :disabled="referensiSaving" class="btn btn-primary">
+          <i v-if="referensiSaving" class="fa-solid fa-spinner animate-spin"></i>
+          <span>Simpan Opsi Referensi</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 8. Modal Panduan 20 JP -->
 <div v-if="showPanduan" class="modal-overlay" @click.self="showPanduan = false">
   <div class="modal-box max-w-lg">
     <div class="modal-header">
