@@ -483,8 +483,7 @@
               <th class="py-3 px-4 font-bold min-w-[220px]">Nama Kegiatan & Penyelenggara</th>
               <th class="py-3 px-3 font-bold">Rumpun / JP</th>
               <th class="py-3 px-3 font-bold">Periode Pelaksanaan</th>
-              <th class="py-3 px-3 font-bold">Kuota & Lokasi</th>
-              <th class="py-3 px-3 font-bold">Status</th>
+              <th class="py-3 px-3 font-bold">Metode Pelatihan</th>
               <th class="py-3 px-4 font-bold text-center min-w-[180px]">Aksi Manajemen</th>
             </tr>
           </thead>
@@ -493,7 +492,7 @@
               <td class="py-3 px-3 font-bold text-slate-400">{{ idx + 1 }}</td>
               <td class="py-3 px-4">
                 <div class="font-bold text-slate-900 dark:text-white text-sm">{{ j.nama_kegiatan || j.nama_diklat }}</div>
-                <div class="text-[11px] text-slate-500 mt-0.5"><i class="fa-solid fa-building-columns text-[10px]"></i> {{ j.penyelenggara }} &bull; Kode: {{ j.kode_jadwal }}</div>
+                <div class="text-[11px] text-slate-500 mt-0.5"><i class="fa-solid fa-building-columns text-[10px]"></i> {{ j.penyelenggara }}</div>
               </td>
               <td class="py-3 px-3">
                 <span class="badge badge-emerald text-[10px] font-bold">{{ j.jumlah_jp || 20 }} JP</span>
@@ -504,13 +503,7 @@
                 <div class="text-[10px] text-slate-400">s/d {{ formatDate(j.tgl_selesai) }}</div>
               </td>
               <td class="py-3 px-3">
-                <div class="font-bold text-slate-800 dark:text-slate-200">{{ j.kuota_peserta || '-' }} Peserta</div>
-                <div class="text-[10px] text-slate-400 truncate max-w-[140px]">{{ j.lokasi_pelaksanaan || '-' }}</div>
-              </td>
-              <td class="py-3 px-3">
-                <span class="badge" :class="j.status_jadwal === 'Buka Pendaftaran' ? 'badge-success' : (j.status_jadwal === 'Sedang Berjalan' ? 'badge-info' : 'badge-warning')">
-                  {{ j.status_jadwal || 'Tersedia' }}
-                </span>
+                <span class="badge badge-info text-[10px] font-semibold">{{ j.metode || 'Klasikal' }}</span>
               </td>
               <td class="py-3 px-4 text-center">
                 <div class="flex items-center justify-center gap-1.5">
@@ -1116,7 +1109,7 @@
 
   <!-- Modal 2: Susun Jadwal Pelatihan Admin -->
   <div v-if="showJadwalModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-950/70 backdrop-blur-md overflow-y-auto">
-    <div class="relative w-full max-w-xl bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col my-auto max-h-[90vh]">
+    <div class="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col my-auto max-h-[90vh]">
       
       <div class="px-6 py-4 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-100 dark:border-slate-700/60 flex items-center justify-between shrink-0">
         <div class="flex items-center gap-3">
@@ -1127,7 +1120,7 @@
             <h3 class="font-black text-sm text-slate-900 dark:text-white">
               {{ jadwalForm.id ? 'Edit Agenda Diklat' : 'Susun Jadwal Pelatihan Baru' }}
             </h3>
-            <p class="text-[11px] text-slate-400">Kalender agenda diklat & kuota peserta</p>
+            <p class="text-[11px] text-slate-400">Pencatatan agenda & kalender diklat kedinasan</p>
           </div>
         </div>
         <button @click="showJadwalModal = false" class="w-8 h-8 rounded-full bg-slate-200/60 dark:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-white flex items-center justify-center transition">
@@ -1143,39 +1136,24 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Kode Agenda</label>
-            <input type="text" v-model="jadwalForm.kode_jadwal" placeholder="JDW-2026-..." class="input text-xs w-full py-2.5 rounded-xl font-mono">
-          </div>
-          <div>
             <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Rumpun Kompetensi *</label>
             <select v-model="jadwalForm.rumpun" required class="input text-xs w-full py-2.5 rounded-xl">
               <option v-for="r in optionsRumpun" :key="r.id" :value="r.nama_nilai">{{ r.nama_nilai }}</option>
             </select>
           </div>
+          <div>
+            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Alokasi JP *</label>
+            <input type="number" v-model="jadwalForm.jumlah_jp" required min="1" class="input text-xs w-full py-2.5 rounded-xl font-bold">
+          </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div>
-            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Alokasi JP</label>
-            <input type="number" v-model="jadwalForm.jumlah_jp" class="input text-xs w-full py-2 rounded-xl font-bold">
-          </div>
-          <div>
-            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Metode</label>
-            <select v-model="jadwalForm.metode" class="input text-xs w-full py-2 rounded-xl">
-              <option value="Klasikal">Klasikal (Tatap Muka)</option>
-              <option value="Daring">E-Learning / MOOC</option>
-              <option value="Blended Learning">Blended Learning</option>
-            </select>
-          </div>
-          <div>
-            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Status Pendaftaran</label>
-            <select v-model="jadwalForm.status_jadwal" class="input text-xs w-full py-2 rounded-xl font-bold text-emerald-600">
-              <option value="Buka Pendaftaran">Buka Pendaftaran</option>
-              <option value="Sedang Berjalan">Sedang Berjalan</option>
-              <option value="Segera Dibuka">Segera Dibuka</option>
-              <option value="Selesai">Selesai</option>
-            </select>
-          </div>
+        <div>
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Metode Pelatihan</label>
+          <select v-model="jadwalForm.metode" class="input text-xs w-full py-2.5 rounded-xl">
+            <option value="Klasikal">Klasikal (Tatap Muka Langsung)</option>
+            <option value="Non-Klasikal / E-Learning">Non-Klasikal (E-Learning / Online / MOOC)</option>
+            <option value="Blended Learning">Blended Learning (Kombinasi Daring & Luring)</option>
+          </select>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1189,20 +1167,19 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Lembaga Penyelenggara</label>
-            <input type="text" v-model="jadwalForm.penyelenggara" placeholder="BPSDM Jatim / Basarnas..." class="input text-xs w-full py-2.5 rounded-xl">
-          </div>
-          <div>
-            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Kuota & Lokasi</label>
-            <input type="text" v-model="jadwalForm.lokasi_pelaksanaan" placeholder="Contoh: 10 Orang (Kampus Ciracas)..." class="input text-xs w-full py-2.5 rounded-xl">
+        <div class="space-y-2">
+          <label class="block font-bold text-slate-700 dark:text-slate-300">Lembaga Penyelenggara *</label>
+          <select v-model="jadwalPenyelenggaraSelect" class="input text-xs w-full py-2.5 rounded-xl font-medium">
+            <option v-for="peny in optionsPenyelenggara" :key="peny" :value="peny">{{ peny }}</option>
+          </select>
+          <div v-if="jadwalPenyelenggaraSelect === 'Lainnya (Tulis Manual)...'" class="pt-1">
+            <input type="text" v-model="jadwalPenyelenggaraCustom" required placeholder="Ketik nama lembaga penyelenggara di sini..." class="input text-xs w-full py-2.5 rounded-xl border-emerald-500 bg-emerald-50/30 dark:bg-emerald-950/20">
           </div>
         </div>
 
         <div class="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-3">
           <button type="button" @click="showJadwalModal = false" class="btn btn-secondary text-xs px-4 py-2.5 rounded-xl">Batal</button>
-          <button type="submit" :disabled="jadwalSaving" class="btn btn-primary text-xs px-5 py-2.5 rounded-xl flex items-center gap-2">
+          <button type="submit" :disabled="jadwalSaving" class="btn btn-primary text-xs px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-lg shadow-emerald-900/20">
             <i v-if="jadwalSaving" class="fa-solid fa-circle-notch animate-spin"></i>
             <span>{{ jadwalSaving ? 'Menyimpan...' : 'Simpan Agenda' }}</span>
           </button>

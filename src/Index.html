@@ -222,11 +222,13 @@
           jadwalLoading: false,
           showJadwalModal: false,
           jadwalSaving: false,
+          jadwalPenyelenggaraSelect: 'BPSDM Provinsi Jawa Timur',
+          jadwalPenyelenggaraCustom: '',
           jadwalForm: {
             id: '', kode_jadwal: '', diklat_id: '', nama_kegiatan: '', rumpun: 'Teknis Pemadam & Rescue',
-            penyelenggara: 'BPSDM Jawa Timur', metode: 'Klasikal', jumlah_jp: 20, tgl_mulai: '',
-            tgl_selesai: '', bulan_periode: 'September 2026', tahun_periode: 2026, kuota_peserta: 10,
-            lokasi_pelaksanaan: '', link_pendaftaran: '', status_jadwal: 'Buka Pendaftaran', keterangan: ''
+            penyelenggara: 'BPSDM Provinsi Jawa Timur', metode: 'Klasikal', jumlah_jp: 20, tgl_mulai: '',
+            tgl_selesai: '', bulan_periode: 'September 2026', tahun_periode: 2026, kuota_peserta: 0,
+            lokasi_pelaksanaan: '', link_pendaftaran: '', status_jadwal: 'Terjadwal', keterangan: ''
           },
 
           // State 2: Kualifikasi Khusus (T_KUALIFIKASI_KHUSUS)
@@ -343,6 +345,22 @@
             { id: '4', nama_nilai: 'Jabatan Fungsional Pol PP & Damkar' },
             { id: '5', nama_nilai: 'Bimbingan Teknis & Workshop' }
           ];
+        },
+
+        optionsPenyelenggara() {
+          const res = this.referensiList.filter(r => r.kategori === 'PENYELENGGARA').map(r => r.nama_nilai);
+          const defaults = [
+            'BPSDM Provinsi Jawa Timur',
+            'BPSDM Kementerian Dalam Negeri',
+            'BKPSDM Kabupaten Trenggalek',
+            'Pusdiklat Penanggulangan Kebakaran & Penyelamatan Ciracas',
+            'Badan Nasional Pencarian & Pertolongan (BASARNAS)',
+            'Lembaga Administrasi Negara (LAN RI)',
+            'Satpol PP & Damkar Kabupaten Trenggalek',
+            'Kementerian Hukum dan HAM RI'
+          ];
+          const combined = Array.from(new Set([...defaults, ...res]));
+          return [...combined, 'Lainnya (Tulis Manual)...'];
         },
 
         optionsUrgensi() {
@@ -627,7 +645,7 @@
         openJadwalModal() {
           this.jadwalForm = {
             id: '',
-            kode_jadwal: 'JDW-' + String(Date.now()).slice(-4),
+            kode_jadwal: '',
             diklat_id: '',
             nama_kegiatan: '',
             rumpun: 'Teknis Pemadam & Rescue',
@@ -638,23 +656,50 @@
             tgl_selesai: '',
             bulan_periode: this.dashboardData.bulan_aktif || 'September 2026',
             tahun_periode: new Date().getFullYear(),
-            kuota_peserta: 10,
+            kuota_peserta: 0,
             lokasi_pelaksanaan: '',
             link_pendaftaran: '',
-            status_jadwal: 'Buka Pendaftaran',
+            status_jadwal: 'Terjadwal',
             keterangan: ''
           };
+          this.jadwalPenyelenggaraSelect = 'BPSDM Provinsi Jawa Timur';
+          this.jadwalPenyelenggaraCustom = '';
           this.showJadwalModal = true;
         },
 
         openEditJadwal(item) {
           this.jadwalForm = Object.assign({}, item);
+          const standardList = [
+            'BPSDM Provinsi Jawa Timur',
+            'BPSDM Kementerian Dalam Negeri',
+            'BKPSDM Kabupaten Trenggalek',
+            'Pusdiklat Penanggulangan Kebakaran & Penyelamatan Ciracas',
+            'Badan Nasional Pencarian & Pertolongan (BASARNAS)',
+            'Lembaga Administrasi Negara (LAN RI)',
+            'Satpol PP & Damkar Kabupaten Trenggalek',
+            'Kementerian Hukum dan HAM RI'
+          ];
+          if (standardList.includes(item.penyelenggara)) {
+            this.jadwalPenyelenggaraSelect = item.penyelenggara;
+            this.jadwalPenyelenggaraCustom = '';
+          } else if (item.penyelenggara) {
+            this.jadwalPenyelenggaraSelect = 'Lainnya (Tulis Manual)...';
+            this.jadwalPenyelenggaraCustom = item.penyelenggara;
+          } else {
+            this.jadwalPenyelenggaraSelect = 'BPSDM Provinsi Jawa Timur';
+            this.jadwalPenyelenggaraCustom = '';
+          }
           this.showJadwalModal = true;
         },
 
         async saveJadwalDiklat() {
           this.jadwalSaving = true;
           try {
+            if (this.jadwalPenyelenggaraSelect === 'Lainnya (Tulis Manual)...') {
+              this.jadwalForm.penyelenggara = (this.jadwalPenyelenggaraCustom || '').trim();
+            } else {
+              this.jadwalForm.penyelenggara = this.jadwalPenyelenggaraSelect;
+            }
             const res = await this.callServer('save_jadwal', { record: this.jadwalForm });
             if (res && res.success) {
               this.showToast('Agenda jadwal pelatihan berhasil disimpan', 'success');

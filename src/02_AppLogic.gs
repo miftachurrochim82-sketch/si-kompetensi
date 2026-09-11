@@ -745,10 +745,13 @@ function saveJadwal_(params, user) {
       return { success: false, error: 'Nama kegiatan pelatihan wajib diisi.' };
     }
     if (!record.kode_jadwal) {
-      record.kode_jadwal = 'JDW-' + String(Date.now()).slice(-4);
+      record.kode_jadwal = 'JDW-' + Utilities.formatDate(new Date(), 'Asia/Jakarta', 'yyyyMM') + '-' + Math.floor(1000 + Math.random() * 9000);
     }
     if (!record.nama_kegiatan && record.nama_diklat) {
       record.nama_kegiatan = record.nama_diklat;
+    }
+    if (!record.status_jadwal) {
+      record.status_jadwal = 'Terjadwal';
     }
     var saved = saveRecord_(LOCAL_SHEETS.T_JADWAL_DIKLAT, record, user);
     sendAuditLog_(user, 'SAVE_JADWAL', 'T_JADWAL_DIKLAT', saved.id, 'SUCCESS', 'Simpan agenda jadwal: ' + (saved.nama_kegiatan || ''));
