@@ -1,5 +1,5 @@
 <!-- ============================================================ -->
-<!-- SI-KOMPETENSI - V_Layout.html (v4.0.0 — 8-Sheet Comprehensive UI) -->
+<!-- SI-KOMPETENSI - V_Layout.html (v4.1.0 — Clean Responsive Modals) -->
 <!-- Standard Satpol PP & Pemadam Kebakaran Kab. Trenggalek -->
 <!-- ============================================================ -->
 
@@ -16,7 +16,7 @@
         <div class="space-y-2">
           <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-xs font-bold tracking-wide">
             <i class="fa-solid fa-graduation-cap"></i>
-            <span>SI-KOMPETENSI v4.0.0 &bull; Satpol PP & Damkar Trenggalek</span>
+            <span>SI-KOMPETENSI v4.1.0 &bull; Satpol PP & Damkar Trenggalek</span>
           </div>
           <h1 class="text-2xl md:text-3xl font-black tracking-tight text-white">
             Dashboard Pemenuhan Standar JP & Kompetensi ASN
@@ -455,7 +455,7 @@
 
   </section>
 
-  <!-- ==================== 2. VIEW: AGENDA & PENUGASAN SPT (BARU) ==================== -->
+  <!-- ==================== 2. VIEW: AGENDA & PENUGASAN SPT ==================== -->
   <section v-if="currentPage === 'jadwal_penugasan'" class="space-y-6">
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
@@ -533,7 +533,7 @@
     </div>
   </section>
 
-  <!-- ==================== 3. VIEW: KUALIFIKASI & LISENSI KHUSUS (BARU) ==================== -->
+  <!-- ==================== 3. VIEW: KUALIFIKASI & LISENSI KHUSUS ==================== -->
   <section v-if="currentPage === 'kualifikasi_khusus'" class="space-y-6">
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
@@ -999,100 +999,113 @@
     </div>
   </section>
 
-  <!-- ==================== MODALS ==================== -->
+  <!-- ==================== CLEAN MODAL DIALOGS ==================== -->
 
-  <!-- Modal 1: Input / Edit Sertifikat Kompetensi -->
-  <div v-if="showKompetensiForm" class="modal-overlay">
-    <div class="modal-card max-w-2xl">
-      <div class="modal-header">
-        <h3 class="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
-          <i class="fa-solid fa-certificate text-emerald-500"></i>
-          <span>{{ kompetensiForm.id ? 'Edit Portofolio Diklat' : 'Upload Sertifikat Kompetensi' }}</span>
-        </h3>
-        <button @click="showKompetensiForm = false" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+  <!-- Modal 1: Upload / Edit Sertifikat Kompetensi -->
+  <div v-if="showKompetensiForm" class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-950/70 backdrop-blur-md overflow-y-auto">
+    <div class="relative w-full max-w-2xl bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col my-auto max-h-[90vh]">
+      
+      <!-- Header -->
+      <div class="px-6 py-4 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-100 dark:border-slate-700/60 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-lg shadow-sm">
+            <i class="fa-solid fa-certificate"></i>
+          </div>
+          <div>
+            <h3 class="font-black text-sm text-slate-900 dark:text-white">
+              {{ kompetensiForm.id ? 'Edit Portofolio Sertifikat' : 'Upload Sertifikat Kompetensi ASN' }}
+            </h3>
+            <p class="text-[11px] text-slate-400">Pemenuhan standar 20 JP PNS / 24 JP PPPK</p>
+          </div>
+        </div>
+        <button @click="showKompetensiForm = false" class="w-8 h-8 rounded-full bg-slate-200/60 dark:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-white flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
       </div>
 
-      <form @submit.prevent="saveKompetensi" class="p-6 space-y-4">
+      <!-- Body Form -->
+      <form @submit.prevent="saveKompetensi" class="p-6 overflow-y-auto space-y-4 flex-1 text-xs">
         <div>
-          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Pegawai Pemilik Sertifikat *</label>
-          <select v-model="kompetensiForm.pegawai_id" required class="input text-xs w-full">
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Pegawai Pemilik Sertifikat *</label>
+          <select v-model="kompetensiForm.pegawai_id" required class="input text-xs w-full py-2.5 rounded-xl">
             <option value="" disabled>-- Pilih Pegawai --</option>
-            <option v-for="p in simpegLookup.pegawai" :key="p.id" :value="p.id">{{ p.nama_lengkap }} ({{ p.nip }})</option>
+            <option v-for="p in simpegLookup.pegawai" :key="p.id" :value="p.id">{{ p.nama_lengkap }} ({{ p.nip }}) - {{ p.status_pegawai }}</option>
           </select>
         </div>
 
-        <div class="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3">
+        <div class="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-3">
           <div class="flex items-center justify-between">
-            <label class="text-xs font-bold text-slate-700 dark:text-slate-300">Pilih dari Agenda Jadwal Diklat (Otomatis)</label>
-            <label class="inline-flex items-center gap-1.5 text-xs text-emerald-600 font-semibold cursor-pointer">
+            <label class="font-bold text-slate-700 dark:text-slate-300">Pilih dari Agenda Jadwal Diklat Resmi</label>
+            <label class="inline-flex items-center gap-1.5 text-xs text-emerald-600 font-bold cursor-pointer">
               <input type="checkbox" v-model="isMandiriTraining" class="rounded text-emerald-600">
-              <span>Pelatihan Mandiri / Luar Agenda</span>
+              <span>Pelatihan Mandiri / Di Luar Agenda</span>
             </label>
           </div>
           
-          <select v-if="!isMandiriTraining" v-model="kompetensiForm.diklat_id" @change="onJadwalPelatihanChanged" class="input text-xs w-full">
-            <option value="">-- Pilih dari Jadwal Resmi --</option>
-            <option v-for="j in jadwalList" :key="j.id" :value="j.id">{{ j.nama_kegiatan || j.nama_diklat }} ({{ j.penyelenggara }})</option>
+          <select v-if="!isMandiriTraining" v-model="kompetensiForm.diklat_id" @change="onJadwalPelatihanChanged" class="input text-xs w-full py-2 rounded-xl font-semibold text-emerald-700 dark:text-emerald-300">
+            <option value="">-- Pilih dari Agenda Jadwal Tersedia --</option>
+            <option v-for="j in jadwalList" :key="j.id" :value="j.id">{{ j.nama_kegiatan || j.nama_diklat }} ({{ j.penyelenggara }}) - {{ j.jumlah_jp }} JP</option>
           </select>
         </div>
 
         <div>
-          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Nama Kegiatan Pelatihan *</label>
-          <input type="text" v-model="kompetensiForm.nama_kegiatan" required placeholder="Contoh: Diklat Kualifikasi Pemadam Kebakaran I..." class="input text-xs w-full">
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Nama Kegiatan Pelatihan / Diklat *</label>
+          <input type="text" v-model="kompetensiForm.nama_kegiatan" required placeholder="Contoh: Diklat Kualifikasi Pemadam Kebakaran I..." class="input text-xs w-full py-2.5 rounded-xl">
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Rumpun Kompetensi *</label>
-            <select v-model="kompetensiForm.rumpun" required class="input text-xs w-full">
+            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Rumpun Kompetensi *</label>
+            <select v-model="kompetensiForm.rumpun" required class="input text-xs w-full py-2.5 rounded-xl">
               <option v-for="r in optionsRumpun" :key="r.id" :value="r.nama_nilai">{{ r.nama_nilai }}</option>
             </select>
           </div>
           <div>
-            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Jumlah Jam Pelajaran (JP) *</label>
-            <input type="number" v-model="kompetensiForm.jumlah_jp" required min="1" class="input text-xs w-full font-bold">
+            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Jumlah Jam Pelajaran (JP) *</label>
+            <input type="number" v-model="kompetensiForm.jumlah_jp" required min="1" class="input text-xs w-full py-2.5 rounded-xl font-bold">
           </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Lembaga Penyelenggara *</label>
-            <input type="text" v-model="kompetensiForm.penyelenggara" required placeholder="BPSDM Jatim / Pusdiklat Damkar..." class="input text-xs w-full">
+            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Lembaga Penyelenggara *</label>
+            <input type="text" v-model="kompetensiForm.penyelenggara" required placeholder="BPSDM Jatim / Ciracas Damkar..." class="input text-xs w-full py-2.5 rounded-xl">
           </div>
           <div>
-            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Nomor Sertifikat</label>
-            <input type="text" v-model="kompetensiForm.no_sertifikat" placeholder="893.3/452/2026..." class="input text-xs w-full">
+            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Nomor Sertifikat</label>
+            <input type="text" v-model="kompetensiForm.no_sertifikat" placeholder="893.3/452/2026..." class="input text-xs w-full py-2.5 rounded-xl">
           </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div>
-            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Tanggal Mulai</label>
-            <input type="date" v-model="kompetensiForm.tgl_mulai" class="input text-xs w-full">
+            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Tanggal Mulai</label>
+            <input type="date" v-model="kompetensiForm.tgl_mulai" class="input text-xs w-full py-2 rounded-xl">
           </div>
           <div>
-            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Tanggal Selesai</label>
-            <input type="date" v-model="kompetensiForm.tgl_selesai" class="input text-xs w-full">
+            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Tanggal Selesai</label>
+            <input type="date" v-model="kompetensiForm.tgl_selesai" class="input text-xs w-full py-2 rounded-xl">
           </div>
           <div>
-            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Tanggal Sertifikat</label>
-            <input type="date" v-model="kompetensiForm.tgl_terbit" class="input text-xs w-full">
+            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Tanggal Sertifikat</label>
+            <input type="date" v-model="kompetensiForm.tgl_terbit" class="input text-xs w-full py-2 rounded-xl">
           </div>
         </div>
 
-        <div class="p-3 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-xl border border-emerald-500/20 space-y-2">
-          <label class="block text-xs font-bold text-emerald-800 dark:text-emerald-300">Unggah Berkas PDF (Kompresi Otomatis di Browser)</label>
-          <input type="file" accept="application/pdf" @change="onPdfFileSelected" class="text-xs text-slate-600 dark:text-slate-300 w-full">
-          <div v-if="pdfCompressInfo" class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+        <div class="p-4 bg-emerald-50/60 dark:bg-emerald-950/30 rounded-2xl border border-emerald-500/20 space-y-2">
+          <label class="block font-bold text-emerald-800 dark:text-emerald-300">Unggah Berkas PDF (Kompresi Otomatis di Browser)</label>
+          <input type="file" accept="application/pdf" @change="onPdfFileSelected" class="text-xs text-slate-600 dark:text-slate-300 w-full file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-emerald-500 file:text-white hover:file:bg-emerald-600">
+          <div v-if="pdfCompressInfo" class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 mt-1">
             <i class="fa-solid fa-circle-check"></i>
             <span>{{ pdfCompressInfo }}</span>
           </div>
-          <input type="url" v-model="kompetensiForm.file_url" placeholder="Atau tempel URL Google Drive dokumen sertifikat..." class="input text-xs w-full mt-1">
+          <input type="url" v-model="kompetensiForm.file_url" placeholder="Atau tempel URL Google Drive bukti sertifikat..." class="input text-xs w-full mt-2 py-2 rounded-xl">
         </div>
 
-        <div class="modal-footer">
-          <button type="button" @click="showKompetensiForm = false" class="btn btn-secondary text-xs px-4 py-2">Batal</button>
-          <button type="submit" :disabled="kompetensiSaving" class="btn btn-primary text-xs px-5 py-2 flex items-center gap-1.5">
+        <!-- Footer Buttons -->
+        <div class="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-3">
+          <button type="button" @click="showKompetensiForm = false" class="btn btn-secondary text-xs px-4 py-2.5 rounded-xl">Batal</button>
+          <button type="submit" :disabled="kompetensiSaving" class="btn btn-primary text-xs px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-lg shadow-emerald-900/30">
             <i v-if="kompetensiSaving" class="fa-solid fa-circle-notch animate-spin"></i>
             <span>{{ kompetensiSaving ? 'Menyimpan...' : 'Simpan Sertifikat' }}</span>
           </button>
@@ -1102,30 +1115,40 @@
   </div>
 
   <!-- Modal 2: Susun Jadwal Pelatihan Admin -->
-  <div v-if="showJadwalModal" class="modal-overlay">
-    <div class="modal-card max-w-xl">
-      <div class="modal-header">
-        <h3 class="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
-          <i class="fa-solid fa-calendar-plus text-emerald-500"></i>
-          <span>{{ jadwalForm.id ? 'Edit Jadwal Pelatihan' : 'Susun Jadwal Pelatihan Baru' }}</span>
-        </h3>
-        <button @click="showJadwalModal = false" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+  <div v-if="showJadwalModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-950/70 backdrop-blur-md overflow-y-auto">
+    <div class="relative w-full max-w-xl bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col my-auto max-h-[90vh]">
+      
+      <div class="px-6 py-4 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-100 dark:border-slate-700/60 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-teal-500/10 text-teal-600 dark:text-teal-400 flex items-center justify-center text-lg shadow-sm">
+            <i class="fa-solid fa-calendar-plus"></i>
+          </div>
+          <div>
+            <h3 class="font-black text-sm text-slate-900 dark:text-white">
+              {{ jadwalForm.id ? 'Edit Agenda Diklat' : 'Susun Jadwal Pelatihan Baru' }}
+            </h3>
+            <p class="text-[11px] text-slate-400">Kalender agenda diklat & kuota peserta</p>
+          </div>
+        </div>
+        <button @click="showJadwalModal = false" class="w-8 h-8 rounded-full bg-slate-200/60 dark:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-white flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
       </div>
 
-      <form @submit.prevent="saveJadwalDiklat" class="p-6 space-y-4">
+      <form @submit.prevent="saveJadwalDiklat" class="p-6 overflow-y-auto space-y-4 flex-1 text-xs">
         <div>
-          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Nama Kegiatan Pelatihan *</label>
-          <input type="text" v-model="jadwalForm.nama_kegiatan" required placeholder="Contoh: Diklat Water Rescue Pantai Prigi..." class="input text-xs w-full">
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Nama Kegiatan Pelatihan *</label>
+          <input type="text" v-model="jadwalForm.nama_kegiatan" required placeholder="Contoh: Diklat Water Rescue Pantai Prigi..." class="input text-xs w-full py-2.5 rounded-xl">
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Kode Agenda</label>
-            <input type="text" v-model="jadwalForm.kode_jadwal" placeholder="JDW-2026-..." class="input text-xs w-full font-mono">
+            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Kode Agenda</label>
+            <input type="text" v-model="jadwalForm.kode_jadwal" placeholder="JDW-2026-..." class="input text-xs w-full py-2.5 rounded-xl font-mono">
           </div>
           <div>
-            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Rumpun Kompetensi *</label>
-            <select v-model="jadwalForm.rumpun" required class="input text-xs w-full">
+            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Rumpun Kompetensi *</label>
+            <select v-model="jadwalForm.rumpun" required class="input text-xs w-full py-2.5 rounded-xl">
               <option v-for="r in optionsRumpun" :key="r.id" :value="r.nama_nilai">{{ r.nama_nilai }}</option>
             </select>
           </div>
@@ -1133,20 +1156,20 @@
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div>
-            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Alokasi JP</label>
-            <input type="number" v-model="jadwalForm.jumlah_jp" class="input text-xs w-full font-bold">
+            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Alokasi JP</label>
+            <input type="number" v-model="jadwalForm.jumlah_jp" class="input text-xs w-full py-2 rounded-xl font-bold">
           </div>
           <div>
-            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Metode</label>
-            <select v-model="jadwalForm.metode" class="input text-xs w-full">
+            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Metode</label>
+            <select v-model="jadwalForm.metode" class="input text-xs w-full py-2 rounded-xl">
               <option value="Klasikal">Klasikal (Tatap Muka)</option>
               <option value="Daring">E-Learning / MOOC</option>
               <option value="Blended Learning">Blended Learning</option>
             </select>
           </div>
           <div>
-            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Status Pendaftaran</label>
-            <select v-model="jadwalForm.status_jadwal" class="input text-xs w-full font-bold text-emerald-600">
+            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Status Pendaftaran</label>
+            <select v-model="jadwalForm.status_jadwal" class="input text-xs w-full py-2 rounded-xl font-bold text-emerald-600">
               <option value="Buka Pendaftaran">Buka Pendaftaran</option>
               <option value="Sedang Berjalan">Sedang Berjalan</option>
               <option value="Segera Dibuka">Segera Dibuka</option>
@@ -1157,29 +1180,30 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Tanggal Mulai</label>
-            <input type="date" v-model="jadwalForm.tgl_mulai" class="input text-xs w-full">
+            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Tanggal Mulai</label>
+            <input type="date" v-model="jadwalForm.tgl_mulai" class="input text-xs w-full py-2 rounded-xl">
           </div>
           <div>
-            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Tanggal Selesai</label>
-            <input type="date" v-model="jadwalForm.tgl_selesai" class="input text-xs w-full">
+            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Tanggal Selesai</label>
+            <input type="date" v-model="jadwalForm.tgl_selesai" class="input text-xs w-full py-2 rounded-xl">
           </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Lembaga Penyelenggara</label>
-            <input type="text" v-model="jadwalForm.penyelenggara" placeholder="BPSDM Jatim / Basarnas..." class="input text-xs w-full">
+            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Lembaga Penyelenggara</label>
+            <input type="text" v-model="jadwalForm.penyelenggara" placeholder="BPSDM Jatim / Basarnas..." class="input text-xs w-full py-2.5 rounded-xl">
           </div>
           <div>
-            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Kuota Peserta & Lokasi</label>
-            <input type="text" v-model="jadwalForm.lokasi_pelaksanaan" placeholder="Contoh: 10 Orang (Kampus Ciracas)..." class="input text-xs w-full">
+            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Kuota & Lokasi</label>
+            <input type="text" v-model="jadwalForm.lokasi_pelaksanaan" placeholder="Contoh: 10 Orang (Kampus Ciracas)..." class="input text-xs w-full py-2.5 rounded-xl">
           </div>
         </div>
 
-        <div class="modal-footer">
-          <button type="button" @click="showJadwalModal = false" class="btn btn-secondary text-xs px-4 py-2">Batal</button>
-          <button type="submit" :disabled="jadwalSaving" class="btn btn-primary text-xs px-5 py-2">
+        <div class="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-3">
+          <button type="button" @click="showJadwalModal = false" class="btn btn-secondary text-xs px-4 py-2.5 rounded-xl">Batal</button>
+          <button type="submit" :disabled="jadwalSaving" class="btn btn-primary text-xs px-5 py-2.5 rounded-xl flex items-center gap-2">
+            <i v-if="jadwalSaving" class="fa-solid fa-circle-notch animate-spin"></i>
             <span>{{ jadwalSaving ? 'Menyimpan...' : 'Simpan Agenda' }}</span>
           </button>
         </div>
@@ -1188,28 +1212,38 @@
   </div>
 
   <!-- Modal 3: Input / Edit Kualifikasi Khusus -->
-  <div v-if="showKualifikasiModal" class="modal-overlay">
-    <div class="modal-card max-w-xl">
-      <div class="modal-header">
-        <h3 class="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
-          <i class="fa-solid fa-id-badge text-purple-500"></i>
-          <span>{{ kualifikasiForm.id ? 'Edit Lisensi Khusus' : 'Perekaman Kualifikasi / SK Khusus' }}</span>
-        </h3>
-        <button @click="showKualifikasiModal = false" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+  <div v-if="showKualifikasiModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-950/70 backdrop-blur-md overflow-y-auto">
+    <div class="relative w-full max-w-xl bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col my-auto max-h-[90vh]">
+      
+      <div class="px-6 py-4 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-100 dark:border-slate-700/60 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center text-lg shadow-sm">
+            <i class="fa-solid fa-id-badge"></i>
+          </div>
+          <div>
+            <h3 class="font-black text-sm text-slate-900 dark:text-white">
+              {{ kualifikasiForm.id ? 'Edit Lisensi Khusus' : 'Perekaman Kualifikasi / SK Khusus' }}
+            </h3>
+            <p class="text-[11px] text-slate-400">Monitoring kadaluwarsa SK PPNS, Damkar I, SCBA, & Water SAR</p>
+          </div>
+        </div>
+        <button @click="showKualifikasiModal = false" class="w-8 h-8 rounded-full bg-slate-200/60 dark:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-white flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
       </div>
 
-      <form @submit.prevent="saveKualifikasi" class="p-6 space-y-4">
+      <form @submit.prevent="saveKualifikasi" class="p-6 overflow-y-auto space-y-4 flex-1 text-xs">
         <div>
-          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Pegawai Pemilik Lisensi *</label>
-          <select v-model="kualifikasiForm.pegawai_id" required class="input text-xs w-full">
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Pegawai Pemilik Lisensi *</label>
+          <select v-model="kualifikasiForm.pegawai_id" required class="input text-xs w-full py-2.5 rounded-xl">
             <option value="" disabled>-- Pilih Pegawai --</option>
             <option v-for="p in simpegLookup.pegawai" :key="p.id" :value="p.id">{{ p.nama_lengkap }} ({{ p.nip }})</option>
           </select>
         </div>
 
         <div>
-          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Jenis Kualifikasi / Lisensi *</label>
-          <select v-model="kualifikasiForm.jenis_kualifikasi" required class="input text-xs w-full font-semibold">
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Jenis Kualifikasi / Lisensi *</label>
+          <select v-model="kualifikasiForm.jenis_kualifikasi" required class="input text-xs w-full py-2.5 rounded-xl font-bold text-purple-700 dark:text-purple-300">
             <option value="SK Pengangkatan Penyidik PPNS (Kemenkumham/Polri)">SK Pengangkatan Penyidik PPNS (Kemenkumham/Polri)</option>
             <option value="Sertifikasi BNSP Pemadam Kebakaran Level I">Sertifikasi BNSP Pemadam Kebakaran Level I</option>
             <option value="Lisensi Operator SCBA & Ruang Terbatas">Lisensi Operator SCBA & Ruang Terbatas</option>
@@ -1220,34 +1254,35 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Nomor SK / Sertifikasi</label>
-            <input type="text" v-model="kualifikasiForm.nomor_sk_lisensi" placeholder="M.HH-02... / BNSP-..." class="input text-xs w-full font-mono">
+            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Nomor SK / Sertifikasi</label>
+            <input type="text" v-model="kualifikasiForm.nomor_sk_lisensi" placeholder="M.HH-02... / BNSP-..." class="input text-xs w-full py-2.5 rounded-xl font-mono">
           </div>
           <div>
-            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Lembaga Penerbit</label>
-            <input type="text" v-model="kualifikasiForm.lembaga_penerbit" placeholder="Kemenkumham / BNSP / Basarnas..." class="input text-xs w-full">
+            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Lembaga Penerbit</label>
+            <input type="text" v-model="kualifikasiForm.lembaga_penerbit" placeholder="Kemenkumham / BNSP / Basarnas..." class="input text-xs w-full py-2.5 rounded-xl">
           </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Tanggal SK Diterbitkan</label>
-            <input type="date" v-model="kualifikasiForm.tgl_sk_terbit" class="input text-xs w-full">
+            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Tanggal SK Diterbitkan</label>
+            <input type="date" v-model="kualifikasiForm.tgl_sk_terbit" class="input text-xs w-full py-2 rounded-xl">
           </div>
           <div>
-            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Tanggal Habis Berlaku (Expired) *</label>
-            <input type="date" v-model="kualifikasiForm.tgl_habis_berlaku" required class="input text-xs w-full font-bold text-purple-700">
+            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Tanggal Habis Berlaku (Expired) *</label>
+            <input type="date" v-model="kualifikasiForm.tgl_habis_berlaku" required class="input text-xs w-full py-2 rounded-xl font-bold text-purple-700 dark:text-purple-300">
           </div>
         </div>
 
         <div>
-          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Link Bukti Scan SK (Google Drive)</label>
-          <input type="url" v-model="kualifikasiForm.file_sk_url" placeholder="https://drive.google.com/..." class="input text-xs w-full">
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Link Bukti Scan Dokumen (Google Drive)</label>
+          <input type="url" v-model="kualifikasiForm.file_sk_url" placeholder="https://drive.google.com/..." class="input text-xs w-full py-2.5 rounded-xl">
         </div>
 
-        <div class="modal-footer">
-          <button type="button" @click="showKualifikasiModal = false" class="btn btn-secondary text-xs px-4 py-2">Batal</button>
-          <button type="submit" :disabled="kualifikasiSaving" class="btn btn-primary text-xs px-5 py-2">
+        <div class="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-3">
+          <button type="button" @click="showKualifikasiModal = false" class="btn btn-secondary text-xs px-4 py-2.5 rounded-xl">Batal</button>
+          <button type="submit" :disabled="kualifikasiSaving" class="btn btn-primary text-xs px-5 py-2.5 rounded-xl flex items-center gap-2">
+            <i v-if="kualifikasiSaving" class="fa-solid fa-circle-notch animate-spin"></i>
             <span>{{ kualifikasiSaving ? 'Menyimpan...' : 'Simpan Lisensi' }}</span>
           </button>
         </div>
@@ -1256,31 +1291,39 @@
   </div>
 
   <!-- Modal 4: Verifikasi Sertifikat (Verifikator) -->
-  <div v-if="showVerifModal" class="modal-overlay">
-    <div class="modal-card max-w-lg">
-      <div class="modal-header">
-        <h3 class="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
-          <i class="fa-solid fa-stamp text-teal-500"></i>
-          <span>Verifikasi Keabsahan Sertifikat</span>
-        </h3>
-        <button @click="showVerifModal = false" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+  <div v-if="showVerifModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-950/70 backdrop-blur-md overflow-y-auto">
+    <div class="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col my-auto max-h-[90vh]">
+      
+      <div class="px-6 py-4 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-100 dark:border-slate-700/60 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-teal-500/10 text-teal-600 dark:text-teal-400 flex items-center justify-center text-lg shadow-sm">
+            <i class="fa-solid fa-stamp"></i>
+          </div>
+          <div>
+            <h3 class="font-black text-sm text-slate-900 dark:text-white">Verifikasi Keabsahan Sertifikat</h3>
+            <p class="text-[11px] text-slate-400">Pemeriksaan bukti fisik & nomor sertifikat</p>
+          </div>
+        </div>
+        <button @click="showVerifModal = false" class="w-8 h-8 rounded-full bg-slate-200/60 dark:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-white flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
       </div>
 
-      <form @submit.prevent="saveVerifikasi" class="p-6 space-y-4">
-        <div v-if="selectedKompetensi" class="p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl space-y-1.5 text-xs">
-          <div class="font-bold text-slate-900 dark:text-white">{{ selectedKompetensi.nama_kegiatan }}</div>
-          <div class="text-slate-500">{{ namaPegawai(selectedKompetensi.pegawai_id) }} &bull; {{ selectedKompetensi.jumlah_jp }} JP</div>
+      <form @submit.prevent="saveVerifikasi" class="p-6 overflow-y-auto space-y-4 flex-1 text-xs">
+        <div v-if="selectedKompetensi" class="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2">
+          <div class="font-bold text-slate-900 dark:text-white text-sm">{{ selectedKompetensi.nama_kegiatan }}</div>
+          <div class="text-slate-500">{{ namaPegawai(selectedKompetensi.pegawai_id) }} &bull; <strong class="text-emerald-600">{{ selectedKompetensi.jumlah_jp }} JP</strong></div>
           <div v-if="selectedKompetensi.file_url" class="pt-1">
-            <a :href="selectedKompetensi.file_url" target="_blank" class="text-emerald-600 font-bold hover:underline flex items-center gap-1">
+            <a :href="selectedKompetensi.file_url" target="_blank" class="text-emerald-600 font-bold hover:underline flex items-center gap-1.5">
               <i class="fa-solid fa-arrow-up-right-from-square"></i>
-              <span>Buka Dokumen Bukti Sertifikat</span>
+              <span>Buka Dokumen Bukti Sertifikat (Drive)</span>
             </a>
           </div>
         </div>
 
         <div>
-          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Keputusan Status Verifikasi *</label>
-          <select v-model="verifForm.status" class="input text-xs w-full font-bold">
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Keputusan Status Verifikasi *</label>
+          <select v-model="verifForm.status" class="input text-xs w-full py-2.5 rounded-xl font-bold">
             <option value="disetujui">Disetujui (Hitung ke Target JP)</option>
             <option value="menunggu">Menunggu Kelengkapan</option>
             <option value="ditolak">Ditolak (Tidak Sah)</option>
@@ -1288,13 +1331,14 @@
         </div>
 
         <div>
-          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Catatan / Keterangan Verifikator</label>
-          <textarea v-model="verifForm.catatan" rows="3" placeholder="Sertifikat terverifikasi sah dari BPSDM / Nomor registrasi valid..." class="input text-xs w-full"></textarea>
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Catatan Verifikator</label>
+          <textarea v-model="verifForm.catatan" rows="3" placeholder="Sertifikat terverifikasi sah dari BPSDM / Nomor registrasi valid..." class="input text-xs w-full py-2.5 rounded-xl"></textarea>
         </div>
 
-        <div class="modal-footer">
-          <button type="button" @click="showVerifModal = false" class="btn btn-secondary text-xs px-4 py-2">Batal</button>
-          <button type="submit" :disabled="verifSaving" class="btn btn-primary text-xs px-5 py-2">
+        <div class="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-3">
+          <button type="button" @click="showVerifModal = false" class="btn btn-secondary text-xs px-4 py-2.5 rounded-xl">Batal</button>
+          <button type="submit" :disabled="verifSaving" class="btn btn-primary text-xs px-5 py-2.5 rounded-xl flex items-center gap-2">
+            <i v-if="verifSaving" class="fa-solid fa-circle-notch animate-spin"></i>
             <span>{{ verifSaving ? 'Memproses...' : 'Simpan Verifikasi' }}</span>
           </button>
         </div>
@@ -1302,65 +1346,76 @@
     </div>
   </div>
 
-  <!-- Modal 5: Form Pengajuan Usulan Diklat -->
-  <div v-if="showUsulanForm" class="modal-overlay">
-    <div class="modal-card max-w-lg">
-      <div class="modal-header">
-        <h3 class="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
-          <i class="fa-solid fa-paper-plane text-rose-500"></i>
-          <span>{{ usulanForm.id ? 'Edit Usulan Diklat' : 'Form Pengajuan Kebutuhan Diklat (AKD)' }}</span>
-        </h3>
-        <button @click="showUsulanForm = false" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+  <!-- Modal 5: Form Pengajuan Usulan Diklat (AKD) -->
+  <div v-if="showUsulanForm" class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-950/70 backdrop-blur-md overflow-y-auto">
+    <div class="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col my-auto max-h-[90vh]">
+      
+      <div class="px-6 py-4 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-100 dark:border-slate-700/60 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center text-lg shadow-sm">
+            <i class="fa-solid fa-paper-plane"></i>
+          </div>
+          <div>
+            <h3 class="font-black text-sm text-slate-900 dark:text-white">
+              {{ usulanForm.id ? 'Edit Usulan Diklat' : 'Form Pengajuan Kebutuhan Diklat (AKD)' }}
+            </h3>
+            <p class="text-[11px] text-slate-400">Usulan bottom-up perencanaan DPA dinas</p>
+          </div>
+        </div>
+        <button @click="showUsulanForm = false" class="w-8 h-8 rounded-full bg-slate-200/60 dark:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-white flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
       </div>
 
-      <form @submit.prevent="saveUsulan" class="p-6 space-y-4">
+      <form @submit.prevent="saveUsulan" class="p-6 overflow-y-auto space-y-4 flex-1 text-xs">
         <div>
-          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Pegawai yang Diusulkan *</label>
-          <select v-model="usulanForm.pegawai_id" required class="input text-xs w-full">
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Pegawai yang Diusulkan *</label>
+          <select v-model="usulanForm.pegawai_id" required class="input text-xs w-full py-2.5 rounded-xl">
             <option value="" disabled>-- Pilih Pegawai --</option>
             <option v-for="p in simpegLookup.pegawai" :key="p.id" :value="p.id">{{ p.nama_lengkap }} ({{ p.nip }})</option>
           </select>
         </div>
 
         <div>
-          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Nama Program Diklat yang Diusulkan *</label>
-          <input type="text" v-model="usulanForm.nama_diklat_usulan" required placeholder="Contoh: Diklat Penyelidikan Tipiring Lanjutan..." class="input text-xs w-full">
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Nama Program Diklat yang Diusulkan *</label>
+          <input type="text" v-model="usulanForm.nama_diklat_usulan" required placeholder="Contoh: Diklat Penyelidikan Tipiring Lanjutan..." class="input text-xs w-full py-2.5 rounded-xl">
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Rumpun *</label>
-            <select v-model="usulanForm.rumpun" required class="input text-xs w-full">
+            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Rumpun *</label>
+            <select v-model="usulanForm.rumpun" required class="input text-xs w-full py-2.5 rounded-xl">
               <option v-for="r in optionsRumpun" :key="r.id" :value="r.nama_nilai">{{ r.nama_nilai }}</option>
             </select>
           </div>
           <div>
-            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Target Penyelenggara</label>
-            <input type="text" v-model="usulanForm.target_penyelenggara" placeholder="BPSDM Jatim / Kemendagri..." class="input text-xs w-full">
+            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Target Penyelenggara</label>
+            <input type="text" v-model="usulanForm.target_penyelenggara" placeholder="BPSDM Jatim / Kemendagri..." class="input text-xs w-full py-2.5 rounded-xl">
           </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Tingkat Urgensi *</label>
-            <select v-model="usulanForm.urgensi" required class="input text-xs w-full font-semibold">
+            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Tingkat Urgensi *</label>
+            <select v-model="usulanForm.urgensi" required class="input text-xs w-full py-2.5 rounded-xl font-bold">
               <option v-for="u in optionsUrgensi" :key="u.id" :value="u.nama_nilai">{{ u.nama_nilai }}</option>
             </select>
           </div>
           <div>
-            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Estimasi Biaya (Rp)</label>
-            <input type="number" v-model="usulanForm.estimasi_biaya" placeholder="0" class="input text-xs w-full">
+            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Estimasi Biaya (Rp)</label>
+            <input type="number" v-model="usulanForm.estimasi_biaya" placeholder="0" class="input text-xs w-full py-2.5 rounded-xl">
           </div>
         </div>
 
         <div>
-          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Alasan Kebutuhan / Justifikasi Teknis *</label>
-          <textarea v-model="usulanForm.alasan_usulan" required rows="3" placeholder="Jelaskan kebutuhan penunjang tugas di pos/bidang..." class="input text-xs w-full"></textarea>
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Alasan Kebutuhan / Justifikasi Teknis *</label>
+          <textarea v-model="usulanForm.alasan_usulan" required rows="3" placeholder="Jelaskan kebutuhan penunjang tugas operasional di pos/bidang..." class="input text-xs w-full py-2.5 rounded-xl"></textarea>
         </div>
 
-        <div class="modal-footer">
-          <button type="button" @click="showUsulanForm = false" class="btn btn-secondary text-xs px-4 py-2">Batal</button>
-          <button type="submit" :disabled="usulanSaving" class="btn btn-primary text-xs px-5 py-2">
+        <div class="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-3">
+          <button type="button" @click="showUsulanForm = false" class="btn btn-secondary text-xs px-4 py-2.5 rounded-xl">Batal</button>
+          <button type="submit" :disabled="usulanSaving" class="btn btn-primary text-xs px-5 py-2.5 rounded-xl flex items-center gap-2">
+            <i v-if="usulanSaving" class="fa-solid fa-circle-notch animate-spin"></i>
             <span>{{ usulanSaving ? 'Mengirim...' : 'Kirim Usulan' }}</span>
           </button>
         </div>
@@ -1369,26 +1424,34 @@
   </div>
 
   <!-- Modal 6: Review Usulan Diklat (Kasatpol PP) -->
-  <div v-if="showReviewUsulanModal" class="modal-overlay">
-    <div class="modal-card max-w-lg">
-      <div class="modal-header">
-        <h3 class="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
-          <i class="fa-solid fa-gavel text-purple-500"></i>
-          <span>Review Usulan Diklat Pimpinan</span>
-        </h3>
-        <button @click="showReviewUsulanModal = false" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+  <div v-if="showReviewUsulanModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-950/70 backdrop-blur-md overflow-y-auto">
+    <div class="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col my-auto max-h-[90vh]">
+      
+      <div class="px-6 py-4 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-100 dark:border-slate-700/60 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center text-lg shadow-sm">
+            <i class="fa-solid fa-gavel"></i>
+          </div>
+          <div>
+            <h3 class="font-black text-sm text-slate-900 dark:text-white">Review Usulan Diklat Pimpinan</h3>
+            <p class="text-[11px] text-slate-400">Persetujuan usulan diklat masuk RKA/DPA</p>
+          </div>
+        </div>
+        <button @click="showReviewUsulanModal = false" class="w-8 h-8 rounded-full bg-slate-200/60 dark:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-white flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
       </div>
 
-      <form @submit.prevent="saveReviewUsulan" class="p-6 space-y-4">
-        <div v-if="selectedUsulan" class="p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl space-y-1 text-xs">
-          <div class="font-bold text-slate-900 dark:text-white">{{ selectedUsulan.nama_diklat_usulan }}</div>
+      <form @submit.prevent="saveReviewUsulan" class="p-6 overflow-y-auto space-y-4 flex-1 text-xs">
+        <div v-if="selectedUsulan" class="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-1.5">
+          <div class="font-bold text-slate-900 dark:text-white text-sm">{{ selectedUsulan.nama_diklat_usulan }}</div>
           <div class="text-slate-500">Pengusul: {{ namaPegawai(selectedUsulan.pegawai_id) }} &bull; {{ selectedUsulan.urgensi }}</div>
-          <div class="text-slate-600 dark:text-slate-300 italic pt-1">"{{ selectedUsulan.alasan_usulan }}"</div>
+          <div class="text-slate-600 dark:text-slate-300 italic pt-1 text-[11px]">"{{ selectedUsulan.alasan_usulan }}"</div>
         </div>
 
         <div>
-          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Keputusan Usulan *</label>
-          <select v-model="reviewUsulanForm.status" class="input text-xs w-full font-bold">
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Keputusan Pimpinan *</label>
+          <select v-model="reviewUsulanForm.status" class="input text-xs w-full py-2.5 rounded-xl font-bold">
             <option value="disetujui_kasat">Disetujui Kasat (Masuk Rencana Anggaran DPA)</option>
             <option value="direkomendasikan_bkpsdm">Direkomendasikan ke BKPSDM Trenggalek</option>
             <option value="ditolak">Ditolak / Ditunda</option>
@@ -1396,13 +1459,14 @@
         </div>
 
         <div>
-          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Catatan Pimpinan / Arahan Kasat</label>
-          <textarea v-model="reviewUsulanForm.catatan" rows="3" placeholder="Diusulkan pada DPA TA 2027..." class="input text-xs w-full"></textarea>
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Catatan Arahan Kasat</label>
+          <textarea v-model="reviewUsulanForm.catatan" rows="3" placeholder="Diusulkan pada DPA TA 2027..." class="input text-xs w-full py-2.5 rounded-xl"></textarea>
         </div>
 
-        <div class="modal-footer">
-          <button type="button" @click="showReviewUsulanModal = false" class="btn btn-secondary text-xs px-4 py-2">Batal</button>
-          <button type="submit" :disabled="reviewUsulanSaving" class="btn btn-primary text-xs px-5 py-2">
+        <div class="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-3">
+          <button type="button" @click="showReviewUsulanModal = false" class="btn btn-secondary text-xs px-4 py-2.5 rounded-xl">Batal</button>
+          <button type="submit" :disabled="reviewUsulanSaving" class="btn btn-primary text-xs px-5 py-2.5 rounded-xl flex items-center gap-2">
+            <i v-if="reviewUsulanSaving" class="fa-solid fa-circle-notch animate-spin"></i>
             <span>{{ reviewUsulanSaving ? 'Menyimpan...' : 'Simpan Review' }}</span>
           </button>
         </div>
@@ -1411,117 +1475,139 @@
   </div>
 
   <!-- Modal 7: Standar Kompetensi Jabatan -->
-  <div v-if="showStandarModal" class="modal-overlay">
-    <div class="modal-card max-w-md">
-      <div class="modal-header">
-        <h3 class="font-bold text-sm text-slate-900 dark:text-white">Standar Kompetensi Jabatan</h3>
-        <button @click="showStandarModal = false" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+  <div v-if="showStandarModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-950/70 backdrop-blur-md overflow-y-auto">
+    <div class="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col my-auto max-h-[90vh]">
+      
+      <div class="px-6 py-4 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-100 dark:border-slate-700/60 flex items-center justify-between shrink-0">
+        <h3 class="font-black text-sm text-slate-900 dark:text-white flex items-center gap-2">
+          <i class="fa-solid fa-award text-emerald-500"></i>
+          <span>Standar Kompetensi Jabatan (SKJ)</span>
+        </h3>
+        <button @click="showStandarModal = false" class="w-8 h-8 rounded-full bg-slate-200/60 dark:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-white flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
       </div>
 
-      <form @submit.prevent="saveStandarKompetensi" class="p-6 space-y-4">
+      <form @submit.prevent="saveStandarKompetensi" class="p-6 overflow-y-auto space-y-4 flex-1 text-xs">
         <div>
-          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Posisi Jabatan *</label>
-          <select v-model="standarForm.jabatan_id" required class="input text-xs w-full">
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Posisi Jabatan *</label>
+          <select v-model="standarForm.jabatan_id" required class="input text-xs w-full py-2.5 rounded-xl">
             <option v-for="j in simpegLookup.jabatan" :key="j.id" :value="j.id">{{ j.nama_jabatan }}</option>
           </select>
         </div>
         <div>
-          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Program Diklat Syarat *</label>
-          <select v-model="standarForm.diklat_id" required class="input text-xs w-full">
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Program Diklat Syarat *</label>
+          <select v-model="standarForm.diklat_id" required class="input text-xs w-full py-2.5 rounded-xl">
             <option v-for="d in katalogList" :key="d.id" :value="d.id">{{ d.nama_diklat }}</option>
           </select>
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Kategori *</label>
-            <select v-model="standarForm.tingkat_kebutuhan" class="input text-xs w-full font-bold">
+            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Kategori *</label>
+            <select v-model="standarForm.tingkat_kebutuhan" class="input text-xs w-full py-2 rounded-xl font-bold">
               <option value="WAJIB">WAJIB</option>
               <option value="DISARANKAN">DISARANKAN</option>
             </select>
           </div>
           <div>
-            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Minimal JP</label>
-            <input type="number" v-model="standarForm.minimal_jp" class="input text-xs w-full font-bold">
+            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Minimal JP</label>
+            <input type="number" v-model="standarForm.minimal_jp" class="input text-xs w-full py-2 rounded-xl font-bold">
           </div>
         </div>
         <div>
-          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Keterangan</label>
-          <input type="text" v-model="standarForm.keterangan" class="input text-xs w-full">
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Keterangan</label>
+          <input type="text" v-model="standarForm.keterangan" class="input text-xs w-full py-2.5 rounded-xl">
         </div>
-        <div class="modal-footer">
-          <button type="button" @click="showStandarModal = false" class="btn btn-secondary text-xs px-4 py-2">Batal</button>
-          <button type="submit" :disabled="standarSaving" class="btn btn-primary text-xs px-5 py-2">Simpan</button>
+        <div class="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-3">
+          <button type="button" @click="showStandarModal = false" class="btn btn-secondary text-xs px-4 py-2.5 rounded-xl">Batal</button>
+          <button type="submit" :disabled="standarSaving" class="btn btn-primary text-xs px-5 py-2.5 rounded-xl">Simpan</button>
         </div>
       </form>
     </div>
   </div>
 
   <!-- Modal 8: Referensi Master -->
-  <div v-if="showReferensiModal" class="modal-overlay">
-    <div class="modal-card max-w-md">
-      <div class="modal-header">
-        <h3 class="font-bold text-sm text-slate-900 dark:text-white">Item Opsi Referensi</h3>
-        <button @click="showReferensiModal = false" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+  <div v-if="showReferensiModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-950/70 backdrop-blur-md overflow-y-auto">
+    <div class="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col my-auto max-h-[90vh]">
+      
+      <div class="px-6 py-4 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-100 dark:border-slate-700/60 flex items-center justify-between shrink-0">
+        <h3 class="font-black text-sm text-slate-900 dark:text-white flex items-center gap-2">
+          <i class="fa-solid fa-sliders text-emerald-500"></i>
+          <span>Item Opsi Referensi</span>
+        </h3>
+        <button @click="showReferensiModal = false" class="w-8 h-8 rounded-full bg-slate-200/60 dark:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-white flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
       </div>
 
-      <form @submit.prevent="saveReferensi" class="p-6 space-y-4">
+      <form @submit.prevent="saveReferensi" class="p-6 overflow-y-auto space-y-4 flex-1 text-xs">
         <div>
-          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Kategori *</label>
-          <input type="text" v-model="referensiForm.kategori" required class="input text-xs w-full font-mono">
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Kategori *</label>
+          <input type="text" v-model="referensiForm.kategori" required class="input text-xs w-full py-2.5 rounded-xl font-mono">
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Kode *</label>
-            <input type="text" v-model="referensiForm.kode" required class="input text-xs w-full font-mono">
+            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Kode *</label>
+            <input type="text" v-model="referensiForm.kode" required class="input text-xs w-full py-2.5 rounded-xl font-mono">
           </div>
           <div>
-            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Urutan</label>
-            <input type="number" v-model="referensiForm.urutan" class="input text-xs w-full">
+            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Urutan</label>
+            <input type="number" v-model="referensiForm.urutan" class="input text-xs w-full py-2.5 rounded-xl">
           </div>
         </div>
         <div>
-          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Nama Nilai *</label>
-          <input type="text" v-model="referensiForm.nama_nilai" required class="input text-xs w-full font-bold">
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Nama Nilai *</label>
+          <input type="text" v-model="referensiForm.nama_nilai" required class="input text-xs w-full py-2.5 rounded-xl font-bold">
         </div>
         <div>
-          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Keterangan</label>
-          <input type="text" v-model="referensiForm.keterangan" class="input text-xs w-full">
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Keterangan</label>
+          <input type="text" v-model="referensiForm.keterangan" class="input text-xs w-full py-2.5 rounded-xl">
         </div>
-        <div class="modal-footer">
-          <button type="button" @click="showReferensiModal = false" class="btn btn-secondary text-xs px-4 py-2">Batal</button>
-          <button type="submit" :disabled="referensiSaving" class="btn btn-primary text-xs px-5 py-2">Simpan</button>
+        <div class="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-3">
+          <button type="button" @click="showReferensiModal = false" class="btn btn-secondary text-xs px-4 py-2.5 rounded-xl">Batal</button>
+          <button type="submit" :disabled="referensiSaving" class="btn btn-primary text-xs px-5 py-2.5 rounded-xl">Simpan</button>
         </div>
       </form>
     </div>
   </div>
 
   <!-- Modal 9: Buku Panduan Sistem -->
-  <div v-if="showPanduan" class="modal-overlay">
-    <div class="modal-card max-w-2xl">
-      <div class="modal-header">
-        <h3 class="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
-          <i class="fa-solid fa-book-bookmark text-emerald-500"></i>
-          <span>Buku Panduan Operasional SI-KOMPETENSI v4.0.0</span>
-        </h3>
-        <button @click="showPanduan = false" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+  <div v-if="showPanduan" class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-950/70 backdrop-blur-md overflow-y-auto">
+    <div class="relative w-full max-w-2xl bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col my-auto max-h-[90vh]">
+      
+      <div class="px-6 py-4 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-100 dark:border-slate-700/60 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-lg shadow-sm">
+            <i class="fa-solid fa-book-bookmark"></i>
+          </div>
+          <div>
+            <h3 class="font-black text-sm text-slate-900 dark:text-white">Buku Panduan Operasional SI-KOMPETENSI v4.1.0</h3>
+            <p class="text-[11px] text-slate-400">Petunjuk teknis pemenuhan standar JP & lisensi ASN</p>
+          </div>
+        </div>
+        <button @click="showPanduan = false" class="w-8 h-8 rounded-full bg-slate-200/60 dark:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-white flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
       </div>
-      <div class="p-6 space-y-4 text-xs text-slate-600 dark:text-slate-300 leading-relaxed max-h-[70vh] overflow-y-auto">
-        <div class="space-y-2">
-          <h4 class="font-bold text-slate-900 dark:text-white text-sm">1. Ketentuan Pemenuhan Jam Pelajaran (JP)</h4>
+
+      <div class="p-6 overflow-y-auto space-y-4 text-xs text-slate-600 dark:text-slate-300 leading-relaxed flex-1">
+        <div class="p-4 bg-emerald-50/60 dark:bg-emerald-950/30 rounded-2xl border border-emerald-500/20 space-y-1.5">
+          <h4 class="font-black text-emerald-800 dark:text-emerald-300 text-xs uppercase tracking-wider">1. Ketentuan Pemenuhan Jam Pelajaran (JP)</h4>
           <p>&bull; <strong>PNS</strong>: Wajib memenuhi minimal <strong>20 JP/tahun</strong> (PP No. 17/2020).</p>
           <p>&bull; <strong>PPPK</strong>: Diberikan hak maksimal hingga <strong>24 JP/tahun</strong> (Perka BKN No. 1/2020).</p>
         </div>
-        <div class="space-y-2">
-          <h4 class="font-bold text-slate-900 dark:text-white text-sm">2. Monitoring Lisensi Khusus (H-90 Alert)</h4>
+        <div class="p-4 bg-purple-50/60 dark:bg-purple-950/30 rounded-2xl border border-purple-500/20 space-y-1.5">
+          <h4 class="font-black text-purple-800 dark:text-purple-300 text-xs uppercase tracking-wider">2. Monitoring Lisensi Khusus (H-90 Alert)</h4>
           <p>Sistem otomatis memberi peringatan dini pada lisensi (SK PPNS, BNSP Damkar I, SCBA Operator, SAR Water/Rope) yang masa berlakunya tersisa &lt; 90 hari.</p>
         </div>
-        <div class="space-y-2">
-          <h4 class="font-bold text-slate-900 dark:text-white text-sm">3. Alur Klaim Cepat Jadwal Diklat</h4>
+        <div class="p-4 bg-teal-50/60 dark:bg-teal-950/30 rounded-2xl border border-teal-500/20 space-y-1.5">
+          <h4 class="font-black text-teal-800 dark:text-teal-300 text-xs uppercase tracking-wider">3. Alur Klaim Cepat Jadwal Diklat</h4>
           <p>Pada agenda diklat yang tersedia, klik tombol <em>Klaim Sertifikat</em> untuk memuat form dengan isian nama diklat, rumpun, dan JP yang terisi otomatis.</p>
         </div>
       </div>
-      <div class="modal-footer">
-        <button @click="showPanduan = false" class="btn btn-primary text-xs px-5 py-2">Tutup Panduan</button>
+
+      <div class="p-4 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-end shrink-0">
+        <button @click="showPanduan = false" class="btn btn-primary text-xs px-5 py-2.5 rounded-xl">Tutup Panduan</button>
       </div>
     </div>
   </div>
