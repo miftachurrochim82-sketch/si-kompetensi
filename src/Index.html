@@ -414,11 +414,31 @@
         // ================= LOOKUP HELPERS =================
         namaPegawai(id) {
           if (!id) return '-';
-          const list = (this.simpegLookup.pegawai && this.simpegLookup.pegawai.length)
+          const list = (this.simpegLookup && this.simpegLookup.pegawai && this.simpegLookup.pegawai.length)
             ? this.simpegLookup.pegawai
             : (this.masterPegawaiList || []);
-          const p = list.find(x => String(x.id || x.pegawai_id) === String(id));
-          return p ? (p.nama_lengkap || p.nama || p.display_name || p.id) : id;
+          const target = String(id).trim().toLowerCase();
+          const p = list.find(x => 
+            String(x.id || '').trim().toLowerCase() === target ||
+            String(x.pegawai_id || '').trim().toLowerCase() === target ||
+            String(x.nip || '').trim().toLowerCase() === target ||
+            String(x.nama_lengkap || '').trim().toLowerCase() === target
+          );
+          return p ? (p.nama_lengkap || p.nama || p.display_name || id) : id;
+        },
+
+        nipPegawai(id) {
+          if (!id) return '-';
+          const list = (this.simpegLookup && this.simpegLookup.pegawai && this.simpegLookup.pegawai.length)
+            ? this.simpegLookup.pegawai
+            : (this.masterPegawaiList || []);
+          const target = String(id).trim().toLowerCase();
+          const p = list.find(x => 
+            String(x.id || '').trim().toLowerCase() === target ||
+            String(x.pegawai_id || '').trim().toLowerCase() === target ||
+            String(x.nip || '').trim().toLowerCase() === target
+          );
+          return p ? (p.nip || id) : id;
         },
 
         namaJabatan(id) {

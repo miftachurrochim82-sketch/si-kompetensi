@@ -380,6 +380,36 @@ function getSimpegLookup_() {
   }
 }
 
+function enrichWithPegawai_(list) {
+  if (!list || !Array.isArray(list)) return list || [];
+  try {
+    var simpeg = getSimpegLookup_();
+    var pegawaiList = (simpeg && simpeg.data && simpeg.data.pegawai) || [];
+    var pegawaiMap = {};
+    pegawaiList.forEach(function(p) {
+      if (p.id) pegawaiMap[String(p.id).trim().toLowerCase()] = p;
+      if (p.pegawai_id) pegawaiMap[String(p.pegawai_id).trim().toLowerCase()] = p;
+      if (p.nip) pegawaiMap[String(p.nip).trim().toLowerCase()] = p;
+    });
+
+    return list.map(function(item) {
+      var key = String(item.pegawai_id || item.id || '').trim().toLowerCase();
+      var p = pegawaiMap[key];
+      if (p) {
+        item.nama_pegawai = p.nama_lengkap || p.nama || item.pegawai_id;
+        item.nip = p.nip || item.pegawai_id;
+        item.status_pegawai = p.status_pegawai || 'PNS';
+      } else {
+        item.nama_pegawai = item.nama_pegawai || item.pegawai_id || '-';
+        item.nip = item.nip || item.pegawai_id || '-';
+      }
+      return item;
+    });
+  } catch (e) {
+    return list;
+  }
+}
+
 function getMasterSatelit_() {
   try {
     var katalog = getSheetData_(LOCAL_SHEETS.M_KATALOG_DIKLAT);
@@ -865,7 +895,7 @@ function getKualifikasiList_(params) {
     if (params.jenis_kualifikasi) {
       list = list.filter(function(k) { return String(k.jenis_kualifikasi) === String(params.jenis_kualifikasi); });
     }
-    return { success: true, data: list };
+    return { success: true, data: enrichWithPegawai_(list) };
   } catch (err) {
     return { success: false, error: err.message };
   }
@@ -942,7 +972,7 @@ function getRiwayatList_(params, user) {
       });
     }
 
-    return { success: true, data: list };
+    return { success: true, data: enrichWithPegawai_(list) };
   } catch (err) {
     return { success: false, error: err.message };
   }
@@ -1023,7 +1053,7 @@ function verifikasiRiwayat_(params, user) {
 function getUsulanList_(params, user) {
   try {
     var list = getSheetData_(LOCAL_SHEETS.T_USULAN_DIKLAT);
-    return { success: true, data: list };
+    return { success: true, data: enrichWithPegawai_(list) };
   } catch (err) {
     return { success: false, error: err.message };
   }
