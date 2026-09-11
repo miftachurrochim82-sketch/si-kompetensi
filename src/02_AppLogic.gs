@@ -994,6 +994,7 @@ function refreshCacheHandler_() {
 function initDatabase() {
   var ss = getLocalSpreadsheet_();
   var created = [];
+  var updated = [];
 
   Object.keys(LOCAL_SHEETS).forEach(function(key) {
     var sheetName = LOCAL_SHEETS[key];
@@ -1015,6 +1016,21 @@ function initDatabase() {
           .setFontWeight('bold');
         sheet.setFrozenRows(1);
       } catch (e) {}
+    } else {
+      // Auto-sinkronisasi kolom baru ke sheet yang sudah ada tanpa menghapus data lama
+      var lastCol = sheet.getLastColumn();
+      var existingHeaders = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(function(h) { return String(h).trim(); });
+      var missing = headers.filter(function(h) { return existingHeaders.indexOf(h) === -1; });
+      if (missing.length > 0) {
+        sheet.getRange(1, lastCol + 1, 1, missing.length).setValues([missing]);
+        try {
+          sheet.getRange(1, lastCol + 1, 1, missing.length)
+            .setBackground('#059669')
+            .setFontColor('#ffffff')
+            .setFontWeight('bold');
+        } catch(e) {}
+        updated.push(sheetName + ' (+' + missing.length + ' kolom baru)');
+      }
     }
   });
 
@@ -1025,8 +1041,11 @@ function initDatabase() {
     }
   } catch (e) {}
 
-  Logger.log('✅ Inisialisasi basis data 5-Sheet Lokal selesai: ' + (created.join(', ') || 'Semua sheet sudah ada'));
-  return { success: true, created: created };
+  var summary = 'Inisialisasi basis data 5-Sheet Lokal selesai.';
+  if (created.length > 0) summary += ' Dibuat: ' + created.join(', ') + '.';
+  if (updated.length > 0) summary += ' Kolom diselaraskan: ' + updated.join(', ') + '.';
+  Logger.log('✅ ' + summary);
+  return { success: true, created: created, updated: updated, summary: summary };
 }
 
 function setupApp() {
