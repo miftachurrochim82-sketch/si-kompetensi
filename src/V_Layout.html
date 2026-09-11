@@ -350,7 +350,7 @@
             <i class="fa-solid fa-plus text-emerald-500"></i>
             <span>Susun Agenda Baru</span>
           </button>
-          <button @click="navigateTo('jadwal_penugasan')" class="btn btn-primary text-xs px-3 py-1.5 flex items-center gap-1.5">
+          <button @click="navigateTo('diklat_portofolio'); diklatSubTab = 'jadwal'" class="btn btn-primary text-xs px-3 py-1.5 flex items-center gap-1.5">
             <span>Buka Kalender Lengkap</span>
             <i class="fa-solid fa-arrow-right"></i>
           </button>
@@ -455,73 +455,212 @@
 
   </section>
 
-  <!-- ==================== 2. VIEW: AGENDA & PENUGASAN SPT ==================== -->
-  <section v-if="currentPage === 'jadwal_penugasan'" class="space-y-6">
+  <!-- ==================== 2. VIEW: DIKLAT & PORTOFOLIO (1 MENU 2 TAB) ==================== -->
+  <section v-if="currentPage === 'diklat_portofolio' || currentPage === 'jadwal_penugasan' || currentPage === 'riwayat_laporan'" class="space-y-6">
+    
+    <!-- Header Halaman -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
-        <h2 class="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
-          <i class="fa-solid fa-calendar-days text-emerald-500"></i>
-          <span>Agenda Jadwal Pelatihan & Penugasan SPT</span>
+        <h2 class="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2.5">
+          <i class="fa-solid fa-graduation-cap text-emerald-500 text-2xl"></i>
+          <span>Diklat & Portofolio ASN</span>
         </h2>
-        <p class="text-xs text-slate-500 mt-1">Kelola kalender diklat resmi, kuota peserta, dan penerbitan Surat Perintah Tugas (SPT) Kasat.</p>
+        <p class="text-xs text-slate-500 mt-1">Manajemen agenda pelatihan resmi dan portofolio sertifikat pemenuhan standar JP.</p>
       </div>
-      <div class="flex items-center gap-2">
-        <button v-if="isAdmin" @click="openJadwalModal()" class="btn btn-primary text-xs px-3.5 py-2 flex items-center gap-2 shadow-sm">
-          <i class="fa-solid fa-plus"></i>
-          <span>Tambah Jadwal Baru</span>
-        </button>
+      
+      <!-- Tombol Aksi Kontekstual Sesuai Tab Aktif -->
+      <div class="flex flex-wrap items-center gap-2">
+        <!-- Aksi Tab 1: Jadwal -->
+        <template v-if="diklatSubTab === 'jadwal'">
+          <button v-if="isAdmin" @click="openJadwalModal()" class="btn btn-primary text-xs px-4 py-2.5 flex items-center gap-2 shadow-sm rounded-xl font-bold">
+            <i class="fa-solid fa-plus"></i>
+            <span>Tambah Jadwal Baru</span>
+          </button>
+        </template>
+        
+        <!-- Aksi Tab 2: Portofolio -->
+        <template v-else>
+          <button @click="exportKompetensiExcel()" class="btn btn-secondary text-xs px-3.5 py-2.5 flex items-center gap-1.5 shadow-sm rounded-xl">
+            <i class="fa-solid fa-file-excel text-emerald-600"></i>
+            <span>Ekspor Excel</span>
+          </button>
+          <button @click="openKompetensiForm()" class="btn btn-primary text-xs px-4 py-2.5 flex items-center gap-2 shadow-sm rounded-xl font-bold">
+            <i class="fa-solid fa-plus"></i>
+            <span>Upload Sertifikat</span>
+          </button>
+        </template>
       </div>
     </div>
 
-    <!-- Table Jadwal Diklat -->
-    <div class="card p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-      <div class="overflow-x-auto">
-        <table class="table-custom w-full text-left text-xs">
-          <thead>
-            <tr class="bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300">
-              <th class="py-3 px-3 font-bold w-12">No</th>
-              <th class="py-3 px-4 font-bold min-w-[220px]">Nama Kegiatan & Penyelenggara</th>
-              <th class="py-3 px-3 font-bold">Rumpun / JP</th>
-              <th class="py-3 px-3 font-bold">Periode Pelaksanaan</th>
-              <th class="py-3 px-3 font-bold">Metode Pelatihan</th>
-              <th class="py-3 px-4 font-bold text-center min-w-[180px]">Aksi Manajemen</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-            <tr v-for="(j, idx) in jadwalList" :key="j.id" class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
-              <td class="py-3 px-3 font-bold text-slate-400">{{ idx + 1 }}</td>
-              <td class="py-3 px-4">
-                <div class="font-bold text-slate-900 dark:text-white text-sm">{{ j.nama_kegiatan || j.nama_diklat }}</div>
-                <div class="text-[11px] text-slate-500 mt-0.5"><i class="fa-solid fa-building-columns text-[10px]"></i> {{ j.penyelenggara }}</div>
-              </td>
-              <td class="py-3 px-3">
-                <span class="badge badge-emerald text-[10px] font-bold">{{ j.jumlah_jp || 20 }} JP</span>
-                <div class="text-[10px] text-slate-400 mt-0.5">{{ j.rumpun }}</div>
-              </td>
-              <td class="py-3 px-3">
-                <div class="font-semibold text-slate-800 dark:text-slate-200">{{ formatDate(j.tgl_mulai) }}</div>
-                <div class="text-[10px] text-slate-400">s/d {{ formatDate(j.tgl_selesai) }}</div>
-              </td>
-              <td class="py-3 px-3">
-                <span class="badge badge-info text-[10px] font-semibold">{{ j.metode || 'Klasikal' }}</span>
-              </td>
-              <td class="py-3 px-4 text-center">
-                <div class="flex items-center justify-center gap-1.5">
-                  <button @click="openClaimJadwalForm(j)" class="btn bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 text-xs px-2.5 py-1.5 rounded-lg flex items-center gap-1" title="Input Sertifikat">
-                    <i class="fa-solid fa-file-circle-check"></i>
-                    <span>Klaim</span>
-                  </button>
-                  <button v-if="isAdmin" @click="openEditJadwal(j)" class="btn btn-secondary text-xs px-2.5 py-1.5 rounded-lg" title="Edit Jadwal">
-                    <i class="fa-solid fa-pen"></i>
-                  </button>
-                  <button v-if="isAdmin" @click="deleteJadwal(j.id)" class="btn btn-danger text-xs px-2 py-1.5 rounded-lg" title="Hapus Jadwal">
-                    <i class="fa-solid fa-trash-can"></i>
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+    <!-- Tab Navigasi Atas (Pill Style Besar & Nyaman Disentuh) -->
+    <div class="flex items-center gap-2 p-1.5 bg-slate-200/70 dark:bg-slate-800/80 rounded-2xl w-fit">
+      <button @click="diklatSubTab = 'jadwal'"
+              class="px-5 py-2.5 rounded-xl text-sm font-bold transition flex items-center gap-2.5"
+              :class="diklatSubTab === 'jadwal' ? 'bg-emerald-600 text-white shadow-md' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'">
+        <i class="fa-solid fa-calendar-days"></i>
+        <span>Agenda Jadwal Diklat</span>
+        <span class="px-2 py-0.5 rounded-full text-xs font-black" :class="diklatSubTab === 'jadwal' ? 'bg-emerald-700 text-white' : 'bg-slate-300 dark:bg-slate-700 text-slate-700 dark:text-slate-300'">
+          {{ jadwalList.length }}
+        </span>
+      </button>
+
+      <button @click="diklatSubTab = 'portofolio'"
+              class="px-5 py-2.5 rounded-xl text-sm font-bold transition flex items-center gap-2.5"
+              :class="diklatSubTab === 'portofolio' ? 'bg-emerald-600 text-white shadow-md' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'">
+        <i class="fa-solid fa-certificate"></i>
+        <span>Portofolio Sertifikat Pegawai</span>
+        <span class="px-2 py-0.5 rounded-full text-xs font-black" :class="diklatSubTab === 'portofolio' ? 'bg-emerald-700 text-white' : 'bg-slate-300 dark:bg-slate-700 text-slate-700 dark:text-slate-300'">
+          {{ (kompetensiPagination && kompetensiPagination.total) || kompetensiList.length }}
+        </span>
+      </button>
+    </div>
+
+    <!-- KONTEN TAB 1: AGENDA JADWAL DIKLAT -->
+    <div v-if="diklatSubTab === 'jadwal'" class="space-y-4">
+      <div class="card p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+        <div class="overflow-x-auto">
+          <table class="table-custom w-full text-left text-xs">
+            <thead>
+              <tr class="bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300">
+                <th class="py-3 px-3 font-bold w-12">No</th>
+                <th class="py-3 px-4 font-bold min-w-[220px]">Nama Kegiatan & Penyelenggara</th>
+                <th class="py-3 px-3 font-bold">Rumpun / JP</th>
+                <th class="py-3 px-3 font-bold">Periode Pelaksanaan</th>
+                <th class="py-3 px-3 font-bold">Metode Pelatihan</th>
+                <th class="py-3 px-4 font-bold text-center min-w-[180px]">Aksi Manajemen</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+              <tr v-for="(j, idx) in jadwalList" :key="j.id" class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
+                <td class="py-3 px-3 font-bold text-slate-400">{{ idx + 1 }}</td>
+                <td class="py-3 px-4">
+                  <div class="font-bold text-slate-900 dark:text-white text-sm">{{ j.nama_kegiatan || j.nama_diklat }}</div>
+                  <div class="text-[11px] text-slate-500 mt-0.5"><i class="fa-solid fa-building-columns text-[10px]"></i> {{ j.penyelenggara }}</div>
+                </td>
+                <td class="py-3 px-3">
+                  <span class="badge badge-emerald text-[10px] font-bold">{{ j.jumlah_jp || 20 }} JP</span>
+                  <div class="text-[10px] text-slate-400 mt-0.5">{{ j.rumpun }}</div>
+                </td>
+                <td class="py-3 px-3">
+                  <div class="font-semibold text-slate-800 dark:text-slate-200">{{ formatDate(j.tgl_mulai) }}</div>
+                  <div class="text-[10px] text-slate-400">s/d {{ formatDate(j.tgl_selesai) }}</div>
+                </td>
+                <td class="py-3 px-3">
+                  <span class="badge badge-info text-[10px] font-semibold">{{ j.metode || 'Klasikal' }}</span>
+                </td>
+                <td class="py-3 px-4 text-center">
+                  <div class="flex items-center justify-center gap-1.5">
+                    <button @click="openClaimJadwalForm(j)" class="btn bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 text-xs px-2.5 py-1.5 rounded-lg flex items-center gap-1 font-bold" title="Input Sertifikat">
+                      <i class="fa-solid fa-file-circle-check"></i>
+                      <span>Klaim</span>
+                    </button>
+                    <button v-if="isAdmin" @click="openEditJadwal(j)" class="btn btn-secondary text-xs px-2.5 py-1.5 rounded-lg" title="Edit Jadwal">
+                      <i class="fa-solid fa-pen"></i>
+                    </button>
+                    <button v-if="isAdmin" @click="deleteJadwal(j.id)" class="btn btn-danger text-xs px-2 py-1.5 rounded-lg" title="Hapus Jadwal">
+                      <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr v-if="jadwalList.length === 0">
+                <td colspan="6" class="py-8 text-center text-slate-400">Belum ada agenda jadwal pelatihan yang disusun.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- KONTEN TAB 2: PORTOFOLIO SERTIFIKAT PEGAWAI -->
+    <div v-if="diklatSubTab === 'portofolio'" class="space-y-4">
+      <!-- Filters & Search Bar -->
+      <div class="card p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row gap-3">
+        <div class="flex-1 relative">
+          <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+          <input type="text" v-model="kompetensiSearch" @input="loadKompetensi(1)" placeholder="Cari nama kegiatan diklat, pegawai, nomor sertifikat..." class="input pl-9 text-xs w-full py-2.5 rounded-xl">
+        </div>
+        <select v-model="filterRumpun" @change="loadKompetensi(1)" class="input text-xs md:w-56 py-2.5 rounded-xl">
+          <option value="">Semua Rumpun Diklat</option>
+          <option v-for="r in optionsRumpun" :key="r.id" :value="r.nama_nilai">{{ r.nama_nilai }}</option>
+        </select>
+        <select v-model="filterStatusVerif" @change="loadKompetensi(1)" class="input text-xs md:w-44 py-2.5 rounded-xl">
+          <option value="">Semua Status</option>
+          <option value="disetujui">Disetujui</option>
+          <option value="menunggu">Menunggu</option>
+          <option value="ditolak">Ditolak</option>
+        </select>
+      </div>
+
+      <!-- Table Portofolio dengan Kolom Berkas Terpisah -->
+      <div class="card p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+        <div class="overflow-x-auto">
+          <table class="table-custom w-full text-left text-xs">
+            <thead>
+              <tr class="bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300">
+                <th class="py-3 px-3 font-bold w-12">No</th>
+                <th class="py-3 px-4 font-bold min-w-[180px]">Nama Pegawai</th>
+                <th class="py-3 px-4 font-bold min-w-[220px]">Nama Kegiatan & Penyelenggara</th>
+                <th class="py-3 px-3 font-bold">Rumpun / JP</th>
+                <th class="py-3 px-3 font-bold">Periode Diklat</th>
+                <th class="py-3 px-3 font-bold text-center">Berkas File</th>
+                <th class="py-3 px-3 font-bold">Status Verifikasi</th>
+                <th class="py-3 px-4 font-bold text-center min-w-[180px]">Aksi Manajemen</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+              <tr v-for="(k, idx) in kompetensiList" :key="k.id" class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
+                <td class="py-3 px-3 font-bold text-slate-400">{{ idx + 1 }}</td>
+                <td class="py-3 px-4">
+                  <div class="font-bold text-slate-900 dark:text-white text-sm">{{ namaPegawai(k.pegawai_id) }}</div>
+                  <div class="text-[10px] text-slate-400 font-mono">{{ k.pegawai_id }}</div>
+                </td>
+                <td class="py-3 px-4">
+                  <div class="font-bold text-slate-800 dark:text-slate-200">{{ k.nama_kegiatan }}</div>
+                  <div class="text-[11px] text-slate-500 mt-0.5"><i class="fa-solid fa-building-columns text-[10px]"></i> {{ k.penyelenggara }}</div>
+                  <div v-if="k.no_sertifikat" class="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono mt-0.5">No: {{ k.no_sertifikat }}</div>
+                </td>
+                <td class="py-3 px-3">
+                  <span class="badge badge-emerald text-xs font-black">{{ k.jumlah_jp }} JP</span>
+                  <div class="text-[10px] text-slate-400 mt-0.5">{{ k.rumpun }}</div>
+                </td>
+                <td class="py-3 px-3">
+                  <div class="font-semibold text-slate-800 dark:text-slate-200">{{ formatDate(k.tgl_mulai) }}</div>
+                  <div class="text-[10px] text-slate-400">s/d {{ formatDate(k.tgl_selesai) }}</div>
+                </td>
+                <td class="py-3 px-3 text-center">
+                  <a v-if="k.file_url" :href="k.file_url" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-400 font-bold rounded-xl text-xs border border-red-200 dark:border-red-900/40 shadow-sm" title="Buka Dokumen PDF">
+                    <i class="fa-solid fa-file-pdf text-sm"></i>
+                    <span>PDF</span>
+                  </a>
+                  <span v-else class="text-slate-400 text-xs italic">-</span>
+                </td>
+                <td class="py-3 px-3">
+                  <span class="badge" :class="k.status_verifikasi === 'disetujui' ? 'badge-success' : (k.status_verifikasi === 'ditolak' ? 'badge-danger' : 'badge-warning')">
+                    {{ k.status_verifikasi === 'disetujui' ? 'Disetujui' : (k.status_verifikasi === 'ditolak' ? 'Ditolak' : 'Menunggu') }}
+                  </span>
+                </td>
+                <td class="py-3 px-4 text-center">
+                  <div class="flex items-center justify-center gap-1.5">
+                    <button v-if="isVerifikator" @click="openVerifModal(k)" class="btn bg-teal-50 hover:bg-teal-100 text-teal-700 dark:bg-teal-950/40 dark:text-teal-300 text-xs px-2.5 py-1.5 rounded-lg flex items-center gap-1 font-bold" title="Verifikasi Sertifikat">
+                      <i class="fa-solid fa-stamp"></i>
+                      <span>Verif</span>
+                    </button>
+                    <button @click="openEditKompetensi(k)" class="btn btn-secondary text-xs px-2.5 py-1.5 rounded-lg" title="Edit Data">
+                      <i class="fa-solid fa-pen"></i>
+                    </button>
+                    <button v-if="isAdmin" @click="deleteKompetensi(k.id)" class="btn btn-danger text-xs px-2 py-1.5 rounded-lg" title="Hapus Data">
+                      <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr v-if="kompetensiList.length === 0">
+                <td colspan="8" class="py-8 text-center text-slate-400">Belum ada portofolio sertifikat yang diunggah.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </section>
@@ -536,23 +675,24 @@
         </h2>
         <p class="text-xs text-slate-500 mt-1">Pelacakan SK Pengangkatan PPNS, Sertifikasi BNSP Damkar I, Operator SCBA, Brevet Water SAR, dan Rope Rescue.</p>
       </div>
-      <button @click="openKualifikasiModal()" class="btn btn-primary text-xs px-3.5 py-2 flex items-center gap-2 shadow-sm">
+      <button @click="openKualifikasiModal()" class="btn btn-primary text-xs px-3.5 py-2 flex items-center gap-2 shadow-sm rounded-xl font-bold">
         <i class="fa-solid fa-plus"></i>
         <span>Tambah Lisensi Baru</span>
       </button>
     </div>
 
-    <!-- Table Lisensi Khusus -->
+    <!-- Table Lisensi Khusus dengan Kolom Berkas Terpisah -->
     <div class="card p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
       <div class="overflow-x-auto">
         <table class="table-custom w-full text-left text-xs">
           <thead>
             <tr class="bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300">
               <th class="py-3 px-3 font-bold w-12">No</th>
-              <th class="py-3 px-4 font-bold min-w-[200px]">Nama Pegawai</th>
+              <th class="py-3 px-4 font-bold min-w-[180px]">Nama Pegawai</th>
               <th class="py-3 px-4 font-bold min-w-[220px]">Jenis Kualifikasi / SK</th>
               <th class="py-3 px-3 font-bold">No. Registrasi / SK</th>
               <th class="py-3 px-3 font-bold">Masa Berlaku</th>
+              <th class="py-3 px-3 font-bold text-center">Berkas SK</th>
               <th class="py-3 px-3 font-bold">Status Lisensi</th>
               <th class="py-3 px-4 font-bold text-center min-w-[120px]">Aksi</th>
             </tr>
@@ -575,6 +715,13 @@
                 <div class="font-semibold text-slate-800 dark:text-slate-200">s/d {{ formatDate(k.tgl_habis_berlaku) }}</div>
                 <div class="text-[10px] text-slate-400">Terbit: {{ formatDate(k.tgl_sk_terbit) }}</div>
               </td>
+              <td class="py-3 px-3 text-center">
+                <a v-if="k.file_sk_url" :href="k.file_sk_url" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-400 font-bold rounded-xl text-xs border border-red-200 dark:border-red-900/40 shadow-sm" title="Lihat Bukti SK">
+                  <i class="fa-solid fa-file-pdf text-sm"></i>
+                  <span>PDF</span>
+                </a>
+                <span v-else class="text-slate-400 text-xs italic">-</span>
+              </td>
               <td class="py-3 px-3">
                 <span v-if="isLicenseExpiringSoon(k.tgl_habis_berlaku)" class="badge badge-warning text-[10px] font-bold animate-pulse">
                   <i class="fa-solid fa-triangle-exclamation"></i> H-90 Expired
@@ -585,9 +732,6 @@
               </td>
               <td class="py-3 px-4 text-center">
                 <div class="flex items-center justify-center gap-1.5">
-                  <a v-if="k.file_sk_url" :href="k.file_sk_url" target="_blank" class="btn btn-secondary text-xs px-2.5 py-1.5 rounded-lg" title="Lihat Bukti SK">
-                    <i class="fa-solid fa-file-pdf text-red-500"></i>
-                  </a>
                   <button v-if="isAdmin" @click="openEditKualifikasi(k)" class="btn btn-secondary text-xs px-2.5 py-1.5 rounded-lg">
                     <i class="fa-solid fa-pen"></i>
                   </button>
@@ -597,116 +741,14 @@
                 </div>
               </td>
             </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </section>
-
-  <!-- ==================== 4. VIEW: PORTOFOLIO RIWAYAT KOMPETENSI ==================== -->
-  <section v-if="currentPage === 'riwayat_laporan'" class="space-y-6">
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-      <div>
-        <h2 class="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
-          <i class="fa-solid fa-certificate text-emerald-500"></i>
-          <span>Portofolio Sertifikat & Pemenuhan Standar JP</span>
-        </h2>
-        <p class="text-xs text-slate-500 mt-1">Daftar sertifikat diklat terverifikasi untuk perhitungan kelulusan 20 JP (PNS) dan 24 JP (PPPK).</p>
-      </div>
-      <div class="flex flex-wrap items-center gap-2">
-        <button @click="exportKompetensiExcel()" class="btn btn-secondary text-xs px-3.5 py-2 flex items-center gap-1.5 shadow-sm">
-          <i class="fa-solid fa-file-excel text-emerald-600"></i>
-          <span>Ekspor Excel</span>
-        </button>
-        <button @click="openKompetensiForm()" class="btn btn-primary text-xs px-3.5 py-2 flex items-center gap-2 shadow-sm">
-          <i class="fa-solid fa-plus"></i>
-          <span>Upload Sertifikat</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- Filters & Search Bar -->
-    <div class="card p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row gap-3">
-      <div class="flex-1 relative">
-        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-        <input type="text" v-model="kompetensiSearch" @input="loadKompetensi(1)" placeholder="Cari nama kegiatan diklat, pegawai, nomor sertifikat..." class="input pl-9 text-xs w-full">
-      </div>
-      <select v-model="filterRumpun" @change="loadKompetensi(1)" class="input text-xs md:w-56">
-        <option value="">Semua Rumpun Diklat</option>
-        <option v-for="r in optionsRumpun" :key="r.id" :value="r.nama_nilai">{{ r.nama_nilai }}</option>
-      </select>
-      <select v-model="filterStatusVerif" @change="loadKompetensi(1)" class="input text-xs md:w-44">
-        <option value="">Semua Status</option>
-        <option value="disetujui">Disetujui</option>
-        <option value="menunggu">Menunggu</option>
-        <option value="ditolak">Ditolak</option>
-      </select>
-    </div>
-
-    <!-- Table Portofolio (Double Width Action Column) -->
-    <div class="card p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-      <div class="overflow-x-auto">
-        <table class="table-custom w-full text-left text-xs">
-          <thead>
-            <tr class="bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300">
-              <th class="py-3 px-3 font-bold w-12">No</th>
-              <th class="py-3 px-4 font-bold min-w-[200px]">Nama Pegawai</th>
-              <th class="py-3 px-4 font-bold min-w-[220px]">Nama Kegiatan & Penyelenggara</th>
-              <th class="py-3 px-3 font-bold">Rumpun / JP</th>
-              <th class="py-3 px-3 font-bold">Tanggal Kegiatan</th>
-              <th class="py-3 px-3 font-bold">Status Verifikasi</th>
-              <th class="py-3 px-6 font-bold text-center min-w-[240px]">Aksi Portofolio</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-            <tr v-for="(k, idx) in kompetensiList" :key="k.id" class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
-              <td class="py-3 px-3 font-bold text-slate-400">{{ idx + 1 }}</td>
-              <td class="py-3 px-4">
-                <div class="font-bold text-slate-900 dark:text-white text-sm">{{ namaPegawai(k.pegawai_id) }}</div>
-                <div class="text-[10px] text-slate-400 font-mono">{{ k.pegawai_id }}</div>
-              </td>
-              <td class="py-3 px-4">
-                <div class="font-bold text-slate-800 dark:text-slate-200">{{ k.nama_kegiatan }}</div>
-                <div class="text-[11px] text-slate-500 mt-0.5"><i class="fa-solid fa-building-columns text-[10px]"></i> {{ k.penyelenggara }}</div>
-              </td>
-              <td class="py-3 px-3">
-                <span class="badge badge-emerald text-xs font-black">{{ k.jumlah_jp }} JP</span>
-                <div class="text-[10px] text-slate-400 mt-0.5">{{ k.rumpun }}</div>
-              </td>
-              <td class="py-3 px-3">
-                <div class="font-semibold text-slate-800 dark:text-slate-200">{{ formatDate(k.tgl_mulai) }}</div>
-                <div class="text-[10px] text-slate-400">s/d {{ formatDate(k.tgl_selesai) }}</div>
-              </td>
-              <td class="py-3 px-3">
-                <span class="badge" :class="k.status_verifikasi === 'disetujui' ? 'badge-success' : (k.status_verifikasi === 'ditolak' ? 'badge-danger' : 'badge-warning')">
-                  {{ k.status_verifikasi === 'disetujui' ? 'Disetujui' : (k.status_verifikasi === 'ditolak' ? 'Ditolak' : 'Menunggu') }}
-                </span>
-              </td>
-              <td class="py-3 px-6 text-center">
-                <div class="flex items-center justify-center gap-2">
-                  <a v-if="k.file_url" :href="k.file_url" target="_blank" class="btn bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-950/40 dark:text-red-400 text-xs px-2.5 py-1.5 rounded-lg flex items-center gap-1" title="Lihat Berkas Sertifikat">
-                    <i class="fa-solid fa-file-pdf"></i>
-                    <span>PDF</span>
-                  </a>
-                  <button v-if="isVerifikator" @click="openVerifModal(k)" class="btn bg-teal-50 hover:bg-teal-100 text-teal-700 dark:bg-teal-950/40 dark:text-teal-300 text-xs px-2.5 py-1.5 rounded-lg flex items-center gap-1" title="Verifikasi Sertifikat">
-                    <i class="fa-solid fa-stamp"></i>
-                    <span>Verif</span>
-                  </button>
-                  <button @click="openEditKompetensi(k)" class="btn btn-secondary text-xs px-2.5 py-1.5 rounded-lg" title="Edit Data">
-                    <i class="fa-solid fa-pen"></i>
-                  </button>
-                  <button v-if="isAdmin" @click="deleteKompetensi(k.id)" class="btn btn-danger text-xs px-2.5 py-1.5 rounded-lg" title="Hapus Data">
-                    <i class="fa-solid fa-trash-can"></i>
-                  </button>
-                </div>
-              </td>
+            <tr v-if="kualifikasiList.length === 0">
+              <td colspan="8" class="py-8 text-center text-slate-400">Belum ada data kualifikasi khusus.</td>
             </tr>
           </tbody>
         </table>
       </div>
     </div>
   </section>
-
   <!-- ==================== 5. VIEW: USULAN DIKLAT BOTTOM-UP ==================== -->
   <section v-if="currentPage === 'usulan_diklat'" class="space-y-6">
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

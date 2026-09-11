@@ -217,7 +217,8 @@
             }
           },
 
-          // State 1: Jadwal Diklat (T_JADWAL_DIKLAT)
+          // State 1: Jadwal Diklat & Portofolio (1 Menu 2 Tab)
+          diklatSubTab: 'jadwal',
           jadwalList: [],
           jadwalLoading: false,
           showJadwalModal: false,
@@ -887,6 +888,7 @@
             if (res && res.success) {
               this.showToast('Sertifikat kompetensi berhasil disimpan', 'success');
               this.showKompetensiForm = false;
+              this.diklatSubTab = 'portofolio';
               await this.loadKompetensi(1);
               await this.loadDashboard();
             } else {
@@ -1272,9 +1274,8 @@
       menu: [
         { name: 'Utama', items: [
           { id: 'dashboard', label: 'Dashboard & Standar JP', icon: 'fa-solid fa-gauge-high' },
-          { id: 'jadwal_penugasan', label: 'Agenda & Penugasan', icon: 'fa-solid fa-calendar-days' },
+          { id: 'diklat_portofolio', label: 'Diklat & Portofolio', icon: 'fa-solid fa-graduation-cap' },
           { id: 'kualifikasi_khusus', label: 'Lisensi & SK Khusus', icon: 'fa-solid fa-id-badge' },
-          { id: 'riwayat_laporan', label: 'Portofolio Diklat', icon: 'fa-solid fa-certificate' },
           { id: 'usulan_diklat', label: 'Usulan Diklat (AKD)', icon: 'fa-solid fa-paper-plane' },
           { id: 'analisa', label: 'Analisa Kebutuhan', icon: 'fa-solid fa-chart-pie' }
         ]},
@@ -1289,9 +1290,10 @@
 
       pageIcons: {
         dashboard: 'fa-solid fa-gauge-high',
+        diklat_portofolio: 'fa-solid fa-graduation-cap',
         jadwal_penugasan: 'fa-solid fa-calendar-days',
-        kualifikasi_khusus: 'fa-solid fa-id-badge',
         riwayat_laporan: 'fa-solid fa-certificate',
+        kualifikasi_khusus: 'fa-solid fa-id-badge',
         usulan_diklat: 'fa-solid fa-paper-plane',
         analisa: 'fa-solid fa-chart-pie',
         master_data: 'fa-solid fa-database',
@@ -1302,12 +1304,19 @@
       onNavigate(vm, page) {
         if (page === 'dashboard') {
           vm.loadDashboard();
-        } else if (page === 'jadwal_penugasan') {
+        } else if (page === 'diklat_portofolio') {
           vm.loadJadwal();
+          vm.loadKompetensi(1);
+        } else if (page === 'jadwal_penugasan') {
+          vm.currentPage = 'diklat_portofolio';
+          vm.diklatSubTab = 'jadwal';
+          vm.loadJadwal();
+        } else if (page === 'riwayat_laporan') {
+          vm.currentPage = 'diklat_portofolio';
+          vm.diklatSubTab = 'portofolio';
+          vm.loadKompetensi(1);
         } else if (page === 'kualifikasi_khusus') {
           vm.loadKualifikasi();
-        } else if (page === 'riwayat_laporan') {
-          vm.loadKompetensi(1);
         } else if (page === 'usulan_diklat') {
           vm.loadUsulan();
         } else if (page === 'analisa') {
