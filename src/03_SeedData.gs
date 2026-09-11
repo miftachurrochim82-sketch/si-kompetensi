@@ -1,5 +1,5 @@
 // ============================================================
-// SI-KOMPETENSI - 03_SeedData.gs (v3.0.0 — 5 Sheet Master Satelit)
+// SI-KOMPETENSI - 03_SeedData.gs (v3.3.0 — Scheduled Agendas & 5 Satelit)
 // Realistic Seed Data untuk Satpol PP & Pemadam Kebakaran Trenggalek
 // ============================================================
 
@@ -17,7 +17,7 @@ function seedInitialData() {
     { id: 'REF-006', kategori: 'RUMPUN_KOMPETENSI', kode: 'BIMTEK', nama_nilai: 'Bimbingan Teknis & Workshop', urutan: 6, status_aktif: 'true', keterangan: 'Bimtek Linmas, SOP Pengamanan Obvit, Mitigasi Kebakaran' },
 
     // Metode Pelatihan
-    { id: 'REF-010', kategori: 'METODE_PELATIHAN', kode: 'KLASIKAL', nama_nilai: 'Klasikal (Tatap Muka / Diklat Kampus)', urutan: 1, status_aktif: 'true', keterangan: 'Pelatihan tatap muka fisik di asrama / pusdiklat' },
+    { id: 'REF-010', kategori: 'METODE_PELATIHAN', kode: 'KLASIKAL', nama_nilai: 'Klasikal (Tatap Muka / Kampus)', urutan: 1, status_aktif: 'true', keterangan: 'Pelatihan tatap muka fisik di pusdiklat' },
     { id: 'REF-011', kategori: 'METODE_PELATIHAN', kode: 'DARING', nama_nilai: 'E-Learning / Daring (MOOC ASN)', urutan: 2, status_aktif: 'true', keterangan: 'Pembelajaran online mandiri LAN / BKN' },
     { id: 'REF-012', kategori: 'METODE_PELATIHAN', kode: 'BLENDED', nama_nilai: 'Blended Learning (Kombinasi)', urutan: 3, status_aktif: 'true', keterangan: 'Kombinasi materi daring & simulasi lapangan' },
 
@@ -36,16 +36,152 @@ function seedInitialData() {
   ];
   referensi.forEach(function(r) { saveRecord_(LOCAL_SHEETS.M_REFERENSI, r, user); });
 
-  // ==================== 2. SEED M_KATALOG_DIKLAT (Kamus Resmi Pelatihan) ====================
+  // ==================== 2. SEED M_KATALOG_DIKLAT (Jadwal Pelatihan Admin & Kamus Resmi) ====================
   var diklat = [
-    { id: 'DKL-001', kode_diklat: 'DKL-PKA', nama_diklat: 'Pelatihan Kepemimpinan Administrator (PKA)', rumpun: 'Manajerial & Kepemimpinan', kategori_keahlian: 'Kepemimpinan Struktural', penyelenggara_default: 'BPSDM Provinsi Jawa Timur', default_jp: 908, estimasi_biaya_default: 22500000, deskripsi: 'Peningkatan kompetensi kepemimpinan taktis & manajerial pejabat administrator eselon III.', status_aktif: 'true' },
-    { id: 'DKL-002', kode_diklat: 'DKL-PPNS', nama_diklat: 'Diklat Pembentukan Penyidik Pegawai Negeri Sipil (PPNS) Penegak Perda', rumpun: 'Teknis Penegakan Perda (PPNS)', kategori_keahlian: 'Penyidikan PPNS', penyelenggara_default: 'Kemendagri / Lemdiklat Polri', default_jp: 400, estimasi_biaya_default: 35000000, deskripsi: 'Kualifikasi wewenang penyidikan tindak pidana pelanggaran Perda sesuai Permendagri No. 3/2019.', status_aktif: 'true' },
-    { id: 'DKL-003', kode_diklat: 'DKL-FIRE-1', nama_diklat: 'Diklat Kualifikasi Pemadam Kebakaran I & Fire Rescue Operator', rumpun: 'Teknis Pemadam & Rescue', kategori_keahlian: 'Fire Rescue Operasional', penyelenggara_default: 'Ciracas Fire Safety Academy DKI', default_jp: 150, estimasi_biaya_default: 7500000, deskripsi: 'Standar kompetensi dasar formasi regu pemadam api, penggunaan SCBA, dan evakuasi darurat.', status_aktif: 'true' },
-    { id: 'DKL-004', kode_diklat: 'DKL-WATER-RESCUE', nama_diklat: 'Diklat Water Rescue & Pertolongan Korban Perairan Pantai Prigi', rumpun: 'Teknis Pemadam & Rescue', kategori_keahlian: 'Water Rescue', penyelenggara_default: 'BASARNAS Jawa Timur', default_jp: 60, estimasi_biaya_default: 4500000, deskripsi: 'Keahlian penyelamatan korban laka air, perahu karet LCR, dan teknik navigasi pesisir pantai.', status_aktif: 'true' },
-    { id: 'DKL-005', kode_diklat: 'DKL-VERTICAL-RESCUE', nama_diklat: 'Diklat Vertical Rescue & Evakuasi Ketinggian / Bangunan Gedung', rumpun: 'Teknis Pemadam & Rescue', kategori_keahlian: 'Vertical Rescue', penyelenggara_default: 'BASARNAS Jawa Timur', default_jp: 50, estimasi_biaya_default: 4000000, deskripsi: 'Teknik evakuasi menggunakan tali (rope rescue), ascending, dan descending tebing/gedung bertingkat.', status_aktif: 'true' },
-    { id: 'DKL-006', kode_diklat: 'DKL-JAFUNG-POLPP', nama_diklat: 'Pelatihan Fungsional Polisi Pamong Praja Ahli Pertama', rumpun: 'Jabatan Fungsional Pol PP & Damkar', kategori_keahlian: 'Jabatan Fungsional Pol PP', penyelenggara_default: 'Pusdiklat Kemendagri Regional Yogyakarta', default_jp: 180, estimasi_biaya_default: 8500000, deskripsi: 'Standar kompetensi pengawasan trantibum, penindakan non-yustisial, dan perlindungan masyarakat.', status_aktif: 'true' },
-    { id: 'DKL-007', kode_diklat: 'DKL-BIMTEK-LINMAS', nama_diklat: 'Bimtek Tata Kelola Satlinmas & Mitigasi Bencana Daerah', rumpun: 'Bimbingan Teknis & Workshop', kategori_keahlian: 'Linmas & Mitigasi', penyelenggara_default: 'Satpol PP & Damkar Trenggalek', default_jp: 32, estimasi_biaya_default: 1500000, deskripsi: 'Penguatan kapasitas anggota Satlinmas desa/kelurahan dalam pengamanan TPS dan deteksi dini bencana.', status_aktif: 'true' },
-    { id: 'DKL-008', kode_diklat: 'DKL-INTEL-TIBUM', nama_diklat: 'Workshop Intelijen Taktis & Negosiasi Penanganan Unjuk Rasa', rumpun: 'Teknis Penegakan Perda (PPNS)', kategori_keahlian: 'Intelijen Tibum', penyelenggara_default: 'BPSDM Provinsi Jawa Timur', default_jp: 45, estimasi_biaya_default: 3000000, deskripsi: 'Teknik pengumpulan bahan keterangan, deteksi dini konflik sosial, dan humanis crowd control.', status_aktif: 'true' }
+    {
+      id: 'DKL-001',
+      kode_diklat: 'DKL-PKA',
+      nama_diklat: 'Pelatihan Kepemimpinan Administrator (PKA)',
+      rumpun: 'Manajerial & Kepemimpinan',
+      kategori_keahlian: 'Kepemimpinan Struktural',
+      penyelenggara_default: 'BPSDM Provinsi Jawa Timur',
+      default_jp: 908,
+      metode: 'Blended Learning',
+      tgl_mulai_jadwal: '2026-09-22',
+      tgl_selesai_jadwal: '2026-11-20',
+      bulan_pelaksanaan: 'September 2026',
+      keterangan_jadwal: 'Angkatan IV - Kuota 2 Pejabat Administrator Trenggalek',
+      status_jadwal: 'Buka Pendaftaran',
+      estimasi_biaya_default: 22500000,
+      deskripsi: 'Peningkatan kompetensi kepemimpinan taktis & manajerial pejabat administrator eselon III.',
+      status_aktif: 'true'
+    },
+    {
+      id: 'DKL-002',
+      kode_diklat: 'DKL-PPNS',
+      nama_diklat: 'Diklat Pembentukan Penyidik Pegawai Negeri Sipil (PPNS) Penegak Perda',
+      rumpun: 'Teknis Penegakan Perda (PPNS)',
+      kategori_keahlian: 'Penyidikan PPNS',
+      penyelenggara_default: 'Kemendagri / Lemdiklat Polri',
+      default_jp: 400,
+      metode: 'Klasikal',
+      tgl_mulai_jadwal: '2026-09-15',
+      tgl_selesai_jadwal: '2026-10-15',
+      bulan_pelaksanaan: 'September 2026',
+      keterangan_jadwal: 'Pola 400 JP Kampus Diklat Megamendung Bogor - Kuota 3 Personel',
+      status_jadwal: 'Buka Pendaftaran',
+      estimasi_biaya_default: 35000000,
+      deskripsi: 'Kualifikasi wewenang penyidikan tindak pidana pelanggaran Perda sesuai Permendagri No. 3/2019.',
+      status_aktif: 'true'
+    },
+    {
+      id: 'DKL-003',
+      kode_diklat: 'DKL-FIRE-1',
+      nama_diklat: 'Diklat Kualifikasi Pemadam Kebakaran I & Fire Rescue Operator',
+      rumpun: 'Teknis Pemadam & Rescue',
+      kategori_keahlian: 'Fire Rescue Operasional',
+      penyelenggara_default: 'Ciracas Fire Safety Academy DKI',
+      default_jp: 150,
+      metode: 'Klasikal',
+      tgl_mulai_jadwal: '2026-09-25',
+      tgl_selesai_jadwal: '2026-10-05',
+      bulan_pelaksanaan: 'September 2026',
+      keterangan_jadwal: 'Sertifikasi Nasional BNSP & Kemendagri - Prioritas Regu Pos Panggul & Watulimo',
+      status_jadwal: 'Buka Pendaftaran',
+      estimasi_biaya_default: 7500000,
+      deskripsi: 'Standar kompetensi dasar formasi regu pemadam api, penggunaan SCBA, dan evakuasi darurat.',
+      status_aktif: 'true'
+    },
+    {
+      id: 'DKL-004',
+      kode_diklat: 'DKL-WATER-RESCUE',
+      nama_diklat: 'Diklat Water Rescue & Pertolongan Korban Perairan Pantai Prigi',
+      rumpun: 'Teknis Pemadam & Rescue',
+      kategori_keahlian: 'Water Rescue',
+      penyelenggara_default: 'BASARNAS Jawa Timur',
+      default_jp: 60,
+      metode: 'Klasikal',
+      tgl_mulai_jadwal: '2026-10-08',
+      tgl_selesai_jadwal: '2026-10-12',
+      bulan_pelaksanaan: 'Oktober 2026',
+      keterangan_jadwal: 'Simulasi Evakuasi Laka Laut Pantai Selatan Trenggalek',
+      status_jadwal: 'Segera Dibuka',
+      estimasi_biaya_default: 4500000,
+      deskripsi: 'Keahlian penyelamatan korban laka air, perahu karet LCR, dan teknik navigasi pesisir pantai.',
+      status_aktif: 'true'
+    },
+    {
+      id: 'DKL-005',
+      kode_diklat: 'DKL-VERTICAL-RESCUE',
+      nama_diklat: 'Diklat Vertical Rescue & Evakuasi Ketinggian / Bangunan Gedung',
+      rumpun: 'Teknis Pemadam & Rescue',
+      kategori_keahlian: 'Vertical Rescue',
+      penyelenggara_default: 'BASARNAS Jawa Timur',
+      default_jp: 50,
+      metode: 'Klasikal',
+      tgl_mulai_jadwal: '2026-10-20',
+      tgl_selesai_jadwal: '2026-10-24',
+      bulan_pelaksanaan: 'Oktober 2026',
+      keterangan_jadwal: 'Sertifikasi Rope Rescue Tebing & Gedung Bertingkat',
+      status_jadwal: 'Segera Dibuka',
+      estimasi_biaya_default: 4000000,
+      deskripsi: 'Teknik evakuasi menggunakan tali (rope rescue), ascending, dan descending tebing/gedung bertingkat.',
+      status_aktif: 'true'
+    },
+    {
+      id: 'DKL-006',
+      kode_diklat: 'DKL-JAFUNG-POLPP',
+      nama_diklat: 'Pelatihan Fungsional Polisi Pamong Praja Ahli Pertama',
+      rumpun: 'Jabatan Fungsional Pol PP & Damkar',
+      kategori_keahlian: 'Jabatan Fungsional Pol PP',
+      penyelenggara_default: 'Pusdiklat Kemendagri Regional Yogyakarta',
+      default_jp: 180,
+      metode: 'Blended Learning',
+      tgl_mulai_jadwal: '2026-09-18',
+      tgl_selesai_jadwal: '2026-10-02',
+      bulan_pelaksanaan: 'September 2026',
+      keterangan_jadwal: 'Angkatan II Pol PP Trenggalek - Penyesuaian Inpassing JF',
+      status_jadwal: 'Buka Pendaftaran',
+      estimasi_biaya_default: 8500000,
+      deskripsi: 'Standar kompetensi pengawasan trantibum, penindakan non-yustisial, dan perlindungan masyarakat.',
+      status_aktif: 'true'
+    },
+    {
+      id: 'DKL-007',
+      kode_diklat: 'DKL-BIMTEK-LINMAS',
+      nama_diklat: 'Bimtek Tata Kelola Satlinmas & Mitigasi Bencana Daerah',
+      rumpun: 'Bimbingan Teknis & Workshop',
+      kategori_keahlian: 'Linmas & Mitigasi',
+      penyelenggara_default: 'Satpol PP & Damkar Trenggalek',
+      default_jp: 32,
+      metode: 'Klasikal',
+      tgl_mulai_jadwal: '2026-09-12',
+      tgl_selesai_jadwal: '2026-09-14',
+      bulan_pelaksanaan: 'September 2026',
+      keterangan_jadwal: 'In-House Training Ruang Rapat Praja Mukti',
+      status_jadwal: 'Sedang Berjalan',
+      estimasi_biaya_default: 1500000,
+      deskripsi: 'Penguatan kapasitas anggota Satlinmas desa/kelurahan dalam pengamanan TPS dan deteksi dini bencana.',
+      status_aktif: 'true'
+    },
+    {
+      id: 'DKL-008',
+      kode_diklat: 'DKL-INTEL-TIBUM',
+      nama_diklat: 'Workshop Intelijen Taktis & Negosiasi Penanganan Unjuk Rasa',
+      rumpun: 'Teknis Penegakan Perda (PPNS)',
+      kategori_keahlian: 'Intelijen Tibum',
+      penyelenggara_default: 'BPSDM Provinsi Jawa Timur',
+      default_jp: 45,
+      metode: 'Klasikal',
+      tgl_mulai_jadwal: '2026-09-15',
+      tgl_selesai_jadwal: '2026-09-17',
+      bulan_pelaksanaan: 'September 2026',
+      keterangan_jadwal: 'Kerjasama BPSDM Jatim - Kuota 10 Anggota Bidang Gakda',
+      status_jadwal: 'Buka Pendaftaran',
+      estimasi_biaya_default: 3000000,
+      deskripsi: 'Teknik pengumpulan bahan keterangan, deteksi dini konflik sosial, dan humanis crowd control.',
+      status_aktif: 'true'
+    }
   ];
   diklat.forEach(function(d) { saveRecord_(LOCAL_SHEETS.M_KATALOG_DIKLAT, d, user); });
 
