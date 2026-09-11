@@ -1,5 +1,5 @@
 // ============================================================
-// SI-KOMPETENSI - 99_TestSuite.gs (v3.0.0 — 5 Sheet Master Satelit)
+// SI-KOMPETENSI - 99_TestSuite.gs (v3.2.0 — Live Ecosystem Linked)
 // Comprehensive Automated Integration & Unit Tests
 // ============================================================
 
@@ -9,7 +9,7 @@ function runAllTests() {
   var adminUser = { id: 'TEST_ADMIN', email: 'admin.test@trenggalekkab.go.id', role: 'admin' };
   var viewerUser = { id: 'PEG-TEST', email: 'staf.test@trenggalekkab.go.id', role: 'viewer' };
 
-  Logger.log('🧪 Memulai Test Suite SI-KOMPETENSI (v3.0.0 — 5 Sheet Master Satelit)...');
+  Logger.log('🧪 Memulai Test Suite SI-KOMPETENSI (v3.2.0 — Ekosistem Terpadu)...');
 
   // Test 1: Verifikasi Struktur 5 Sheet Database Lokal
   try {
@@ -31,7 +31,7 @@ function runAllTests() {
       if (missing.length === 0) {
         results.push({ name: '1. Struktur 5 Sheet Database Lokal', status: 'PASS', message: '5 Sheet Satelit terdaftar lengkap di spreadsheet.' });
       } else {
-        results.push({ name: '1. Struktur 5 Sheet Database Lokal', status: 'WARN', message: 'Sheet belum dibuat: ' + missing.join(', ') + ' (Jalankan setupApp() untuk inisialisasi)' });
+        results.push({ name: '1. Struktur 5 Sheet Database Lokal', status: 'WARN', message: 'Sheet belum dibuat: ' + missing.join(', ') });
       }
     }
   } catch (e) {
@@ -67,7 +67,7 @@ function runAllTests() {
       results.push({
         name: '3. SIMPEG Lookup Bridge (Read-Only)',
         status: 'PASS',
-        message: 'Pegawai: ' + pCount + ', Unit: ' + uCount + ', Jabatan: ' + jCount
+        message: 'Pegawai: ' + pCount + ', Unit: ' + uCount + ', Jabatan: ' + jCount + ' (dari SIMPEG Master)'
       });
     } else {
       results.push({ name: '3. SIMPEG Lookup Bridge (Read-Only)', status: 'FAIL', error: 'Gagal membaca lookup SIMPEG' });
@@ -112,7 +112,7 @@ function runAllTests() {
   try {
     var writeFailedAsExpected = false;
     try {
-      saveRecord_('M_PEGAWAI', { id: 'TEST_HACK', nama_lengkap: 'Hacker' }, viewerUser);
+      saveRecord_('PEGAWAI', { id: 'TEST_HACK', nama: 'Hacker' }, viewerUser);
     } catch(err) {
       if (err.message && err.message.indexOf('Akses Ditolak') !== -1) {
         writeFailedAsExpected = true;
@@ -142,7 +142,7 @@ function runAllTests() {
   }
 
   // Log Hasil Rangkuman
-  Logger.log('================ HASIL PENGUJIAN SI-KOMPETENSI v3.0.0 ================');
+  Logger.log('================ HASIL PENGUJIAN SI-KOMPETENSI v3.2.0 ================');
   results.forEach(function(r) {
     Logger.log('[' + r.status + '] ' + r.name + (r.message ? ' - ' + r.message : '') + (r.error ? ' - ERROR: ' + r.error : ''));
   });

@@ -1,5 +1,5 @@
 // ============================================================
-// SI-KOMPETENSI - 02_AppLogic.gs (v3.0.0 — 5 Sheet Master Satelit)
+// SI-KOMPETENSI - 02_AppLogic.gs (v3.2.0 — Live Ecosystem Linked)
 // Backend Routing, Business Logic & Standalone API Dispatcher
 // Satpol PP & Pemadam Kebakaran Kab. Trenggalek
 // ============================================================
@@ -95,7 +95,7 @@ function handleAction(payload) {
 
   // 2. Ping
   if (action === 'ping') {
-    return { success: true, message: 'SI-KOMPETENSI API v3.0 Online', timestamp: new Date().toISOString() };
+    return { success: true, message: 'SI-KOMPETENSI API v3.2 Online', timestamp: new Date().toISOString() };
   }
 
   // 3. Routing Aksi
@@ -243,8 +243,8 @@ function apiDashboard_(data, sessionUser) {
   var standar = getSheetData_(LOCAL_SHEETS.M_STANDAR_KOMPETENSI);
 
   // Baca referensi SIMPEG
-  var pegawai = getSheetData_('M_PEGAWAI');
-  var unit = getSheetData_('M_UNIT_KERJA');
+  var pegawai = getSheetData_('PEGAWAI');
+  var unit = getSheetData_('UNIT_KERJA');
 
   var currentYear = new Date().getFullYear();
   var targetTahun = Number(data && data.tahun) || currentYear;
@@ -259,7 +259,7 @@ function apiDashboard_(data, sessionUser) {
   var divisiDistribution = {};
 
   unit.forEach(function(u) {
-    divisiDistribution[u.nama_unit || u.id] = 0;
+    divisiDistribution[u.nama_unit || u.nama || u.id] = 0;
   });
 
   riwayat.forEach(function(r) {
@@ -288,10 +288,10 @@ function apiDashboard_(data, sessionUser) {
     }
 
     // Mapping divisi
-    var peg = pegawai.find(function(p) { return String(p.id) === String(r.pegawai_id); });
+    var peg = pegawai.find(function(p) { return String(p.id || p.pegawai_id) === String(r.pegawai_id); });
     if (peg && peg.unit_id) {
-      var un = unit.find(function(u) { return String(u.id) === String(peg.unit_id); });
-      var uName = un ? un.nama_unit : peg.unit_id;
+      var un = unit.find(function(u) { return String(u.id || u.unit_id) === String(peg.unit_id); });
+      var uName = un ? (un.nama_unit || un.nama) : peg.unit_id;
       divisiDistribution[uName] = (divisiDistribution[uName] || 0) + 1;
     }
   });
@@ -340,7 +340,7 @@ function apiDashboard_(data, sessionUser) {
 function getAnalytics_(data, sessionUser) {
   var riwayat = getSheetData_(LOCAL_SHEETS.T_RIWAYAT_KOMPETENSI);
   var standar = getSheetData_(LOCAL_SHEETS.M_STANDAR_KOMPETENSI);
-  var pegawai = getSheetData_('M_PEGAWAI');
+  var pegawai = getSheetData_('PEGAWAI');
   var katalog = getSheetData_(LOCAL_SHEETS.M_KATALOG_DIKLAT);
 
   var currentYear = Number(data && data.tahun) || new Date().getFullYear();
@@ -353,7 +353,7 @@ function getAnalytics_(data, sessionUser) {
 
     stdJabatan.forEach(function(sj) {
       var passed = riwayat.some(function(r) {
-        return String(r.pegawai_id) === String(p.id) &&
+        return String(r.pegawai_id) === String(p.id || p.pegawai_id) &&
                String(r.diklat_id) === String(sj.diklat_id) &&
                String(r.status_verifikasi).toLowerCase() === 'disetujui';
       });
@@ -361,8 +361,8 @@ function getAnalytics_(data, sessionUser) {
       if (!passed && String(sj.tingkat_kebutuhan).toUpperCase() === 'WAJIB') {
         var diklatObj = katalog.find(function(k) { return String(k.id) === String(sj.diklat_id); });
         gapReports.push({
-          pegawai_id: p.id,
-          nama_pegawai: p.nama_lengkap || p.id,
+          pegawai_id: p.id || p.pegawai_id,
+          nama_pegawai: p.nama_lengkap || p.nama || p.id,
           jabatan_id: jId,
           diklat_wajib: (diklatObj && diklatObj.nama_diklat) || sj.diklat_id,
           kategori: sj.tingkat_kebutuhan,
@@ -652,16 +652,16 @@ function getSimpegLookup_() {
   return {
     success: true,
     data: {
-      pegawai: getSheetData_('M_PEGAWAI'),
-      unit: getSheetData_('M_UNIT_KERJA'),
-      jabatan: getSheetData_('M_JABATAN')
+      pegawai: getSheetData_('PEGAWAI'),
+      unit: getSheetData_('UNIT_KERJA'),
+      jabatan: getSheetData_('JABATAN')
     }
   };
 }
 
 function getMyProfile_(data, sessionUser) {
   if (!sessionUser || !sessionUser.email) return { success: false, error: 'Sesi tidak valid.' };
-  var pegawai = getSheetData_('M_PEGAWAI');
+  var pegawai = getSheetData_('PEGAWAI');
   var match = pegawai.find(function(p) { return String(p.email).toLowerCase() === String(sessionUser.email).toLowerCase(); });
   return { success: true, data: match || sessionUser };
 }
@@ -726,12 +726,12 @@ function initDatabase() {
  * Setup Lengkap SI-KOMPETENSI
  */
 function setupApp() {
-  Logger.log('🚀 Memulai Setup SI-KOMPETENSI (Arsitektur 5 Sheet Satelit)...');
+  Logger.log('🚀 Memulai Setup SI-KOMPETENSI (Ekosistem Terpadu SIMPEG & SI-PLATFORM)...');
 
   // 1. Inisialisasi 5 Sheet Lokal
   initDatabase();
 
-  // 2. Simpan Script Properties
+  // 2. Simpan Script Properties Otomatis ke Ekosistem Resmi
   var props = appProps_();
   var activeId = SPREADSHEET_ID;
   if (!activeId) {
@@ -742,9 +742,9 @@ function setupApp() {
     'APP_TITLE': APP_TITLE,
     'APP_CODE': APP_CODE,
     'SPREADSHEET_ID': activeId || '',
-    'MASTER_SPREADSHEET_ID': MASTER_SPREADSHEET_ID || activeId || '',
-    'PLATFORM_SPREADSHEET_ID': PLATFORM_SPREADSHEET_ID || '',
-    'PLATFORM_API_URL': PLATFORM_API_URL,
+    'MASTER_SPREADSHEET_ID': MASTER_SPREADSHEET_ID || DEFAULT_MASTER_SPREADSHEET_ID,
+    'PLATFORM_SPREADSHEET_ID': PLATFORM_SPREADSHEET_ID || DEFAULT_PLATFORM_SPREADSHEET_ID,
+    'PLATFORM_API_URL': PLATFORM_API_URL || DEFAULT_PLATFORM_URL,
     'SESSION_PREFIX': SESSION_PREFIX,
     'SESSION_TTL_SECONDS': String(SESSION_TTL_SECONDS)
   });
@@ -756,7 +756,8 @@ function setupApp() {
 
   Logger.log('🎉 ============================================================');
   Logger.log('🎉 SETUP SELESAI DENGAN SUKSES!');
-  Logger.log('🎉 Database 5 Sheet Satelit siap digunakan untuk Satpol PP & Damkar.');
+  Logger.log('🎉 Terhubung ke SIMPEG Master ID: ' + (MASTER_SPREADSHEET_ID || DEFAULT_MASTER_SPREADSHEET_ID));
+  Logger.log('🎉 Terhubung ke SI-PLATFORM ID: ' + (PLATFORM_SPREADSHEET_ID || DEFAULT_PLATFORM_SPREADSHEET_ID));
   Logger.log('🎉 ============================================================');
 
   return { success: true, message: 'Setup SI-KOMPETENSI berhasil dijalankan.' };

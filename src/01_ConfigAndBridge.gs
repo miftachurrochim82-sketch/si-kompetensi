@@ -1,12 +1,14 @@
 // ============================================================
-// SI-KOMPETENSI - 01_ConfigAndBridge.gs (v3.1.0 — SIMPEG Schema Matched)
-// Standar Spesifik Satpol PP & Pemadam Kebakaran Kab. Trenggalek
+// SI-KOMPETENSI - 01_ConfigAndBridge.gs (v3.2.0 — Live Ecosystem Linked)
+// Standar Satpol PP & Pemadam Kebakaran Kab. Trenggalek
 // ============================================================
 
 var APP_TITLE = 'SI-KOMPETENSI';
 var APP_CODE = 'SIKOMPETENSI';
 
-// URL Portal Utama SSO Pusat
+// ID Spreadsheet Resmi Ekosistem Terpadu
+var DEFAULT_MASTER_SPREADSHEET_ID = '1HvMXmvdtgAUZ9A0-SQHZp9QjnYv1A7Ku_oJIjbT8gT0'; // SIMPEG Master
+var DEFAULT_PLATFORM_SPREADSHEET_ID = '1EeJrOo6-75uf8SWCX4P5XPSMoUGXp8p1a098vKBRJys'; // SI-PLATFORM
 var DEFAULT_PLATFORM_URL = 'https://script.google.com/macros/s/AKfycbwh_OUVqmxLcuF81FHmPZtT33Wrm8Ce9Da1SQ3hfkSr7gM5P8ofyAlHSgW40mq3eo-PoQ/exec';
 
 function appProps_() {
@@ -38,10 +40,10 @@ var SPREADSHEET_ID = getEnvProperty_('SPREADSHEET_ID') || (function() {
 })();
 
 // ID Spreadsheet SIMPEG Pusat (Master Pegawai, Unit, Jabatan)
-var MASTER_SPREADSHEET_ID = getEnvProperty_('MASTER_SPREADSHEET_ID') || SPREADSHEET_ID;
+var MASTER_SPREADSHEET_ID = getEnvProperty_('MASTER_SPREADSHEET_ID') || DEFAULT_MASTER_SPREADSHEET_ID;
 
 // ID Spreadsheet SI-PLATFORM (Sentral Settings & Audit)
-var PLATFORM_SPREADSHEET_ID = getEnvProperty_('PLATFORM_SPREADSHEET_ID') || '';
+var PLATFORM_SPREADSHEET_ID = getEnvProperty_('PLATFORM_SPREADSHEET_ID') || DEFAULT_PLATFORM_SPREADSHEET_ID;
 var PLATFORM_API_URL = getEnvProperty_('PLATFORM_API_URL') || DEFAULT_PLATFORM_URL;
 
 var SESSION_PREFIX = 'APP_SESSION_' + APP_CODE + '_';
@@ -69,7 +71,7 @@ function isSimpegSheet_(sheetName) {
   return SIMPEG_REFERENCE_SHEETS.indexOf(sheetName) !== -1;
 }
 
-// ==================== HEADER STRUKTUR DATABASE ====================
+// ==================== HEADER STRUKTUR DATABASE LENGKAP ====================
 var ALL_SHEET_HEADERS = {
   // 1. Master Referensi Gabungan (Dropdown Opsi Sistem)
   M_REFERENSI: [
@@ -108,6 +110,17 @@ var ALL_SHEET_HEADERS = {
     'tempat_lahir', 'tanggal_lahir', 'pangkat_golongan', 'status_kepegawaian', 'pendidikan_terakhir',
     'email', 'no_hp', 'alamat', 'foto_url', 'unit_id', 'jabatan_id', 'atasan_id', 'role',
     'regu', 'is_ppns', 'no_sk_ppns', 'kualifikasi_damkar', 'status_aktif',
+    'created_at', 'updated_at', 'created_by', 'updated_by', 'deleted_at'
+  ],
+  UNIT_KERJA: [
+    'unit_id', 'kode_unit', 'nama_unit', 'kategori_unit', 'parent_unit_id', 'lokasi',
+    'telepon_unit', 'kepala_nip', 'kepala_hp', 'status_aktif', 'keterangan',
+    'created_at', 'updated_at', 'created_by', 'updated_by', 'deleted_at'
+  ],
+  JABATAN: [
+    'jabatan_id', 'kode_jabatan', 'nama_jabatan', 'jenis_jabatan', 'rumpun_jabatan', 'jenjang_jabatan',
+    'kelas_jabatan', 'unit_id', 'status_jabatan', 'plt_pegawai_id', 'tanggal_mulai_jabatan', 'tanggal_selesai_jabatan',
+    'target_jp_tahunan', 'status_aktif', 'keterangan',
     'created_at', 'updated_at', 'created_by', 'updated_by', 'deleted_at'
   ]
 };
@@ -205,7 +218,7 @@ function getSheetData_(sheetName) {
     }
 
     if (hasData && !obj.deleted_at) {
-      // Normalisasi otomatis atribut SIMPEG PEGAWAI agar kompatibel 100%
+      // Normalisasi otomatis PEGAWAI
       if (obj.pegawai_id && !obj.id) obj.id = obj.pegawai_id;
       if (!obj.pegawai_id && obj.id) obj.pegawai_id = obj.id;
       if (obj.nama && !obj.nama_lengkap) obj.nama_lengkap = obj.nama;
@@ -215,6 +228,17 @@ function getSheetData_(sheetName) {
       if (obj.regu && !obj.regu_pleton) obj.regu_pleton = obj.regu;
       if (obj.regu_pleton && !obj.regu) obj.regu = obj.regu_pleton;
       if (obj.no_hp && !obj.telepon) obj.telepon = obj.no_hp;
+
+      // Normalisasi otomatis UNIT_KERJA
+      if (obj.unit_id && !obj.id) obj.id = obj.unit_id;
+      if (!obj.unit_id && obj.id) obj.unit_id = obj.id;
+      if (obj.nama_unit && !obj.nama) obj.nama = obj.nama_unit;
+      if (obj.telepon_unit && !obj.telepon) obj.telepon = obj.telepon_unit;
+
+      // Normalisasi otomatis JABATAN
+      if (obj.jabatan_id && !obj.id) obj.id = obj.jabatan_id;
+      if (!obj.jabatan_id && obj.id) obj.jabatan_id = obj.id;
+      if (obj.nama_jabatan && !obj.nama) obj.nama = obj.nama_jabatan;
 
       records.push(obj);
     }
@@ -260,11 +284,13 @@ function saveRecord_(sheetName, record, actor) {
 
   var pkIndex = headers.indexOf('id');
   if (pkIndex === -1) pkIndex = headers.indexOf('pegawai_id');
+  if (pkIndex === -1) pkIndex = headers.indexOf('unit_id');
+  if (pkIndex === -1) pkIndex = headers.indexOf('jabatan_id');
   if (pkIndex === -1) pkIndex = 0;
 
   var rowIndex = -1;
   for (var i = 1; i < values.length; i++) {
-    if (String(values[i][pkIndex]) === String(record.id || record.pegawai_id)) {
+    if (String(values[i][pkIndex]) === String(record.id || record.pegawai_id || record.unit_id || record.jabatan_id)) {
       rowIndex = i + 1;
       break;
     }
@@ -315,6 +341,8 @@ function softDeleteRecord_(sheetName, id, actor) {
   var headers = values[0].map(function(h) { return String(h).trim(); });
   var pkIndex = headers.indexOf('id');
   if (pkIndex === -1) pkIndex = headers.indexOf('pegawai_id');
+  if (pkIndex === -1) pkIndex = headers.indexOf('unit_id');
+  if (pkIndex === -1) pkIndex = headers.indexOf('jabatan_id');
   var delIndex = headers.indexOf('deleted_at');
   if (pkIndex === -1 || delIndex === -1) return false;
 
@@ -333,7 +361,7 @@ function softDeleteRecord_(sheetName, id, actor) {
 function findRecordById_(sheetName, id) {
   var records = getSheetData_(sheetName);
   for (var i = 0; i < records.length; i++) {
-    if (String(records[i].id) === String(id) || String(records[i].pegawai_id) === String(id)) {
+    if (String(records[i].id) === String(id) || String(records[i].pegawai_id) === String(id) || String(records[i].unit_id) === String(id) || String(records[i].jabatan_id) === String(id)) {
       return records[i];
     }
   }
