@@ -1,995 +1,1037 @@
 // ============================================================
-// SI-KOMPETENSI - 02_AppLogic.gs (v3.4.0 — AI Insights & Matriks Bulanan)
-// Backend Routing, Business Logic & Standalone API Dispatcher
-// Satpol PP & Pemadam Kebakaran Kab. Trenggalek
+// SI-KOMPETENSI - 02_AppLogic.gs (v4.0.0 — 8-Sheet Backend Business Engine)
+// Sistem Informasi Manajemen Portofolio, Jadwal & Lisensi Khusus ASN
+// Satuan Polisi Pamong Praja & Pemadam Kebakaran Kab. Trenggalek
 // ============================================================
 
 /**
- * Entry point HTTP GET (Web App UI Entry)
- */
-function doGet(e) {
-  var template;
-  try {
-    template = HtmlService.createTemplateFromFile('Index');
-  } catch (err) {
-    template = HtmlService.createTemplateFromFile('index');
-  }
-  template.sessionToken = '';
-  template.user = {};
-  template.ticket = (e && e.parameter && e.parameter.ticket) || '';
-  template.isSsoEntry = Boolean((e && e.parameter && e.parameter.ticket));
-  return template.evaluate()
-    .setTitle(APP_TITLE + ' — Satpol PP & Damkar Trenggalek')
-    .addMetaTag('viewport', 'width=device-width, initial-scale=1')
-    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.DEFAULT);
-}
-
-/**
- * Entry point HTTP POST (API Endpoint)
- */
-function doPost(e) {
-  var body = {};
-  try {
-    if (e && e.postData && e.postData.contents) {
-      body = JSON.parse(e.postData.contents);
-    }
-  } catch (err) {
-    return jsonResponse_({ success: false, code: 'BAD_REQUEST', error: 'Format JSON payload tidak valid.' });
-  }
-
-  var result = handleAction(body);
-  return jsonResponse_(result);
-}
-
-function include(filename) {
-  try {
-    return HtmlService.createTemplateFromFile(filename).evaluate().getContent();
-  } catch (err) {
-    return HtmlService.createTemplateFromFile(filename.toLowerCase()).evaluate().getContent();
-  }
-}
-
-/**
- * Hook pre-save lokal
- */
-function localPreSaveHook_(sheetName, record, isNew, sessionUser) {
-  var userRole = String((sessionUser && sessionUser.role) || '').toLowerCase();
-  var isAdminOrVerifikator = (userRole === 'admin' || userRole === 'super' || userRole === 'verifikator');
-
-  if (sheetName === LOCAL_SHEETS.T_RIWAYAT_KOMPETENSI) {
-    if (isNew && !record.id) {
-      record.id = 'KMP-' + String(Date.now()).slice(-6);
-    }
-    if (!isAdminOrVerifikator) {
-      if (isNew) record.status_verifikasi = 'menunggu';
-    }
-  } else if (sheetName === LOCAL_SHEETS.T_USULAN_DIKLAT) {
-    if (isNew && !record.id) {
-      record.id = 'USL-' + String(Date.now()).slice(-6);
-    }
-    if (!isAdminOrVerifikator) {
-      if (isNew) record.status_usulan = 'diajukan';
-    }
-  }
-  return record;
-}
-
-/**
- * Dispatcher Utama SI-KOMPETENSI
+ * 1. DISPATCHER UTAMA DENGAN VALIDASI TIKET SSO & SESSION TOKEN
  */
 function handleAction(payload) {
-  if (!payload || typeof payload !== 'object') {
-    return { success: false, code: 'BAD_REQUEST', error: 'Payload tidak valid.' };
-  }
-
-  var action = payload.action || '';
-  var data = payload.data || {};
-  var token = payload.token || '';
-  var ticket = payload.ticket || (data && data.ticket) || '';
-  var sessionUser = payload.user || { id: 'GUEST', role: 'viewer', email: '' };
-
-  // 1. SSO Ticket Exchange (Mendukung exchange_platform_ticket & aliasnya)
-  if (action === 'exchange_platform_ticket' || action === 'exchange_ticket' || action === 'validate_ticket' || action === 'sso_login' || action === 'auth_ticket') {
-    return handleTicketExchange_(ticket || token);
-  }
-
-  // 2. Ping
-  if (action === 'ping') {
-    return { success: true, message: 'SI-KOMPETENSI API v3.4.0 Online', timestamp: new Date().toISOString() };
-  }
-
-  // 3. Routing Aksi
   try {
+    payload = payload || {};
+    var action = payload.action || 'ping';
+    var user = payload._user || null;
+    var token = payload.token || '';
+    var ticket = payload.ticket || '';
+
+    // A. Endpoint Publik
+    if (action === 'ping') {
+      return { success: true, message: 'SI-KOMPETENSI API Backend Aktif (v4.0.0 - 8 Sheet Architecture)', timestamp: new Date().toISOString() };
+    }
+    if (action === 'get_config') {
+      return { success: true, data: getAppConfig_() };
+    }
+
+    // B. Autentikasi SSO Ticket dari SI-PLATFORM
+    if (ticket && !user) {
+      user = validateSsoTicket_(ticket);
+    }
+
+    // C. Autentikasi Token Sesi Lokal / SI-PLATFORM
+    if (token && !user) {
+      user = validateSessionToken_(token);
+    }
+
+    // D. Mode Pengembang & In-App Testing
+    if (!user) {
+      var activeEmail = '';
+      try { activeEmail = Session.getActiveUser().getEmail(); } catch (e) {}
+      if (activeEmail) {
+        user = {
+          id: 'DEV-' + activeEmail.split('@')[0],
+          email: activeEmail,
+          username: activeEmail.split('@')[0],
+          nama: activeEmail.split('@')[0],
+          role: 'admin',
+          pegawai_id: 'PEG-001'
+        };
+      } else {
+        user = { id: 'ANONYMOUS', email: 'guest@trenggalekkab.go.id', role: 'viewer', pegawai_id: '' };
+      }
+    }
+
+    // E. Routing Endpoint Aksi
     switch (action) {
-      // Dashboard, AI Insights & Analisa
+      // 1. Dashboard & Analitik
       case 'dashboard':
-        return apiDashboard_(data, sessionUser);
-
+        return apiDashboard_(payload.data || {}, user);
       case 'analytics':
-        return getAnalytics_(data, sessionUser);
+        return getAnalytics_(payload.data || {}, user);
 
-      // Transaksi 1: Riwayat Kompetensi & Sertifikat (20/24 JP)
-      case 'get_riwayat_list':
-      case 'get_kompetensi_list':
-        return getRiwayatList_(data, sessionUser);
+      // 2. SIMPEG Read-Only Lookup
+      case 'get_simpeg_lookup':
+        return getSimpegLookup_();
 
-      case 'save_riwayat':
-      case 'save_kompetensi':
-        return saveRiwayatHandler_(data, sessionUser);
-
-      case 'delete_riwayat':
-      case 'delete_kompetensi':
-        return deleteRiwayatHandler_(data, sessionUser);
-
-      case 'verifikasi_riwayat':
-      case 'verifikasi_kompetensi':
-        return verifikasiRiwayatHandler_(data, sessionUser);
-
-      // Transaksi 2: Usulan Diklat Bottom-Up (AKD)
-      case 'get_usulan_list':
-        return getUsulanList_(data, sessionUser);
-
-      case 'save_usulan':
-        return saveUsulanHandler_(data, sessionUser);
-
-      case 'review_usulan':
-        return reviewUsulanHandler_(data, sessionUser);
-
-      case 'delete_usulan':
-        return deleteUsulanHandler_(data, sessionUser);
-
-      // Master Satelit 1: Katalog & Jadwal Diklat
-      case 'get_katalog_list':
-      case 'get_katalog_diklat':
-      case 'get_jadwal_list':
-        return getKatalogList_(data, sessionUser);
-
-      case 'save_katalog':
-      case 'save_jadwal':
-        return saveKatalogHandler_(data, sessionUser);
-
-      case 'delete_katalog':
-      case 'delete_jadwal':
-        return deleteKatalogHandler_(data, sessionUser);
-
-      // Master Satelit 2: Standar Kompetensi Jabatan (SKJ)
-      case 'get_standar_kompetensi_list':
-        return getStandarKompetensiList_(data, sessionUser);
-
-      case 'save_standar_kompetensi':
-        return saveStandarKompetensiHandler_(data, sessionUser);
-
-      case 'delete_standar_kompetensi':
-        return deleteStandarKompetensiHandler_(data, sessionUser);
-
-      // Master Satelit 3: Master Referensi Gabungan
-      case 'get_referensi_list':
-        return getReferensiList_(data, sessionUser);
-
-      case 'save_referensi':
-        return saveReferensiHandler_(data, sessionUser);
-
-      case 'delete_referensi':
-        return deleteReferensiHandler_(data, sessionUser);
-
-      // Bundle Data Master Satelit & Lookup SIMPEG
+      // 3. Master Satelit Bundle
       case 'get_master_satelit':
         return getMasterSatelit_();
 
-      case 'get_simpeg_lookup':
-      case 'get_master_simpeg':
-        return getSimpegLookup_();
+      // 4. Jadwal Pelatihan Terjadwal (T_JADWAL_DIKLAT)
+      case 'get_jadwal_list':
+        return getJadwalList_(payload.data || {});
+      case 'save_jadwal':
+        return saveJadwal_(payload.data || {}, user);
+      case 'delete_jadwal':
+        return deleteJadwal_(payload.data || {}, user);
 
-      // Profil & Cache
-      case 'get_my_profile':
-        return getMyProfile_(data, sessionUser);
+      // 5. Penugasan Peserta & Surat Perintah Tugas (T_PENUGASAN_PESERTA)
+      case 'get_penugasan_list':
+        return getPenugasanList_(payload.data || {});
+      case 'save_penugasan':
+        return savePenugasan_(payload.data || {}, user);
+      case 'bulk_assign_peserta':
+        return bulkAssignPeserta_(payload.data || {}, user);
+      case 'delete_penugasan':
+        return deletePenugasan_(payload.data || {}, user);
 
-      case 'logout':
-        return { success: true, message: 'Berhasil logout' };
+      // 6. Kualifikasi & Lisensi Khusus Kadaluwarsa (T_KUALIFIKASI_KHUSUS)
+      case 'get_kualifikasi_list':
+        return getKualifikasiList_(payload.data || {});
+      case 'save_kualifikasi':
+        return saveKualifikasi_(payload.data || {}, user);
+      case 'delete_kualifikasi':
+        return deleteKualifikasi_(payload.data || {}, user);
+      case 'get_kualifikasi_expiring_soon':
+        return getKualifikasiExpiringSoon_(payload.data || {});
 
-      case 'refresh_cache':
-        return refreshCacheHandler_();
+      // 7. Riwayat Portofolio Sertifikat (T_RIWAYAT_KOMPETENSI)
+      case 'get_riwayat_list':
+        return getRiwayatList_(payload.data || {}, user);
+      case 'save_riwayat':
+        return saveRiwayat_(payload.data || {}, user);
+      case 'delete_riwayat':
+        return deleteRiwayat_(payload.data || {}, user);
+      case 'verifikasi_riwayat':
+        return verifikasiRiwayat_(payload.data || {}, user);
 
-      case 'setup_app':
+      // 8. Usulan Diklat Bottom-Up / AKD (T_USULAN_DIKLAT)
+      case 'get_usulan_list':
+        return getUsulanList_(payload.data || {}, user);
+      case 'save_usulan':
+        return saveUsulan_(payload.data || {}, user);
+      case 'delete_usulan':
+        return deleteUsulan_(payload.data || {}, user);
+      case 'review_usulan':
+        return reviewUsulan_(payload.data || {}, user);
+
+      // 9. Master Katalog Diklat (M_KATALOG_DIKLAT)
+      case 'get_katalog_list':
+        return { success: true, data: getSheetData_(LOCAL_SHEETS.M_KATALOG_DIKLAT) };
+      case 'save_katalog':
+        return saveKatalog_(payload.data || {}, user);
+      case 'delete_katalog':
+        return deleteKatalog_(payload.data || {}, user);
+
+      // 10. Standar Kompetensi Jabatan (M_STANDAR_KOMPETENSI)
+      case 'get_standar_list':
+        return { success: true, data: getSheetData_(LOCAL_SHEETS.M_STANDAR_KOMPETENSI) };
+      case 'save_standar_kompetensi':
+        return saveStandarKompetensi_(payload.data || {}, user);
+      case 'delete_standar_kompetensi':
+        return deleteStandarKompetensi_(payload.data || {}, user);
+
+      // 11. Master Referensi (M_REFERENSI)
+      case 'get_referensi_list':
+        return { success: true, data: getSheetData_(LOCAL_SHEETS.M_REFERENSI) };
+      case 'save_referensi':
+        return saveReferensi_(payload.data || {}, user);
+      case 'delete_referensi':
+        return deleteReferensi_(payload.data || {}, user);
+
+      // 12. Migrasi & Setup
       case 'init_database':
-        return setupApp();
+        return initDatabase();
+      case 'cleanup_obsolete_sheets':
+        return cleanupObsoleteSheets();
 
       default:
-        if (typeof CoreLib !== 'undefined' && typeof CoreLib.dispatch === 'function') {
-          var cfg = getAppConfig_();
-          cfg.preSaveHook = localPreSaveHook_;
-          return CoreLib.dispatch(payload, cfg);
-        }
-        return { success: false, code: 'UNKNOWN_ACTION', error: 'Action "' + action + '" tidak dikenali.' };
+        return { success: false, error: 'Aksi API "' + action + '" tidak dikenali di SI-KOMPETENSI.' };
     }
   } catch (err) {
-    Logger.log('[ERROR handleAction] ' + (err.stack || err.message));
-    return { success: false, error: err.message || 'Terjadi kesalahan server.' };
+    Logger.log('[CRITICAL ERROR handleAction] ' + err.message + '\n' + err.stack);
+    return { success: false, error: err.message };
   }
 }
 
-/**
- * Handle SSO Ticket Exchange (Dual Mode: HTTP API + Direct Spreadsheet Fallback)
- */
-function handleTicketExchange_(ticket) {
-  if (!ticket) return { success: false, code: 'INVALID_TICKET', error: 'Ticket SSO tidak boleh kosong.' };
+// ==================== WEB APP ENTRY POINTS (GAS) ====================
 
-  var user = null;
+function doGet(e) {
+  e = e || { parameter: {} };
+  var ticket = e.parameter.ticket || '';
+  var isSsoEntry = !!ticket;
 
-  // 1. Coba validasi via HTTP API SI-PLATFORM (/api/v1/auth/validate-ticket)
-  if (PLATFORM_API_URL) {
-    try {
+  var template = HtmlService.createTemplateFromFile('Index');
+  template.ticket = ticket;
+  template.isSsoEntry = isSsoEntry ? 'true' : 'false';
+
+  return template.evaluate()
+    .setTitle(APP_TITLE + ' — Satpol PP & Damkar Trenggalek')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+}
+
+function doPost(e) {
+  try {
+    var payload = {};
+    if (e && e.postData && e.postData.contents) {
+      payload = JSON.parse(e.postData.contents);
+    } else if (e && e.parameter) {
+      payload = e.parameter;
+    }
+    var res = handleAction(payload);
+    return jsonResponse_(res);
+  } catch (err) {
+    return jsonResponse_({ success: false, error: err.message });
+  }
+}
+
+function include(filename) {
+  return HtmlService.createHtmlOutputFromFile(filename).getContent();
+}
+
+// ==================== SSO & SESSION BRIDGE ====================
+
+function validateSsoTicket_(ticket) {
+  if (!ticket) return null;
+  try {
+    if (PLATFORM_API_URL) {
       var resp = UrlFetchApp.fetch(PLATFORM_API_URL, {
         method: 'post',
         contentType: 'application/json',
-        payload: JSON.stringify({
-          method: 'POST',
-          path: '/api/v1/auth/validate-ticket',
-          data: { ticket: ticket }
-        }),
+        payload: JSON.stringify({ action: 'validate_ticket', data: { ticket: ticket, app_code: APP_CODE } }),
         muteHttpExceptions: true
       });
-
-      var resObj = JSON.parse(resp.getContentText());
-      if (resObj && resObj.success && resObj.data && resObj.data.user) {
-        user = resObj.data.user;
+      var body = JSON.parse(resp.getContentText());
+      if (body && body.success && body.data && body.data.user) {
+        var u = body.data.user;
+        var token = 'SESS_' + Utilities.getUuid();
+        CacheService.getScriptCache().put(SESSION_PREFIX + token, JSON.stringify(u), SESSION_TTL_SECONDS);
+        u.token = token;
+        return u;
       }
-    } catch(e) {
-      Logger.log('[WARN UrlFetchApp Ticket] ' + e.message);
     }
+  } catch (e) {
+    Logger.log('[SSO WARN] Validasi tiket gagal: ' + e.message);
   }
+  return null;
+}
 
-  // 2. Fallback Langsung ke Spreadsheet SI-PLATFORM (Sangat Cepat & 100% Handal)
-  if (!user && PLATFORM_SPREADSHEET_ID) {
-    try {
-      var platformSs = SpreadsheetApp.openById(PLATFORM_SPREADSHEET_ID);
-      var ticketSheet = platformSs.getSheetByName('tickets');
-      if (ticketSheet && ticketSheet.getLastRow() > 1) {
-        var tValues = ticketSheet.getDataRange().getValues();
-        var tHeaders = tValues[0].map(function(h) { return String(h).trim(); });
-        var tIdx = tHeaders.indexOf('ticket');
-        var uIdx = tHeaders.indexOf('user_id');
-        var expIdx = tHeaders.indexOf('expires_at');
+function validateSessionToken_(token) {
+  if (!token) return null;
+  try {
+    var cached = CacheService.getScriptCache().get(SESSION_PREFIX + token);
+    if (cached) return JSON.parse(cached);
+  } catch (e) {}
+  return null;
+}
 
-        var matchedUserId = null;
-        for (var i = 1; i < tValues.length; i++) {
-          if (String(tValues[i][tIdx]) === String(ticket)) {
-            var exp = tValues[i][expIdx];
-            if (!exp || new Date(exp) >= new Date()) {
-              matchedUserId = String(tValues[i][uIdx]);
-              break;
-            }
-          }
-        }
+// ==================== SIMPEG READ-ONLY LOOKUP ====================
 
-        if (matchedUserId) {
-          var userSheet = platformSs.getSheetByName('users');
-          var userValues = userSheet.getDataRange().getValues();
-          var userHeaders = userValues[0].map(function(h) { return String(h).trim(); });
-          var idIdx = userHeaders.indexOf('id');
-          var emailIdx = userHeaders.indexOf('email');
-          var nameIdx = userHeaders.indexOf('display_name');
+function getSimpegLookup_() {
+  try {
+    var pegawaiRaw = getSheetData_('PEGAWAI');
+    var unitRaw = getSheetData_('UNIT_KERJA');
+    var jabatanRaw = getSheetData_('JABATAN');
 
-          for (var u = 1; u < userValues.length; u++) {
-            if (String(userValues[u][idIdx]) === matchedUserId) {
-              user = {
-                id: matchedUserId,
-                email: userValues[u][emailIdx] || '',
-                display_name: userValues[u][nameIdx] || userValues[u][emailIdx] || '',
-                role: 'admin',
-                roles: ['admin']
-              };
-              break;
-            }
-          }
-        }
-      }
-    } catch(err) {
-      Logger.log('[WARN Direct Platform Sheet] ' + err.message);
-    }
-  }
+    var pegawaiClean = pegawaiRaw.map(function(p) {
+      return {
+        id: p.id || p.pegawai_id || '',
+        pegawai_id: p.pegawai_id || p.id || '',
+        nip: p.nip || '',
+        nama_lengkap: p.nama_lengkap || p.nama || '',
+        email: p.email || '',
+        unit_id: p.unit_id || '',
+        jabatan_id: p.jabatan_id || '',
+        pangkat_golongan: p.pangkat_golongan || p.pangkat_gol || '',
+        status_pegawai: p.status_pegawai || 'PNS',
+        is_ppns: String(p.is_ppns).toLowerCase() === 'true' || String(p.is_ppns) === '1',
+        kualifikasi_damkar: p.kualifikasi_damkar || ''
+      };
+    });
 
-  if (user) {
-    var primaryRole = (user.roles && user.roles[0]) || user.role || 'user';
-    user.role = primaryRole;
-    user.roles = user.roles || [primaryRole];
+    var unitClean = unitRaw.map(function(u) {
+      return {
+        id: u.id || u.unit_id || '',
+        kode_unit: u.kode_unit || '',
+        nama_unit: u.nama_unit || u.nama || ''
+      };
+    });
 
-    var token = SESSION_PREFIX + Utilities.getUuid();
-    try {
-      CacheService.getUserCache().put(token, JSON.stringify(user), SESSION_TTL_SECONDS);
-    } catch(e) {}
+    var jabatanClean = jabatanRaw.map(function(j) {
+      return {
+        id: j.id || j.jabatan_id || '',
+        kode_jabatan: j.kode_jabatan || '',
+        nama_jabatan: j.nama_jabatan || j.nama || '',
+        target_jp_tahunan: Number(j.target_jp_tahunan) || 20
+      };
+    });
 
     return {
       success: true,
       data: {
-        token: token,
-        user: user
+        pegawai: pegawaiClean,
+        unit: unitClean,
+        jabatan: jabatanClean
       }
     };
+  } catch (err) {
+    return { success: false, error: 'Gagal memuat master SIMPEG: ' + err.message };
   }
-
-  return { success: false, error: 'Tiket Single Sign-On tidak valid atau telah kedaluwarsa.' };
 }
 
-// ==================== 1. DASHBOARD, AI INSIGHTS & MATRIKS ====================
+function getMasterSatelit_() {
+  try {
+    var katalog = getSheetData_(LOCAL_SHEETS.M_KATALOG_DIKLAT);
+    var standar = getSheetData_(LOCAL_SHEETS.M_STANDAR_KOMPETENSI);
+    var referensi = getSheetData_(LOCAL_SHEETS.M_REFERENSI);
+    var jadwal = getSheetData_(LOCAL_SHEETS.T_JADWAL_DIKLAT);
 
-function apiDashboard_(data, sessionUser) {
-  var riwayat = getSheetData_(LOCAL_SHEETS.T_RIWAYAT_KOMPETENSI);
-  var usulan = getSheetData_(LOCAL_SHEETS.T_USULAN_DIKLAT);
-  var katalog = getSheetData_(LOCAL_SHEETS.M_KATALOG_DIKLAT);
-  var standar = getSheetData_(LOCAL_SHEETS.M_STANDAR_KOMPETENSI);
-
-  // Baca referensi SIMPEG Master
-  var pegawai = getSheetData_('PEGAWAI');
-  var unit = getSheetData_('UNIT_KERJA');
-  var jabatan = getSheetData_('JABATAN');
-
-  var pegMap = {};
-  pegawai.forEach(function(p) {
-    var id = String(p.id || p.pegawai_id);
-    pegMap[id] = p;
-  });
-
-  var unitMap = {};
-  unit.forEach(function(u) {
-    unitMap[String(u.id || u.unit_id)] = u.nama_unit || u.nama;
-  });
-
-  var now = new Date();
-  var currentYear = now.getFullYear();
-  var currentMonth = now.getMonth(); // 0 - 11
-  var targetTahun = Number(data && data.tahun) || currentYear;
-
-  var totalJpTahunIni = 0;
-  var totalDisetujui = 0;
-  var totalMenunggu = 0;
-  var totalDitolak = 0;
-
-  var jenisCount = {
-    'Manajerial & Kepemimpinan': 0,
-    'Teknis Penegakan Perda (PPNS)': 0,
-    'Teknis Pemadam & Rescue': 0,
-    'Jabatan Fungsional Pol PP & Damkar': 0,
-    'Bimbingan Teknis & Workshop': 0
-  };
-
-  // Struktur Matriks Capaian Bulanan (Jan - Des)
-  var matriksData = {};
-  pegawai.forEach(function(p) {
-    var pId = String(p.id || p.pegawai_id);
-    var isPppk = String(p.status_pegawai || '').toUpperCase().includes('PPPK');
-    matriksData[pId] = {
-      pegawai_id: pId,
-      nama_pegawai: p.nama_lengkap || p.nama || pId,
-      nip: p.nip || '',
-      status_pegawai: isPppk ? 'PPPK' : 'PNS',
-      target_jp: isPppk ? 24 : 20,
-      unit_id: p.unit_id || '',
-      unit_nama: unitMap[String(p.unit_id)] || 'Satpol PP & Damkar',
-      bulan: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-      total_jp: 0,
-      jenis_diambil: {},
-      bulan_aktif_count: 0
-    };
-  });
-
-  var entriesBulanIni = 0;
-  var entriesBulanLalu = 0;
-  var jpBulanIni = 0;
-  var jpBulanLalu = 0;
-  var divisiJpTotal = {};
-  var divisiPegawaiCount = {};
-
-  unit.forEach(function(u) {
-    var uName = u.nama_unit || u.nama || u.id;
-    divisiJpTotal[uName] = 0;
-    divisiPegawaiCount[uName] = 0;
-  });
-
-  pegawai.forEach(function(p) {
-    var uName = unitMap[String(p.unit_id)];
-    if (uName && divisiPegawaiCount[uName] !== undefined) {
-      divisiPegawaiCount[uName]++;
-    }
-  });
-
-  riwayat.forEach(function(r) {
-    var dateObj = r.tgl_selesai ? new Date(r.tgl_selesai) : (r.tgl_mulai ? new Date(r.tgl_mulai) : null);
-    var rYear = dateObj ? dateObj.getFullYear() : currentYear;
-    var rMonth = dateObj ? dateObj.getMonth() : currentMonth;
-    var jp = Number(r.jumlah_jp) || 0;
-    var st = String(r.status_verifikasi || 'menunggu').toLowerCase();
-
-    if (st === 'disetujui') {
-      totalDisetujui++;
-      if (rYear === targetTahun) {
-        totalJpTahunIni += jp;
-        var pId = String(r.pegawai_id || '');
-        if (matriksData[pId]) {
-          matriksData[pId].bulan[rMonth] += jp;
-          matriksData[pId].total_jp += jp;
-          var rRumpun = r.rumpun || 'Teknis Pemadam & Rescue';
-          matriksData[pId].jenis_diambil[rRumpun] = (matriksData[pId].jenis_diambil[rRumpun] || 0) + 1;
-        }
-
-        // Unit breakdown
-        var peg = pegMap[pId];
-        if (peg && peg.unit_id) {
-          var uName = unitMap[String(peg.unit_id)];
-          if (uName && divisiJpTotal[uName] !== undefined) {
-            divisiJpTotal[uName] += jp;
-          }
-        }
-      }
-    } else if (st === 'menunggu') {
-      totalMenunggu++;
-    } else if (st === 'ditolak') {
-      totalDitolak++;
-    }
-
-    if (rYear === targetTahun) {
-      if (rMonth === currentMonth) {
-        entriesBulanIni++;
-        if (st === 'disetujui') jpBulanIni += jp;
-      } else if (rMonth === (currentMonth - 1)) {
-        entriesBulanLalu++;
-        if (st === 'disetujui') jpBulanLalu += jp;
-      }
-    }
-
-    var jns = r.rumpun || 'Teknis Pemadam & Rescue';
-    if (jenisCount[jns] !== undefined) {
-      jenisCount[jns]++;
-    } else {
-      jenisCount[jns] = 1;
-    }
-  });
-
-  // Hitung Bulan Aktif & Klasifikasi PNS vs PPPK
-  var capaianPNS = [];
-  var capaianPPPK = [];
-  var pegawaiLulusTarget = 0;
-  var totalPegawaiAktif = 0;
-  var prediksiTidakCapaiList = [];
-  var sisaBulan = Math.max(1, 12 - (currentMonth + 1));
-
-  Object.keys(matriksData).forEach(function(pid) {
-    var item = matriksData[pid];
-    totalPegawaiAktif++;
-    var activeMonths = item.bulan.filter(function(v) { return v > 0; }).length;
-    item.bulan_aktif_count = activeMonths;
-    item.persen = Math.min(100, Math.round((item.total_jp / item.target_jp) * 100));
-
-    if (item.total_jp >= item.target_jp) {
-      pegawaiLulusTarget++;
-    }
-
-    // Hitung Prediksi Akhir Tahun
-    var rataPerBulan = (currentMonth > 0) ? (item.total_jp / (currentMonth + 1)) : item.total_jp;
-    var proyeksiAkhir = Math.round(item.total_jp + (rataPerBulan * sisaBulan));
-    item.proyeksi_akhir = proyeksiAkhir;
-    item.akan_capai = proyeksiAkhir >= item.target_jp;
-
-    if (!item.akan_capai && item.total_jp < item.target_jp) {
-      prediksiTidakCapaiList.push({
-        nama: item.nama_pegawai,
-        nip: item.nip,
-        total_jp: item.total_jp,
-        target_jp: item.target_jp,
-        kurang_jp: item.target_jp - item.total_jp,
-        proyeksi: proyeksiAkhir
-      });
-    }
-
-    // Skor Kepatuhan Individu (0 - 100)
-    var skorJP = Math.min((item.total_jp / item.target_jp) * 60, 60);
-    var skorKonsistensi = Math.min((activeMonths / 12) * 40, 40);
-    item.skor = Math.round(skorJP + skorKonsistensi);
-
-    if (item.status_pegawai === 'PPPK') {
-      capaianPPPK.push(item);
-    } else {
-      capaianPNS.push(item);
-    }
-  });
-
-  capaianPNS.sort(function(a, b) { return b.total_jp - a.total_jp; });
-  capaianPPPK.sort(function(a, b) { return b.total_jp - a.total_jp; });
-
-  var persen20Jp = Math.min(100, Math.round((pegawaiLulusTarget / (totalPegawaiAktif || 1)) * 100));
-  var totalPpns = pegawai.filter(function(p) { return String(p.is_ppns).toLowerCase() === 'ya' || String(p.is_ppns) === 'true'; }).length;
-  var totalDamkar = pegawai.filter(function(p) { return Boolean(p.kualifikasi_damkar && p.kualifikasi_damkar !== '-'); }).length;
-
-  // AI Insight 1: Tren Keikutsertaan
-  var trenNaik = entriesBulanIni >= entriesBulanLalu;
-  var persenPerubahan = entriesBulanLalu ? Math.abs(Math.round(((entriesBulanIni - entriesBulanLalu) / entriesBulanLalu) * 100)) : 100;
-
-  // AI Insight 2: Unit Terbaik
-  var bestUnit = '-';
-  var maxAvgJp = -1;
-  Object.keys(divisiJpTotal).forEach(function(uName) {
-    var pCount = divisiPegawaiCount[uName] || 1;
-    var avg = divisiJpTotal[uName] / pCount;
-    if (avg > maxAvgJp) {
-      maxAvgJp = avg;
-      bestUnit = uName;
-    }
-  });
-
-  // 5 Riwayat Terbaru dengan Enriched Pegawai Name
-  var terbaru = riwayat.slice().sort(function(a, b) {
-    return new Date(b.created_at || b.tgl_mulai || 0) - new Date(a.created_at || a.tgl_mulai || 0);
-  }).slice(0, 5).map(function(r) {
-    var p = pegMap[String(r.pegawai_id)];
-    var copy = Object.assign({}, r);
-    copy.nama_pegawai = p ? (p.nama_lengkap || p.nama || r.pegawai_id) : r.pegawai_id;
-    copy.nip_pegawai = p ? (p.nip || '') : '';
-    return copy;
-  });
-
-  // Jadwal Pelatihan Bulan Ini & Mendatang (Dari M_KATALOG_DIKLAT)
-  var currentMonthName = now.toLocaleString('id-ID', { month: 'long', year: 'numeric' });
-  var jadwalPelatihan = katalog.filter(function(k) {
-    return String(k.status_aktif).toLowerCase() !== 'false';
-  }).map(function(k) {
     return {
-      id: k.id,
-      kode_diklat: k.kode_diklat,
-      nama_diklat: k.nama_diklat,
-      rumpun: k.rumpun,
-      penyelenggara: k.penyelenggara_default || k.penyelenggara || 'BPSDM Jatim',
-      default_jp: Number(k.default_jp) || 20,
-      metode: k.metode || 'Klasikal',
-      tgl_mulai_jadwal: k.tgl_mulai_jadwal || '2026-09-15',
-      tgl_selesai_jadwal: k.tgl_selesai_jadwal || '2026-09-18',
-      bulan_pelaksanaan: k.bulan_pelaksanaan || currentMonthName,
-      keterangan_jadwal: k.keterangan_jadwal || 'Terbuka untuk personel Satpol PP & Damkar',
-      status_jadwal: k.status_jadwal || 'Buka Pendaftaran'
-    };
-  });
-
-  return {
-    success: true,
-    data: {
-      total_kompetensi: riwayat.length,
-      total_jp_tahun: totalJpTahunIni,
-      target_tahun: targetTahun,
-      persen_capaian_20jp: persen20Jp,
-      pegawai_lulus_20jp: pegawaiLulusTarget,
-      total_pegawai: totalPegawaiAktif,
-      total_ppns: totalPpns,
-      total_damkar_certified: totalDamkar,
-      total_usulan_diklat: usulan.length,
-      total_katalog: katalog.length,
-      total_standar: standar.length,
-      bulan_aktif: currentMonthName,
-      status_count: {
-        disetujui: totalDisetujui,
-        menunggu: totalMenunggu,
-        ditolak: totalDitolak
-      },
-      jenis_count: jenisCount,
-      divisi_distribution: divisiJpTotal,
-      terbaru: terbaru,
-      jadwal_pelatihan: jadwalPelatihan,
-      // Fitur Adopsi SIPKA: Matriks Bulanan & Klasifikasi
-      matriks_bulanan: Object.keys(matriksData).map(function(k) { return matriksData[k]; }),
-      capaian_pns: capaianPNS,
-      capaian_pppk: capaianPPPK,
-      // Fitur Adopsi SIPKA: AI Insights Organisasi
-      ai_insights: {
-        tren_partisipasi: {
-          naik: trenNaik,
-          persen: persenPerubahan,
-          bulan_ini_entri: entriesBulanIni,
-          bulan_lalu_entri: entriesBulanLalu,
-          bulan_ini_jp: jpBulanIni,
-          bulan_lalu_jp: jpBulanLalu
-        },
-        unit_terbaik: {
-          nama: bestUnit,
-          rata_jp: Math.round(maxAvgJp * 10) / 10
-        },
-        prediksi_tidak_capai: {
-          total_berisiko: prediksiTidakCapaiList.length,
-          sisa_bulan: sisaBulan,
-          daftar: prediksiTidakCapaiList.slice(0, 5)
-        }
+      success: true,
+      data: {
+        katalog: katalog,
+        standar_kompetensi: standar,
+        referensi: referensi,
+        jadwal: jadwal
       }
-    }
-  };
+    };
+  } catch (err) {
+    return { success: false, error: 'Gagal memuat Master Satelit: ' + err.message };
+  }
 }
 
-function getAnalytics_(data, sessionUser) {
-  var riwayat = getSheetData_(LOCAL_SHEETS.T_RIWAYAT_KOMPETENSI);
-  var standar = getSheetData_(LOCAL_SHEETS.M_STANDAR_KOMPETENSI);
-  var pegawai = getSheetData_('PEGAWAI');
-  var katalog = getSheetData_(LOCAL_SHEETS.M_KATALOG_DIKLAT);
+// ==================== 2. DASHBOARD, MATRIKS & SMART ANALYTICS ====================
 
-  var currentYear = Number(data && data.tahun) || new Date().getFullYear();
+function apiDashboard_(params, user) {
+  try {
+    params = params || {};
+    var tahun = Number(params.tahun) || new Date().getFullYear();
+    var bulanIniIdx = new Date().getMonth(); // 0 = Jan, 8 = Sep
 
-  // Gap Analysis per Jabatan menggunakan M_STANDAR_KOMPETENSI
-  var gapReports = [];
-  pegawai.forEach(function(p) {
-    var jId = p.jabatan_id;
-    var stdJabatan = standar.filter(function(s) { return String(s.jabatan_id) === String(jId); });
+    var riwayat = getSheetData_(LOCAL_SHEETS.T_RIWAYAT_KOMPETENSI);
+    var simpeg = getSimpegLookup_();
+    var pegawaiList = (simpeg && simpeg.data && simpeg.data.pegawai) || [];
+    var unitList = (simpeg && simpeg.data && simpeg.data.unit) || [];
+    var jabatanList = (simpeg && simpeg.data && simpeg.data.jabatan) || [];
+    var jadwalList = getSheetData_(LOCAL_SHEETS.T_JADWAL_DIKLAT);
+    var kualifikasiList = getSheetData_(LOCAL_SHEETS.T_KUALIFIKASI_KHUSUS);
+    var usulanList = getSheetData_(LOCAL_SHEETS.T_USULAN_DIKLAT);
 
-    stdJabatan.forEach(function(sj) {
-      var passed = riwayat.some(function(r) {
-        return String(r.pegawai_id) === String(p.id || p.pegawai_id) &&
-               String(r.diklat_id) === String(sj.diklat_id) &&
-               String(r.status_verifikasi).toLowerCase() === 'disetujui';
-      });
+    var totalJpTahun = 0;
+    var jenisCount = {};
+    var statusCount = { disetujui: 0, menunggu: 0, ditolak: 0 };
+    var pegawaiJpMap = {};
+    var pegawaiMonthlyJpMap = {};
+    var unitJpMap = {};
+    var unitPegawaiCountMap = {};
 
-      if (!passed && String(sj.tingkat_kebutuhan).toUpperCase() === 'WAJIB') {
-        var diklatObj = katalog.find(function(k) { return String(k.id) === String(sj.diklat_id); });
-        gapReports.push({
-          pegawai_id: p.id || p.pegawai_id,
-          nama_pegawai: p.nama_lengkap || p.nama || p.id,
-          jabatan_id: jId,
-          diklat_wajib: (diklatObj && diklatObj.nama_diklat) || sj.diklat_id,
-          kategori: sj.tingkat_kebutuhan,
-          rekomendasi: 'Diusulkan mengikuti ' + ((diklatObj && diklatObj.nama_diklat) || sj.diklat_id)
+    var monthlyJpTotal = [0,0,0,0,0,0,0,0,0,0,0,0];
+
+    // Inisialisasi peta pegawai
+    pegawaiList.forEach(function(p) {
+      var pid = String(p.id);
+      pegawaiJpMap[pid] = 0;
+      pegawaiMonthlyJpMap[pid] = [0,0,0,0,0,0,0,0,0,0,0,0];
+
+      var uid = String(p.unit_id || 'UNKNOWN');
+      unitPegawaiCountMap[uid] = (unitPegawaiCountMap[uid] || 0) + 1;
+      if (unitJpMap[uid] === undefined) unitJpMap[uid] = 0;
+    });
+
+    // Proses data riwayat
+    riwayat.forEach(function(r) {
+      var st = String(r.status_verifikasi || 'menunggu').toLowerCase();
+      statusCount[st] = (statusCount[st] || 0) + 1;
+
+      var jp = Number(r.jumlah_jp) || 0;
+      var rumpun = r.rumpun || 'Lainnya';
+      jenisCount[rumpun] = (jenisCount[rumpun] || 0) + 1;
+
+      var rTahun = tahun;
+      var rBulan = 0;
+      var dateField = r.tgl_selesai || r.tgl_terbit || r.tgl_mulai || r.created_at;
+      if (dateField) {
+        var d = new Date(dateField);
+        if (!isNaN(d.getTime())) {
+          rTahun = d.getFullYear();
+          rBulan = d.getMonth();
+        }
+      }
+
+      if (rTahun === tahun && st === 'disetujui') {
+        totalJpTahun += jp;
+        var pid = String(r.pegawai_id);
+        pegawaiJpMap[pid] = (pegawaiJpMap[pid] || 0) + jp;
+
+        if (pegawaiMonthlyJpMap[pid]) {
+          pegawaiMonthlyJpMap[pid][rBulan] += jp;
+        }
+        if (rBulan >= 0 && rBulan < 12) {
+          monthlyJpTotal[rBulan] += jp;
+        }
+
+        var pegObj = pegawaiList.find(function(p) { return String(p.id) === pid; });
+        if (pegObj && pegObj.unit_id) {
+          var uid = String(pegObj.unit_id);
+          unitJpMap[uid] = (unitJpMap[uid] || 0) + jp;
+        }
+      }
+    });
+
+    // Klasifikasi PNS vs PPPK
+    var pnsTotal = 0, pnsLulus = 0, pnsJpTotal = 0;
+    var pppkTotal = 0, pppkLulus = 0, pppkJpTotal = 0;
+    var matriksBulanan = [];
+    var listPegawaiRisiko = [];
+
+    pegawaiList.forEach(function(p) {
+      var pid = String(p.id);
+      var jp = pegawaiJpMap[pid] || 0;
+      var isPppk = String(p.status_pegawai || '').toUpperCase().indexOf('PPPK') !== -1;
+      var targetJp = isPppk ? 24 : 20;
+
+      if (isPppk) {
+        pppkTotal++;
+        pppkJpTotal += jp;
+        if (jp >= targetJp) pppkLulus++;
+      } else {
+        pnsTotal++;
+        pnsJpTotal += jp;
+        if (jp >= targetJp) pnsLulus++;
+      }
+
+      var unitObj = unitList.find(function(u) { return String(u.id) === String(p.unit_id); });
+      var unitNama = unitObj ? (unitObj.nama_unit || unitObj.nama) : (p.unit_id || '-');
+
+      var jabObj = jabatanList.find(function(j) { return String(j.id) === String(p.jabatan_id); });
+      var jabNama = jabObj ? (jabObj.nama_jabatan || jabObj.nama) : (p.jabatan_id || '-');
+
+      var mData = {
+        pegawai_id: pid,
+        nama_pegawai: p.nama_lengkap || p.nama || pid,
+        nip: p.nip || '-',
+        status_pegawai: isPppk ? 'PPPK' : 'PNS',
+        unit_nama: unitNama,
+        jabatan_nama: jabNama,
+        target_jp: targetJp,
+        total_jp: jp,
+        persen_capaian: Math.min(100, Math.round((jp / targetJp) * 100)),
+        bulan: pegawaiMonthlyJpMap[pid] || [0,0,0,0,0,0,0,0,0,0,0,0]
+      };
+      matriksBulanan.push(mData);
+
+      if (jp < targetJp) {
+        listPegawaiRisiko.push({
+          nama: p.nama_lengkap || p.nama || pid,
+          nip: p.nip || '-',
+          status: isPppk ? 'PPPK' : 'PNS',
+          target_jp: targetJp,
+          capaian_jp: jp,
+          kurang_jp: targetJp - jp,
+          unit_nama: unitNama
         });
       }
     });
-  });
 
-  var temuan = [
-    { level: 'INFO', pesan: 'Pencapaian Jam Pelajaran (JP) ASN Satpol PP & Damkar Trenggalek rata-rata mencapai 24 JP/pegawai.' },
-    { level: 'WARNING', pesan: 'Terdeteksi ' + gapReports.length + ' kesenjangan standar kompetensi wajib jabatan yang perlu dipenuhi.' },
-    { level: 'INFO', pesan: '85% Personel Bidang Gakda telah tersertifikasi PPNS Penegak Perda.' }
-  ];
+    var totalPegawai = pegawaiList.length || 1;
+    var totalLulus = pnsLulus + pppkLulus;
+    var persenCapaian = Math.round((totalLulus / totalPegawai) * 100);
 
-  var rekomendasi = [
-    { prioritas: 'TINGGI', tindakan: 'Mengusulkan diklat kualifikasi teknis wajib bagi pejabat fungsional Damkar dan Pol PP.' },
-    { prioritas: 'SEDANG', tindakan: 'Melakukan pemutakhiran sertifikat kedaluwarsa secara berkala.' },
-    { prioritas: 'RUTIN', tindakan: 'Mendorong pembelajaran mandiri e-Learning ASN Unggul LAN.' }
-  ];
+    // Kualifikasi Khusus (SK PPNS & Damkar Expired Alert)
+    var nowMs = Date.now();
+    var ms90Days = 90 * 24 * 60 * 60 * 1000;
+    var kualifikasiAktifCount = 0;
+    var kualifikasiExpiringSoonCount = 0;
 
-  return {
-    success: true,
-    data: {
-      tahun: currentYear,
-      gap_count: gapReports.length,
-      gap_details: gapReports.slice(0, 10),
-      temuan: temuan,
-      rekomendasi: rekomendasi
-    }
-  };
-}
-
-// ==================== 2. TRANSAKSI RIWAYAT KOMPETENSI ====================
-
-function getRiwayatList_(data, sessionUser) {
-  var rows = getSheetData_(LOCAL_SHEETS.T_RIWAYAT_KOMPETENSI);
-  var pegawai = getSheetData_('PEGAWAI');
-  var unit = getSheetData_('UNIT_KERJA');
-
-  var pegMap = {};
-  pegawai.forEach(function(p) {
-    pegMap[String(p.id || p.pegawai_id)] = p;
-  });
-
-  var unitMap = {};
-  unit.forEach(function(u) {
-    unitMap[String(u.id || u.unit_id)] = u.nama_unit || u.nama;
-  });
-
-  var search = String((data && data.search) || '').toLowerCase().trim();
-  var filters = (data && data.filters) || {};
-  var page = Math.max(1, Number(data && data.page) || 1);
-  var limit = Math.max(1, Number(data && data.limit) || 10);
-
-  var enriched = rows.map(function(r) {
-    var p = pegMap[String(r.pegawai_id)];
-    var copy = Object.assign({}, r);
-    copy.nama_pegawai = p ? (p.nama_lengkap || p.nama || r.pegawai_id) : r.pegawai_id;
-    copy.nip_pegawai = p ? (p.nip || '') : '';
-    copy.unit_nama = (p && unitMap[String(p.unit_id)]) || '';
-    return copy;
-  });
-
-  var filtered = enriched.filter(function(r) {
-    if (search) {
-      var m = String(r.nama_kegiatan || '').toLowerCase().includes(search) ||
-              String(r.nama_pegawai || '').toLowerCase().includes(search) ||
-              String(r.nip_pegawai || '').toLowerCase().includes(search) ||
-              String(r.penyelenggara || '').toLowerCase().includes(search) ||
-              String(r.no_sertifikat || '').toLowerCase().includes(search);
-      if (!m) return false;
-    }
-    if (filters.status && String(r.status_verifikasi || '').toLowerCase() !== String(filters.status).toLowerCase()) return false;
-    if (filters.rumpun && String(r.rumpun || '').toLowerCase() !== String(filters.rumpun).toLowerCase()) return false;
-    if (filters.pegawai_id && String(r.pegawai_id || '') !== String(filters.pegawai_id)) return false;
-    return true;
-  });
-
-  filtered.sort(function(a, b) {
-    return new Date(b.tgl_mulai || b.created_at || 0) - new Date(a.tgl_mulai || a.created_at || 0);
-  });
-
-  var total = filtered.length;
-  var start = (page - 1) * limit;
-
-  return {
-    success: true,
-    data: filtered.slice(start, start + limit),
-    meta: { total: total, page: page, limit: limit, totalPages: Math.max(1, Math.ceil(total / limit)) }
-  };
-}
-
-function saveRiwayatHandler_(data, sessionUser) {
-  var record = data && (data.record || data);
-  if (!record) return { success: false, error: 'Data riwayat kompetensi wajib diisi.' };
-
-  // Otomatis lengkapi dari Katalog jika diklat_id tersedia
-  if (record.diklat_id) {
-    var katalog = getSheetData_(LOCAL_SHEETS.M_KATALOG_DIKLAT);
-    var matched = katalog.find(function(k) { return String(k.id) === String(record.diklat_id); });
-    if (matched) {
-      if (!record.nama_kegiatan) record.nama_kegiatan = matched.nama_diklat;
-      if (!record.rumpun) record.rumpun = matched.rumpun;
-      if (!record.jumlah_jp) record.jumlah_jp = matched.default_jp;
-      if (!record.penyelenggara) record.penyelenggara = matched.penyelenggara_default;
-      if (!record.metode) record.metode = matched.metode || 'Klasikal';
-      if (!record.tgl_mulai && matched.tgl_mulai_jadwal) record.tgl_mulai = matched.tgl_mulai_jadwal;
-      if (!record.tgl_selesai && matched.tgl_selesai_jadwal) record.tgl_selesai = matched.tgl_selesai_jadwal;
-    }
-  }
-
-  var isNew = !record.id;
-  record = localPreSaveHook_(LOCAL_SHEETS.T_RIWAYAT_KOMPETENSI, record, isNew, sessionUser);
-  var saved = saveRecord_(LOCAL_SHEETS.T_RIWAYAT_KOMPETENSI, record, sessionUser);
-
-  sendAuditLog_(sessionUser, isNew ? 'CREATE_KOMPETENSI' : 'UPDATE_KOMPETENSI', 'T_RIWAYAT_KOMPETENSI', saved.id, 'SUCCESS', 'Nama: ' + saved.nama_kegiatan);
-  return { success: true, data: saved };
-}
-
-function deleteRiwayatHandler_(data, sessionUser) {
-  var id = data && data.id;
-  if (!id) return { success: false, error: 'ID data wajib disertakan.' };
-
-  var deleted = softDeleteRecord_(LOCAL_SHEETS.T_RIWAYAT_KOMPETENSI, id, sessionUser);
-  sendAuditLog_(sessionUser, 'DELETE_KOMPETENSI', 'T_RIWAYAT_KOMPETENSI', id, deleted ? 'SUCCESS' : 'FAILED', '');
-  return { success: true, data: deleted };
-}
-
-function verifikasiRiwayatHandler_(data, sessionUser) {
-  var role = String((sessionUser && sessionUser.role) || '').toLowerCase();
-  if (role !== 'admin' && role !== 'super' && role !== 'verifikator') {
-    return { success: false, error: 'Akses ditolak: Hanya verifikator atau admin yang berhak memverifikasi.' };
-  }
-
-  var id = data && data.id;
-  var status = data && data.status_verifikasi;
-  var catatan = (data && data.catatan_verifikator) || '';
-
-  var existing = findRecordById_(LOCAL_SHEETS.T_RIWAYAT_KOMPETENSI, id);
-  if (!existing) return { success: false, error: 'Data tidak ditemukan.' };
-
-  existing.status_verifikasi = status;
-  existing.catatan_verifikator = catatan;
-  existing.verifikator_id = sessionUser.email || sessionUser.id;
-  existing.tanggal_verifikasi = new Date().toISOString();
-
-  var updated = saveRecord_(LOCAL_SHEETS.T_RIWAYAT_KOMPETENSI, existing, sessionUser);
-  sendAuditLog_(sessionUser, 'VERIFIKASI_KOMPETENSI', 'T_RIWAYAT_KOMPETENSI', id, 'SUCCESS', 'Status: ' + status);
-  return { success: true, data: updated };
-}
-
-// ==================== 3. TRANSAKSI USULAN DIKLAT ====================
-
-function getUsulanList_(data, sessionUser) {
-  var rows = getSheetData_(LOCAL_SHEETS.T_USULAN_DIKLAT);
-  var pegawai = getSheetData_('PEGAWAI');
-  var pegMap = {};
-  pegawai.forEach(function(p) {
-    pegMap[String(p.id || p.pegawai_id)] = p;
-  });
-
-  var search = String((data && data.search) || '').toLowerCase().trim();
-  var filters = (data && data.filters) || {};
-  var page = Math.max(1, Number(data && data.page) || 1);
-  var limit = Math.max(1, Number(data && data.limit) || 10);
-
-  var enriched = rows.map(function(r) {
-    var p = pegMap[String(r.pegawai_id)];
-    var copy = Object.assign({}, r);
-    copy.nama_pegawai = p ? (p.nama_lengkap || p.nama || r.pegawai_id) : r.pegawai_id;
-    copy.nip_pegawai = p ? (p.nip || '') : '';
-    return copy;
-  });
-
-  var filtered = enriched.filter(function(r) {
-    if (search) {
-      var m = String(r.nama_diklat_usulan || '').toLowerCase().includes(search) ||
-              String(r.nama_pegawai || '').toLowerCase().includes(search) ||
-              String(r.target_penyelenggara || '').toLowerCase().includes(search);
-      if (!m) return false;
-    }
-    if (filters.status && String(r.status_usulan || '').toLowerCase() !== String(filters.status).toLowerCase()) return false;
-    if (filters.pegawai_id && String(r.pegawai_id || '') !== String(filters.pegawai_id)) return false;
-    return true;
-  });
-
-  filtered.sort(function(a, b) {
-    return new Date(b.tgl_pengajuan || b.created_at || 0) - new Date(a.tgl_pengajuan || a.created_at || 0);
-  });
-
-  var total = filtered.length;
-  var start = (page - 1) * limit;
-
-  return {
-    success: true,
-    data: filtered.slice(start, start + limit),
-    meta: { total: total, page: page, limit: limit, totalPages: Math.max(1, Math.ceil(total / limit)) }
-  };
-}
-
-function saveUsulanHandler_(data, sessionUser) {
-  var record = data && (data.record || data);
-  if (!record) return { success: false, error: 'Data usulan wajib diisi.' };
-
-  var isNew = !record.id;
-  record = localPreSaveHook_(LOCAL_SHEETS.T_USULAN_DIKLAT, record, isNew, sessionUser);
-  var saved = saveRecord_(LOCAL_SHEETS.T_USULAN_DIKLAT, record, sessionUser);
-
-  sendAuditLog_(sessionUser, isNew ? 'CREATE_USULAN' : 'UPDATE_USULAN', 'T_USULAN_DIKLAT', saved.id, 'SUCCESS', 'Usulan: ' + saved.nama_diklat_usulan);
-  return { success: true, data: saved };
-}
-
-function reviewUsulanHandler_(data, sessionUser) {
-  var role = String((sessionUser && sessionUser.role) || '').toLowerCase();
-  if (role !== 'admin' && role !== 'super') {
-    return { success: false, error: 'Akses ditolak: Hanya pimpinan/admin yang dapat menyetujui usulan diklat.' };
-  }
-
-  var id = data && data.id;
-  var existing = findRecordById_(LOCAL_SHEETS.T_USULAN_DIKLAT, id);
-  if (!existing) return { success: false, error: 'Data usulan tidak ditemukan.' };
-
-  existing.status_usulan = data.status_usulan || existing.status_usulan;
-  existing.catatan_pimpinan = data.catatan_pimpinan || existing.catatan_pimpinan;
-
-  var updated = saveRecord_(LOCAL_SHEETS.T_USULAN_DIKLAT, existing, sessionUser);
-  sendAuditLog_(sessionUser, 'REVIEW_USULAN', 'T_USULAN_DIKLAT', id, 'SUCCESS', 'Status: ' + existing.status_usulan);
-  return { success: true, data: updated };
-}
-
-function deleteUsulanHandler_(data, sessionUser) {
-  var id = data && data.id;
-  var deleted = softDeleteRecord_(LOCAL_SHEETS.T_USULAN_DIKLAT, id, sessionUser);
-  sendAuditLog_(sessionUser, 'DELETE_USULAN', 'T_USULAN_DIKLAT', id, deleted ? 'SUCCESS' : 'FAILED', '');
-  return { success: true, data: deleted };
-}
-
-// ==================== 4. MASTER SATELIT 1: KATALOG & JADWAL DIKLAT ====================
-
-function getKatalogList_(data, sessionUser) {
-  var rows = getSheetData_(LOCAL_SHEETS.M_KATALOG_DIKLAT);
-  return { success: true, data: rows };
-}
-
-function saveKatalogHandler_(data, sessionUser) {
-  var record = data && (data.record || data);
-  if (!record || !record.nama_diklat) return { success: false, error: 'Nama diklat wajib diisi.' };
-
-  if (!record.id) {
-    record.id = 'DKL-' + String(Date.now()).slice(-4);
-  }
-  var saved = saveRecord_(LOCAL_SHEETS.M_KATALOG_DIKLAT, record, sessionUser);
-  sendAuditLog_(sessionUser, 'SAVE_KATALOG', 'M_KATALOG_DIKLAT', saved.id, 'SUCCESS', saved.nama_diklat);
-  return { success: true, data: saved };
-}
-
-function deleteKatalogHandler_(data, sessionUser) {
-  var id = data && data.id;
-  var deleted = softDeleteRecord_(LOCAL_SHEETS.M_KATALOG_DIKLAT, id, sessionUser);
-  return { success: true, data: deleted };
-}
-
-// ==================== 5. MASTER SATELIT 2: STANDAR KOMPETENSI JABATAN ====================
-
-function getStandarKompetensiList_(data, sessionUser) {
-  var rows = getSheetData_(LOCAL_SHEETS.M_STANDAR_KOMPETENSI);
-  return { success: true, data: rows };
-}
-
-function saveStandarKompetensiHandler_(data, sessionUser) {
-  var record = data && (data.record || data);
-  if (!record || !record.jabatan_id || !record.diklat_id) {
-    return { success: false, error: 'Jabatan dan Diklat wajib dipilih.' };
-  }
-  if (!record.id) {
-    record.id = 'SKJ-' + String(Date.now()).slice(-4);
-  }
-  var saved = saveRecord_(LOCAL_SHEETS.M_STANDAR_KOMPETENSI, record, sessionUser);
-  sendAuditLog_(sessionUser, 'SAVE_SKJ', 'M_STANDAR_KOMPETENSI', saved.id, 'SUCCESS', 'Jabatan: ' + saved.jabatan_id);
-  return { success: true, data: saved };
-}
-
-function deleteStandarKompetensiHandler_(data, sessionUser) {
-  var id = data && data.id;
-  var deleted = softDeleteRecord_(LOCAL_SHEETS.M_STANDAR_KOMPETENSI, id, sessionUser);
-  return { success: true, data: deleted };
-}
-
-// ==================== 6. MASTER SATELIT 3: MASTER REFERENSI GABUNGAN ====================
-
-function getReferensiList_(data, sessionUser) {
-  var rows = getSheetData_(LOCAL_SHEETS.M_REFERENSI);
-  if (data && data.kategori) {
-    rows = rows.filter(function(r) {
-      return String(r.kategori).toUpperCase() === String(data.kategori).toUpperCase();
+    kualifikasiList.forEach(function(k) {
+      if (String(k.status_kualifikasi).toLowerCase() !== 'tidak_aktif') {
+        kualifikasiAktifCount++;
+        if (k.tgl_habis_berlaku) {
+          var expMs = new Date(k.tgl_habis_berlaku).getTime();
+          if (!isNaN(expMs) && expMs > nowMs && (expMs - nowMs) <= ms90Days) {
+            kualifikasiExpiringSoonCount++;
+          }
+        }
+      }
     });
+
+    // Smart AI Organization Insights
+    var bulanIniJp = monthlyJpTotal[bulanIniIdx] || 0;
+    var bulanLaluJp = bulanIniIdx > 0 ? (monthlyJpTotal[bulanIniIdx - 1] || 0) : 0;
+    var trenPersen = bulanLaluJp > 0 ? Math.round(((bulanIniJp - bulanLaluJp) / bulanLaluJp) * 100) : (bulanIniJp > 0 ? 100 : 0);
+
+    var topUnitId = '-';
+    var topUnitAvg = 0;
+    Object.keys(unitJpMap).forEach(function(uid) {
+      var count = unitPegawaiCountMap[uid] || 1;
+      var avg = Math.round((unitJpMap[uid] / count) * 10) / 10;
+      if (avg > topUnitAvg) {
+        topUnitAvg = avg;
+        topUnitId = uid;
+      }
+    });
+    var topUnitObj = unitList.find(function(u) { return String(u.id) === topUnitId; });
+    var topUnitNama = topUnitObj ? (topUnitObj.nama_unit || topUnitObj.nama) : 'Bidang Pemadam Kebakaran';
+
+    var aiInsights = {
+      tren_partisipasi: {
+        naik: trenPersen >= 0,
+        persen: Math.abs(trenPersen),
+        bulan_ini_jp: bulanIniJp,
+        bulan_lalu_jp: bulanLaluJp
+      },
+      unit_terbaik: {
+        nama: topUnitNama,
+        rata_jp: topUnitAvg
+      },
+      prediksi_tidak_capai: {
+        total_berisiko: listPegawaiRisiko.length,
+        sisa_bulan: Math.max(0, 11 - bulanIniIdx),
+        daftar: listPegawaiRisiko.slice(0, 5)
+      }
+    };
+
+    var months = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+    var bulanAktifNama = months[bulanIniIdx] + ' ' + tahun;
+
+    return {
+      success: true,
+      data: {
+        total_kompetensi: riwayat.length,
+        total_jp_tahun: totalJpTahun,
+        total_pegawai: totalPegawai,
+        pegawai_lulus_20jp: totalLulus,
+        persen_capaian_20jp: persenCapaian,
+        bulan_aktif: bulanAktifNama,
+
+        // Klasifikasi PNS vs PPPK
+        capaian_pns: {
+          total: pnsTotal,
+          lulus: pnsLulus,
+          persen: pnsTotal > 0 ? Math.round((pnsLulus / pnsTotal) * 100) : 0,
+          total_jp: pnsJpTotal,
+          target_standar: '20 JP'
+        },
+        capaian_pppk: {
+          total: pppkTotal,
+          lulus: pppkLulus,
+          persen: pppkTotal > 0 ? Math.round((pppkLulus / pppkTotal) * 100) : 0,
+          total_jp: pppkJpTotal,
+          target_standar: '24 JP'
+        },
+
+        // Status Kualifikasi Khusus
+        total_kualifikasi_aktif: kualifikasiAktifCount,
+        total_kualifikasi_expiring_soon: kualifikasiExpiringSoonCount,
+        total_jadwal_aktif: jadwalList.length,
+        total_usulan_diklat: usulanList.length,
+
+        // Detail Koleksi
+        status_count: statusCount,
+        jenis_count: jenisCount,
+        terbaru: riwayat.slice(-5).reverse(),
+        jadwal_pelatihan: jadwalList.slice(0, 8),
+        matriks_bulanan: matriksBulanan,
+        ai_insights: aiInsights
+      }
+    };
+  } catch (err) {
+    return { success: false, error: 'Gagal memproses kalkulasi Dashboard: ' + err.message };
   }
-  return { success: true, data: rows };
 }
 
-function saveReferensiHandler_(data, sessionUser) {
-  var record = data && (data.record || data);
-  if (!record || !record.kategori || !record.nama_nilai) {
-    return { success: false, error: 'Kategori dan nama nilai referensi wajib diisi.' };
-  }
-  if (!record.id) {
-    record.id = 'REF-' + String(Date.now()).slice(-4);
-  }
-  var saved = saveRecord_(LOCAL_SHEETS.M_REFERENSI, record, sessionUser);
-  sendAuditLog_(sessionUser, 'SAVE_REFERENSI', 'M_REFERENSI', saved.id, 'SUCCESS', saved.kategori + ' : ' + saved.nama_nilai);
-  return { success: true, data: saved };
-}
+function getAnalytics_(params, user) {
+  try {
+    params = params || {};
+    var tahun = Number(params.tahun) || new Date().getFullYear();
 
-function deleteReferensiHandler_(data, sessionUser) {
-  var id = data && data.id;
-  var deleted = softDeleteRecord_(LOCAL_SHEETS.M_REFERENSI, id, sessionUser);
-  return { success: true, data: deleted };
-}
+    var standar = getSheetData_(LOCAL_SHEETS.M_STANDAR_KOMPETENSI);
+    var riwayat = getSheetData_(LOCAL_SHEETS.T_RIWAYAT_KOMPETENSI);
+    var katalog = getSheetData_(LOCAL_SHEETS.M_KATALOG_DIKLAT);
+    var simpeg = getSimpegLookup_();
 
-// ==================== 7. LOOKUP & MASTER BUNDLE ====================
+    var pegawaiList = (simpeg && simpeg.data && simpeg.data.pegawai) || [];
+    var unitList = (simpeg && simpeg.data && simpeg.data.unit) || [];
+    var jabatanList = (simpeg && simpeg.data && simpeg.data.jabatan) || [];
 
-function getMasterSatelit_() {
-  return {
-    success: true,
-    data: {
-      katalog: getSheetData_(LOCAL_SHEETS.M_KATALOG_DIKLAT),
-      standar_kompetensi: getSheetData_(LOCAL_SHEETS.M_STANDAR_KOMPETENSI),
-      referensi: getSheetData_(LOCAL_SHEETS.M_REFERENSI)
+    var gapDetails = [];
+    var temuan = [];
+    var rekomendasi = [];
+
+    // Matriks Gap Analisis per Jabatan
+    standar.forEach(function(std) {
+      var jid = String(std.jabatan_id);
+      var did = String(std.diklat_id);
+      var minJp = Number(std.minimal_jp) || 20;
+
+      var targetPegawai = pegawaiList.filter(function(p) { return String(p.jabatan_id) === jid; });
+      var dObj = katalog.find(function(k) { return String(k.id) === did; });
+      var jObj = jabatanList.find(function(j) { return String(j.id) === jid; });
+
+      var namaDiklat = dObj ? dObj.nama_diklat : did;
+      var namaJabatan = jObj ? (jObj.nama_jabatan || jObj.nama) : jid;
+
+      targetPegawai.forEach(function(p) {
+        var pid = String(p.id);
+        var sertif = riwayat.find(function(r) {
+          return String(r.pegawai_id) === pid &&
+                 (String(r.diklat_id) === did || String(r.nama_kegiatan || '').toLowerCase().indexOf(namaDiklat.toLowerCase()) !== -1) &&
+                 String(r.status_verifikasi).toLowerCase() === 'disetujui';
+        });
+
+        if (!sertif) {
+          gapDetails.push({
+            pegawai_id: pid,
+            nama_pegawai: p.nama_lengkap || p.nama || pid,
+            jabatan_id: jid,
+            nama_jabatan: namaJabatan,
+            diklat_id: did,
+            nama_diklat: namaDiklat,
+            tingkat_kebutuhan: std.tingkat_kebutuhan || 'WAJIB',
+            minimal_jp: minJp,
+            status_gap: 'Belum Mengikuti Diklat Wajib'
+          });
+        }
+      });
+    });
+
+    if (gapDetails.length > 0) {
+      temuan.push({
+        level: 'PERINGATAN',
+        pesan: 'Ditemukan ' + gapDetails.length + ' kesenjangan kompetensi standar jabatan (SKJ) yang belum terpenuhi personel.'
+      });
+      rekomendasi.push({
+        prioritas: 'Prioritas 1',
+        tindakan: 'Usulkan pelaksanaan in-house training teknis Satpol PP & Damkar Trenggalek untuk menutup gap kompetensi wajib.'
+      });
+    } else {
+      temuan.push({
+        level: 'OPTIMAL',
+        pesan: 'Seluruh pejabat struktural dan fungsional telah memenuhi standar kompetensi minimal jabatan.'
+      });
     }
-  };
+
+    return {
+      success: true,
+      data: {
+        gap_count: gapDetails.length,
+        gap_details: gapDetails,
+        temuan: temuan,
+        rekomendasi: rekomendasi,
+        tahun: tahun
+      }
+    };
+  } catch (err) {
+    return { success: false, error: 'Gagal memproses analisa gap: ' + err.message };
+  }
 }
 
-function getSimpegLookup_() {
-  return {
-    success: true,
-    data: {
-      pegawai: getSheetData_('PEGAWAI'),
-      unit: getSheetData_('UNIT_KERJA'),
-      jabatan: getSheetData_('JABATAN')
+// ==================== 3. JADWAL PELATIHAN (T_JADWAL_DIKLAT) ====================
+
+function getJadwalList_(params) {
+  try {
+    var list = getSheetData_(LOCAL_SHEETS.T_JADWAL_DIKLAT);
+    return { success: true, data: list };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+function saveJadwal_(params, user) {
+  try {
+    var record = params.record || params;
+    if (!record.nama_kegiatan && !record.nama_diklat) {
+      return { success: false, error: 'Nama kegiatan pelatihan wajib diisi.' };
     }
-  };
+    if (!record.kode_jadwal) {
+      record.kode_jadwal = 'JDW-' + String(Date.now()).slice(-4);
+    }
+    if (!record.nama_kegiatan && record.nama_diklat) {
+      record.nama_kegiatan = record.nama_diklat;
+    }
+    var saved = saveRecord_(LOCAL_SHEETS.T_JADWAL_DIKLAT, record, user);
+    sendAuditLog_(user, 'SAVE_JADWAL', 'T_JADWAL_DIKLAT', saved.id, 'SUCCESS', 'Simpan agenda jadwal: ' + (saved.nama_kegiatan || ''));
+    return { success: true, data: saved };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
 }
 
-function getMyProfile_(data, sessionUser) {
-  if (!sessionUser || !sessionUser.email) return { success: false, error: 'Sesi tidak valid.' };
-  var pegawai = getSheetData_('PEGAWAI');
-  var match = pegawai.find(function(p) { return String(p.email).toLowerCase() === String(sessionUser.email).toLowerCase(); });
-  return { success: true, data: match || sessionUser };
+function deleteJadwal_(params, user) {
+  try {
+    var id = params.id;
+    if (!id) return { success: false, error: 'ID jadwal wajib disertakan.' };
+    var ok = softDeleteRecord_(LOCAL_SHEETS.T_JADWAL_DIKLAT, id, user);
+    sendAuditLog_(user, 'DELETE_JADWAL', 'T_JADWAL_DIKLAT', id, 'SUCCESS', 'Hapus agenda jadwal: ' + id);
+    return { success: ok, message: 'Jadwal berhasil dihapus.' };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
 }
 
-function refreshCacheHandler_() {
-  var cache = CacheService.getScriptCache();
-  Object.keys(LOCAL_SHEETS).forEach(function(k) {
-    cache.remove('CACHE_' + APP_CODE + '_' + LOCAL_SHEETS[k]);
-  });
-  SIMPEG_REFERENCE_SHEETS.forEach(function(s) {
-    cache.remove('CACHE_' + APP_CODE + '_' + s);
-  });
-  Logger.log('✅ Invalidation cache berhasil.');
-  return { success: true, message: 'Seluruh cache sistem berhasil diperbarui.' };
+// ==================== 4. PENUGASAN PESERTA & SURAT TUGAS (T_PENUGASAN_PESERTA) ====================
+
+function getPenugasanList_(params) {
+  try {
+    params = params || {};
+    var list = getSheetData_(LOCAL_SHEETS.T_PENUGASAN_PESERTA);
+    if (params.jadwal_id) {
+      list = list.filter(function(p) { return String(p.jadwal_id) === String(params.jadwal_id); });
+    }
+    if (params.pegawai_id) {
+      list = list.filter(function(p) { return String(p.pegawai_id) === String(params.pegawai_id); });
+    }
+    return { success: true, data: list };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
 }
 
-// ==================== 8. DATABASE INITIALIZATION & SETUP ====================
+function savePenugasan_(params, user) {
+  try {
+    var record = params.record || params;
+    if (!record.pegawai_id) return { success: false, error: 'Pegawai peserta wajib dipilih.' };
+    if (!record.no_surat_tugas) record.no_surat_tugas = '800/SPT/' + String(Date.now()).slice(-4) + '/2026';
+    if (!record.status_keikutsertaan) record.status_keikutsertaan = 'DITUGASKAN';
+
+    var saved = saveRecord_(LOCAL_SHEETS.T_PENUGASAN_PESERTA, record, user);
+    sendAuditLog_(user, 'SAVE_PENUGASAN', 'T_PENUGASAN_PESERTA', saved.id, 'SUCCESS', 'Penugasan diklat pegawai: ' + saved.pegawai_id);
+    return { success: true, data: saved };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+function bulkAssignPeserta_(params, user) {
+  try {
+    var jadwalId = params.jadwal_id;
+    var pegawaiIds = params.pegawai_ids || [];
+    var noSuratTugas = params.no_surat_tugas || ('800/SPT/' + String(Date.now()).slice(-4) + '/2026');
+    var tglSuratTugas = params.tgl_surat_tugas || new Date().toISOString().slice(0, 10);
+
+    if (!jadwalId || !Array.isArray(pegawaiIds) || pegawaiIds.length === 0) {
+      return { success: false, error: 'Jadwal dan daftar pegawai wajib dipilih.' };
+    }
+
+    var inserted = [];
+    pegawaiIds.forEach(function(pid) {
+      var item = {
+        jadwal_id: jadwalId,
+        pegawai_id: pid,
+        no_surat_tugas: noSuratTugas,
+        tgl_surat_tugas: tglSuratTugas,
+        pejabat_penandatangan: 'Kepala Satpol PP & Pemadam Kebakaran',
+        status_keikutsertaan: 'DITUGASKAN',
+        nilai_kelulusan: '',
+        no_sertifikat_terbit: '',
+        catatan: ''
+      };
+      var res = saveRecord_(LOCAL_SHEETS.T_PENUGASAN_PESERTA, item, user);
+      inserted.push(res);
+    });
+
+    sendAuditLog_(user, 'BULK_ASSIGN_PESERTA', 'T_PENUGASAN_PESERTA', jadwalId, 'SUCCESS', 'Delegasi massal ' + inserted.length + ' pegawai.');
+    return { success: true, count: inserted.length, data: inserted };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+function deletePenugasan_(params, user) {
+  try {
+    var id = params.id;
+    if (!id) return { success: false, error: 'ID penugasan wajib disertakan.' };
+    var ok = softDeleteRecord_(LOCAL_SHEETS.T_PENUGASAN_PESERTA, id, user);
+    sendAuditLog_(user, 'DELETE_PENUGASAN', 'T_PENUGASAN_PESERTA', id, 'SUCCESS', 'Hapus penugasan: ' + id);
+    return { success: ok, message: 'Data penugasan peserta dihapus.' };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+// ==================== 5. KUALIFIKASI & LISENSI KHUSUS (T_KUALIFIKASI_KHUSUS) ====================
+
+function getKualifikasiList_(params) {
+  try {
+    params = params || {};
+    var list = getSheetData_(LOCAL_SHEETS.T_KUALIFIKASI_KHUSUS);
+    if (params.pegawai_id) {
+      list = list.filter(function(k) { return String(k.pegawai_id) === String(params.pegawai_id); });
+    }
+    if (params.jenis_kualifikasi) {
+      list = list.filter(function(k) { return String(k.jenis_kualifikasi) === String(params.jenis_kualifikasi); });
+    }
+    return { success: true, data: list };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+function saveKualifikasi_(params, user) {
+  try {
+    var record = params.record || params;
+    if (!record.pegawai_id || !record.jenis_kualifikasi) {
+      return { success: false, error: 'Pegawai dan jenis kualifikasi khusus wajib diisi.' };
+    }
+    if (!record.status_kualifikasi) record.status_kualifikasi = 'AKTIF';
+
+    var saved = saveRecord_(LOCAL_SHEETS.T_KUALIFIKASI_KHUSUS, record, user);
+    sendAuditLog_(user, 'SAVE_KUALIFIKASI', 'T_KUALIFIKASI_KHUSUS', saved.id, 'SUCCESS', 'Simpan lisensi: ' + saved.jenis_kualifikasi);
+    return { success: true, data: saved };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+function deleteKualifikasi_(params, user) {
+  try {
+    var id = params.id;
+    if (!id) return { success: false, error: 'ID kualifikasi wajib disertakan.' };
+    var ok = softDeleteRecord_(LOCAL_SHEETS.T_KUALIFIKASI_KHUSUS, id, user);
+    sendAuditLog_(user, 'DELETE_KUALIFIKASI', 'T_KUALIFIKASI_KHUSUS', id, 'SUCCESS', 'Hapus lisensi kualifikasi: ' + id);
+    return { success: ok, message: 'Lisensi kualifikasi khusus berhasil dihapus.' };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+function getKualifikasiExpiringSoon_(params) {
+  try {
+    var list = getSheetData_(LOCAL_SHEETS.T_KUALIFIKASI_KHUSUS);
+    var nowMs = Date.now();
+    var ms90Days = 90 * 24 * 60 * 60 * 1000;
+
+    var expiring = list.filter(function(k) {
+      if (!k.tgl_habis_berlaku || String(k.status_kualifikasi).toLowerCase() === 'tidak_aktif') return false;
+      var expMs = new Date(k.tgl_habis_berlaku).getTime();
+      return !isNaN(expMs) && expMs > nowMs && (expMs - nowMs) <= ms90Days;
+    });
+
+    return { success: true, count: expiring.length, data: expiring };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+// ==================== 6. PORTOFOLIO RIWAYAT KOMPETENSI (T_RIWAYAT_KOMPETENSI) ====================
+
+function getRiwayatList_(params, user) {
+  try {
+    params = params || {};
+    var list = getSheetData_(LOCAL_SHEETS.T_RIWAYAT_KOMPETENSI);
+
+    if (params.filters) {
+      if (params.filters.rumpun) {
+        list = list.filter(function(k) { return String(k.rumpun) === String(params.filters.rumpun); });
+      }
+      if (params.filters.status) {
+        list = list.filter(function(k) { return String(k.status_verifikasi) === String(params.filters.status); });
+      }
+    }
+
+    if (params.search) {
+      var q = String(params.search).toLowerCase().trim();
+      list = list.filter(function(k) {
+        return String(k.nama_kegiatan || '').toLowerCase().indexOf(q) !== -1 ||
+               String(k.penyelenggara || '').toLowerCase().indexOf(q) !== -1 ||
+               String(k.no_sertifikat || '').toLowerCase().indexOf(q) !== -1;
+      });
+    }
+
+    return { success: true, data: list };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+function saveRiwayat_(params, user) {
+  try {
+    var record = params.record || params;
+    if (!record.nama_kegiatan) return { success: false, error: 'Nama kegiatan pelatihan wajib diisi.' };
+    if (!record.pegawai_id) return { success: false, error: 'Pegawai pemilik sertifikat wajib dipilih.' };
+
+    if (record.jumlah_jp === undefined || record.jumlah_jp === '') record.jumlah_jp = 20;
+    if (!record.status_verifikasi) record.status_verifikasi = 'menunggu';
+
+    var saved = saveRecord_(LOCAL_SHEETS.T_RIWAYAT_KOMPETENSI, record, user);
+    sendAuditLog_(user, 'SAVE_RIWAYAT', 'T_RIWAYAT_KOMPETENSI', saved.id, 'SUCCESS', 'Simpan riwayat kompetensi: ' + saved.nama_kegiatan);
+    return { success: true, data: saved };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+function deleteRiwayat_(params, user) {
+  try {
+    var id = params.id;
+    if (!id) return { success: false, error: 'ID riwayat wajib disertakan.' };
+    var ok = softDeleteRecord_(LOCAL_SHEETS.T_RIWAYAT_KOMPETENSI, id, user);
+    sendAuditLog_(user, 'DELETE_RIWAYAT', 'T_RIWAYAT_KOMPETENSI', id, 'SUCCESS', 'Hapus riwayat kompetensi: ' + id);
+    return { success: ok, message: 'Riwayat sertifikat berhasil dihapus.' };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+function verifikasiRiwayat_(params, user) {
+  try {
+    var id = params.id;
+    var status = params.status_verifikasi || 'disetujui';
+    var catatan = params.catatan_verifikator || '';
+
+    if (!id) return { success: false, error: 'ID sertifikat wajib disertakan.' };
+
+    var rec = findRecordById_(LOCAL_SHEETS.T_RIWAYAT_KOMPETENSI, id);
+    if (!rec) return { success: false, error: 'Data sertifikat tidak ditemukan.' };
+
+    rec.status_verifikasi = status;
+    rec.catatan_verifikator = catatan;
+    rec.verifikator_id = (user && (user.email || user.id)) || 'verifikator';
+    rec.tanggal_verifikasi = new Date().toISOString();
+
+    var saved = saveRecord_(LOCAL_SHEETS.T_RIWAYAT_KOMPETENSI, rec, user);
+    sendAuditLog_(user, 'VERIFIKASI_RIWAYAT', 'T_RIWAYAT_KOMPETENSI', id, 'SUCCESS', 'Verifikasi status: ' + status);
+    return { success: true, data: saved };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+// ==================== 7. USULAN DIKLAT BOTTOM-UP (T_USULAN_DIKLAT) ====================
+
+function getUsulanList_(params, user) {
+  try {
+    var list = getSheetData_(LOCAL_SHEETS.T_USULAN_DIKLAT);
+    return { success: true, data: list };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+function saveUsulan_(params, user) {
+  try {
+    var record = params.record || params;
+    if (!record.nama_diklat_usulan) return { success: false, error: 'Nama diklat yang diusulkan wajib diisi.' };
+    if (!record.status_usulan) record.status_usulan = 'diajukan';
+    if (!record.tgl_pengajuan) record.tgl_pengajuan = new Date().toISOString().slice(0, 10);
+    if (!record.tahun_anggaran_target) record.tahun_anggaran_target = new Date().getFullYear() + 1;
+
+    var saved = saveRecord_(LOCAL_SHEETS.T_USULAN_DIKLAT, record, user);
+    sendAuditLog_(user, 'SAVE_USULAN', 'T_USULAN_DIKLAT', saved.id, 'SUCCESS', 'Pengajuan usulan: ' + saved.nama_diklat_usulan);
+    return { success: true, data: saved };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+function reviewUsulan_(params, user) {
+  try {
+    var id = params.id;
+    var status = params.status_usulan || 'disetujui_kasat';
+    var catatan = params.catatan_pimpinan || '';
+
+    if (!id) return { success: false, error: 'ID usulan wajib disertakan.' };
+
+    var rec = findRecordById_(LOCAL_SHEETS.T_USULAN_DIKLAT, id);
+    if (!rec) return { success: false, error: 'Data usulan diklat tidak ditemukan.' };
+
+    rec.status_usulan = status;
+    rec.catatan_pimpinan = catatan;
+
+    var saved = saveRecord_(LOCAL_SHEETS.T_USULAN_DIKLAT, rec, user);
+    sendAuditLog_(user, 'REVIEW_USULAN', 'T_USULAN_DIKLAT', id, 'SUCCESS', 'Review usulan status: ' + status);
+    return { success: true, data: saved };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+function deleteUsulan_(params, user) {
+  try {
+    var id = params.id;
+    if (!id) return { success: false, error: 'ID usulan wajib disertakan.' };
+    var ok = softDeleteRecord_(LOCAL_SHEETS.T_USULAN_DIKLAT, id, user);
+    sendAuditLog_(user, 'DELETE_USULAN', 'T_USULAN_DIKLAT', id, 'SUCCESS', 'Hapus usulan diklat: ' + id);
+    return { success: ok, message: 'Usulan diklat berhasil dihapus.' };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+// ==================== 8. MASTER KATALOG, STANDAR & REFERENSI ====================
+
+function saveKatalog_(params, user) {
+  try {
+    var record = params.record || params;
+    if (!record.nama_diklat) return { success: false, error: 'Nama program diklat wajib diisi.' };
+    if (!record.kode_diklat) record.kode_diklat = 'DKL-' + String(Date.now()).slice(-4);
+    var saved = saveRecord_(LOCAL_SHEETS.M_KATALOG_DIKLAT, record, user);
+    sendAuditLog_(user, 'SAVE_KATALOG', 'M_KATALOG_DIKLAT', saved.id, 'SUCCESS', 'Simpan katalog: ' + saved.nama_diklat);
+    return { success: true, data: saved };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+function deleteKatalog_(params, user) {
+  try {
+    var id = params.id;
+    if (!id) return { success: false, error: 'ID katalog wajib disertakan.' };
+    var ok = softDeleteRecord_(LOCAL_SHEETS.M_KATALOG_DIKLAT, id, user);
+    return { success: ok, message: 'Katalog berhasil dihapus.' };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+function saveStandarKompetensi_(params, user) {
+  try {
+    var record = params.record || params;
+    if (!record.jabatan_id || !record.diklat_id) return { success: false, error: 'Jabatan dan Diklat wajib dipilih.' };
+    var saved = saveRecord_(LOCAL_SHEETS.M_STANDAR_KOMPETENSI, record, user);
+    sendAuditLog_(user, 'SAVE_STANDAR', 'M_STANDAR_KOMPETENSI', saved.id, 'SUCCESS', 'Simpan standar kompetensi jabatan');
+    return { success: true, data: saved };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+function deleteStandarKompetensi_(params, user) {
+  try {
+    var id = params.id;
+    if (!id) return { success: false, error: 'ID standar wajib disertakan.' };
+    var ok = softDeleteRecord_(LOCAL_SHEETS.M_STANDAR_KOMPETENSI, id, user);
+    return { success: ok, message: 'Standar kompetensi dihapus.' };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+function saveReferensi_(params, user) {
+  try {
+    var record = params.record || params;
+    if (!record.kategori || !record.nama_nilai) return { success: false, error: 'Kategori dan nama nilai referensi wajib diisi.' };
+    var saved = saveRecord_(LOCAL_SHEETS.M_REFERENSI, record, user);
+    sendAuditLog_(user, 'SAVE_REFERENSI', 'M_REFERENSI', saved.id, 'SUCCESS', 'Simpan referensi: ' + saved.nama_nilai);
+    return { success: true, data: saved };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+function deleteReferensi_(params, user) {
+  try {
+    var id = params.id;
+    if (!id) return { success: false, error: 'ID referensi wajib disertakan.' };
+    var ok = softDeleteRecord_(LOCAL_SHEETS.M_REFERENSI, id, user);
+    return { success: ok, message: 'Item referensi berhasil dihapus.' };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+// ==================== 9. DATABASE INITIALIZATION & SETUP (8 SHEETS) ====================
 
 function initDatabase() {
   var ss = getLocalSpreadsheet_();
@@ -1041,7 +1083,7 @@ function initDatabase() {
     }
   } catch (e) {}
 
-  var summary = 'Inisialisasi basis data 5-Sheet Lokal selesai.';
+  var summary = 'Inisialisasi basis data 8-Sheet Ideal SI-KOMPETENSI selesai.';
   if (created.length > 0) summary += ' Dibuat: ' + created.join(', ') + '.';
   if (updated.length > 0) summary += ' Kolom diselaraskan: ' + updated.join(', ') + '.';
   Logger.log('✅ ' + summary);
@@ -1049,7 +1091,7 @@ function initDatabase() {
 }
 
 function setupApp() {
-  Logger.log('🚀 Memulai Setup SI-KOMPETENSI (Ekosistem Terpadu SIMPEG & SI-PLATFORM)...');
+  Logger.log('🚀 Memulai Setup SI-KOMPETENSI (8 Sheet Ideal Ekosistem Terpadu)...');
   initDatabase();
 
   var props = appProps_();
@@ -1059,29 +1101,14 @@ function setupApp() {
   }
 
   props.setProperties({
-    'APP_TITLE': APP_TITLE,
-    'APP_CODE': APP_CODE,
-    'SPREADSHEET_ID': activeId || '',
-    'MASTER_SPREADSHEET_ID': MASTER_SPREADSHEET_ID || DEFAULT_MASTER_SPREADSHEET_ID,
-    'PLATFORM_SPREADSHEET_ID': PLATFORM_SPREADSHEET_ID || DEFAULT_PLATFORM_SPREADSHEET_ID,
-    'PLATFORM_API_URL': PLATFORM_API_URL || DEFAULT_PLATFORM_URL,
-    'SESSION_PREFIX': SESSION_PREFIX,
-    'SESSION_TTL_SECONDS': String(SESSION_TTL_SECONDS)
+    APP_TITLE: APP_TITLE,
+    APP_CODE: APP_CODE,
+    SPREADSHEET_ID: activeId || '',
+    MASTER_SPREADSHEET_ID: MASTER_SPREADSHEET_ID,
+    PLATFORM_SPREADSHEET_ID: PLATFORM_SPREADSHEET_ID,
+    PLATFORM_API_URL: PLATFORM_API_URL
   });
 
-  if (typeof seedInitialData === 'function') {
-    seedInitialData();
-  }
-
-  Logger.log('🎉 ============================================================');
-  Logger.log('🎉 SETUP SELESAI DENGAN SUKSES!');
-  Logger.log('🎉 Terhubung ke SIMPEG Master ID: ' + (MASTER_SPREADSHEET_ID || DEFAULT_MASTER_SPREADSHEET_ID));
-  Logger.log('🎉 Terhubung ke SI-PLATFORM ID: ' + (PLATFORM_SPREADSHEET_ID || DEFAULT_PLATFORM_SPREADSHEET_ID));
-  Logger.log('🎉 ============================================================');
-
-  return { success: true, message: 'Setup SI-KOMPETENSI berhasil dijalankan.' };
-}
-
-function setup() {
-  return setupApp();
+  Logger.log('✅ Setup SI-KOMPETENSI 8-Sheet selesai!');
+  return { success: true, message: 'Setup aplikasi berhasil.' };
 }

@@ -1,12 +1,13 @@
 // ============================================================
-// SI-KOMPETENSI - 01_ConfigAndBridge.gs (v3.3.0 — Streamlined Workflow & Schedules)
-// Standar Satpol PP & Pemadam Kebakaran Kab. Trenggalek
+// SI-KOMPETENSI - 01_ConfigAndBridge.gs (v4.0.0 — 8-Sheet Ideal Architecture)
+// Sistem Informasi Manajemen Portofolio, Jadwal & Lisensi Khusus ASN
+// Satuan Polisi Pamong Praja & Pemadam Kebakaran Kab. Trenggalek
 // ============================================================
 
 var APP_TITLE = 'SI-KOMPETENSI';
 var APP_CODE = 'SIKOMPETENSI';
 
-// ID Spreadsheet Resmi Ekosistem Terpadu
+// ID Spreadsheet Resmi Ekosistem Terpadu Trenggalek
 var DEFAULT_MASTER_SPREADSHEET_ID = '1HvMXmvdtgAUZ9A0-SQHZp9QjnYv1A7Ku_oJIjbT8gT0'; // SIMPEG Master
 var DEFAULT_PLATFORM_SPREADSHEET_ID = '1EeJrOo6-75uf8SWCX4P5XPSMoUGXp8p1a098vKBRJys'; // SI-PLATFORM
 var DEFAULT_PLATFORM_URL = 'https://script.google.com/macros/s/AKfycbwh_OUVqmxLcuF81FHmPZtT33Wrm8Ce9Da1SQ3hfkSr7gM5P8ofyAlHSgW40mq3eo-PoQ/exec';
@@ -51,12 +52,15 @@ var SESSION_TTL_SECONDS = 6 * 60 * 60; // 6 jam
 var DATA_CACHE_TTL = 300; // 5 Menit Cache
 var ROLE_LEVELS = { viewer: 1, user: 1, verifikator: 2, admin: 3, super: 3 };
 
-// ==================== 5 SHEET DATABASE LOKAL SI-KOMPETENSI ====================
+// ==================== 8 SHEET DATABASE LOKAL SI-KOMPETENSI ====================
 var LOCAL_SHEETS = {
   M_REFERENSI: 'M_REFERENSI',
   M_KATALOG_DIKLAT: 'M_KATALOG_DIKLAT',
   M_STANDAR_KOMPETENSI: 'M_STANDAR_KOMPETENSI',
+  T_JADWAL_DIKLAT: 'T_JADWAL_DIKLAT',
+  T_PENUGASAN_PESERTA: 'T_PENUGASAN_PESERTA',
   T_RIWAYAT_KOMPETENSI: 'T_RIWAYAT_KOMPETENSI',
+  T_KUALIFIKASI_KHUSUS: 'T_KUALIFIKASI_KHUSUS',
   T_USULAN_DIKLAT: 'T_USULAN_DIKLAT'
 };
 
@@ -72,41 +76,69 @@ function isSimpegSheet_(sheetName) {
   return SIMPEG_REFERENCE_SHEETS.indexOf(s) !== -1;
 }
 
-// Skema Header Resmi
+// Skema Header Resmi 8 Sheet Lokal + SIMPEG
 var ALL_SHEET_HEADERS = {
   // 1. Master Referensi Gabungan
   M_REFERENSI: [
     'id', 'kategori', 'kode', 'nama_nilai', 'urutan', 'status_aktif', 'keterangan',
     'created_at', 'updated_at', 'created_by', 'updated_by', 'deleted_at'
   ],
-  // 2. Katalog & Jadwal Pelatihan Resmi (Diinput Admin/Operator)
+
+  // 2. Katalog Master Program Diklat Resmi (Kamus Diklat)
   M_KATALOG_DIKLAT: [
     'id', 'kode_diklat', 'nama_diklat', 'rumpun', 'kategori_keahlian',
-    'penyelenggara_default', 'default_jp', 'metode', 'tgl_mulai_jadwal', 'tgl_selesai_jadwal',
-    'bulan_pelaksanaan', 'keterangan_jadwal', 'status_jadwal', 'estimasi_biaya_default', 'deskripsi', 'status_aktif',
+    'penyelenggara_default', 'default_jp', 'metode', 'estimasi_biaya_default',
+    'deskripsi', 'persyaratan', 'status_aktif',
     'created_at', 'updated_at', 'created_by', 'updated_by', 'deleted_at'
   ],
-  // 3. Standar Kompetensi Jabatan (Matriks Kebutuhan Pelatihan per Jabatan)
+
+  // 3. Standar Kompetensi Jabatan (Matriks Kebutuhan Pelatihan per Posisi Jabatan)
   M_STANDAR_KOMPETENSI: [
     'id', 'jabatan_id', 'diklat_id', 'tingkat_kebutuhan', 'minimal_jp', 'keterangan', 'status_aktif',
     'created_at', 'updated_at', 'created_by', 'updated_by', 'deleted_at'
   ],
-  // 4. Riwayat Sertifikat Diklat Pegawai (Pemenuhan 20 JP)
+
+  // 4. Jadwal & Agenda Pelatihan Riil (Pemisahan Jadwal dari Katalog)
+  T_JADWAL_DIKLAT: [
+    'id', 'kode_jadwal', 'diklat_id', 'nama_kegiatan', 'rumpun', 'penyelenggara',
+    'metode', 'jumlah_jp', 'tgl_mulai', 'tgl_selesai', 'bulan_periode', 'tahun_periode',
+    'kuota_peserta', 'lokasi_pelaksanaan', 'link_pendaftaran', 'status_jadwal', 'keterangan',
+    'created_at', 'updated_at', 'created_by', 'updated_by', 'deleted_at'
+  ],
+
+  // 5. Penugasan Peserta & Surat Perintah Tugas (SPT Kasatpol PP & Damkar)
+  T_PENUGASAN_PESERTA: [
+    'id', 'jadwal_id', 'pegawai_id', 'no_surat_tugas', 'tgl_surat_tugas',
+    'pejabat_penandatangan', 'status_keikutsertaan', 'nilai_kelulusan', 'no_sertifikat_terbit',
+    'catatan', 'created_at', 'updated_at', 'created_by', 'updated_by', 'deleted_at'
+  ],
+
+  // 6. Riwayat Sertifikat Diklat Pegawai (Pemenuhan Standar 20 JP PNS / 24 JP PPPK)
   T_RIWAYAT_KOMPETENSI: [
-    'id', 'pegawai_id', 'diklat_id', 'nama_kegiatan', 'rumpun', 'penyelenggara',
+    'id', 'pegawai_id', 'diklat_id', 'jadwal_id', 'nama_kegiatan', 'rumpun', 'penyelenggara',
     'no_sertifikat', 'tgl_terbit', 'tgl_mulai', 'tgl_selesai', 'tgl_kedaluwarsa',
     'jumlah_jp', 'metode', 'file_url', 'status_verifikasi', 'catatan_verifikator',
     'verifikator_id', 'tanggal_verifikasi',
     'created_at', 'updated_at', 'created_by', 'updated_by', 'deleted_at'
   ],
-  // 5. Usulan Pelatihan Bottom-Up (AKD)
+
+  // 7. Kualifikasi & Lisensi Khusus Kadaluwarsa (PPNS, Damkar I, SCBA, Rescue, Water SAR)
+  T_KUALIFIKASI_KHUSUS: [
+    'id', 'pegawai_id', 'jenis_kualifikasi', 'nomor_sk_lisensi', 'no_registrasi_nasional',
+    'lembaga_penerbit', 'tgl_sk_terbit', 'tgl_habis_berlaku', 'status_kualifikasi',
+    'file_sk_url', 'catatan_perpanjangan', 'alert_h90_sent',
+    'created_at', 'updated_at', 'created_by', 'updated_by', 'deleted_at'
+  ],
+
+  // 8. Usulan Pelatihan Bottom-Up (AKD / Analisis Kebutuhan Diklat Unit)
   T_USULAN_DIKLAT: [
     'id', 'pegawai_id', 'diklat_id', 'nama_diklat_usulan', 'rumpun', 'target_penyelenggara',
     'alasan_usulan', 'urgensi', 'estimasi_biaya', 'status_usulan', 'catatan_pimpinan',
     'tgl_pengajuan', 'tahun_anggaran_target',
     'created_at', 'updated_at', 'created_by', 'updated_by', 'deleted_at'
   ],
-  // SIMPEG (Read-Only Columns)
+
+  // SIMPEG Pusat (Read-Only)
   PEGAWAI: [
     'pegawai_id', 'nip', 'nama_lengkap', 'gelar_depan', 'gelar_belakang', 'email', 'telepon',
     'unit_id', 'jabatan_id', 'pangkat_golongan', 'status_pegawai', 'status_aktif',
@@ -190,7 +222,10 @@ function getSheetData_(sheetName) {
       'JABATAN': ['M_JABATAN', 'jabatan', 'Jabatan', 'm_jabatan', 'roles'],
       'M_JABATAN': ['JABATAN', 'jabatan', 'Jabatan', 'm_jabatan', 'roles'],
       'T_RIWAYAT_KOMPETENSI': ['T_KOMPETENSI_PEGAWAI', 'DATA_KOMPETENSI', 'riwayat_kompetensi'],
-      'T_KOMPETENSI_PEGAWAI': ['T_RIWAYAT_KOMPETENSI', 'DATA_KOMPETENSI', 'riwayat_kompetensi']
+      'T_KOMPETENSI_PEGAWAI': ['T_RIWAYAT_KOMPETENSI', 'DATA_KOMPETENSI', 'riwayat_kompetensi'],
+      'T_JADWAL_DIKLAT': ['JADWAL_DIKLAT', 'jadwal_diklat', 'T_JADWAL'],
+      'T_PENUGASAN_PESERTA': ['PENUGASAN_PESERTA', 'T_PENUGASAN', 'penugasan'],
+      'T_KUALIFIKASI_KHUSUS': ['KUALIFIKASI_KHUSUS', 'T_LISENSI_KHUSUS', 'kualifikasi_khusus']
     };
     var cand = aliasMap[sheetName] || [];
     for (var i = 0; i < cand.length; i++) {
@@ -252,7 +287,13 @@ function getSheetData_(sheetName) {
   }
 
   // Simpan cache untuk sheet referensi & master satelit
-  if (isSimpegSheet_(sheetName) || sheetName === LOCAL_SHEETS.M_REFERENSI || sheetName === LOCAL_SHEETS.M_KATALOG_DIKLAT || sheetName === LOCAL_SHEETS.M_STANDAR_KOMPETENSI) {
+  var cacheableSheets = [
+    LOCAL_SHEETS.M_REFERENSI,
+    LOCAL_SHEETS.M_KATALOG_DIKLAT,
+    LOCAL_SHEETS.M_STANDAR_KOMPETENSI,
+    LOCAL_SHEETS.T_JADWAL_DIKLAT
+  ];
+  if (isSimpegSheet_(sheetName) || cacheableSheets.indexOf(sheetName) !== -1) {
     try {
       cache.put(cacheKey, JSON.stringify(records), DATA_CACHE_TTL);
     } catch (e) {}
