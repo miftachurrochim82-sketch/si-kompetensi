@@ -23,7 +23,6 @@
 
   <!-- Resource Hints -->
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
-  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
@@ -48,7 +47,7 @@
       const manifest = {
         name: "SI-KOMPETENSI Satpol PP & Damkar",
         short_name: "SI-KOMPETENSI",
-        description: "Sistem Informasi Pengembangan Kompetensi & Standar 20 JP ASN Trenggalek",
+        description: "Sistem Informasi Pengembangan Kompetensi & Standar JP ASN Trenggalek",
         start_url: window.location.href,
         display: "standalone",
         background_color: "#022c22",
@@ -110,7 +109,7 @@
         </div>
         <div>
           <h2 class="text-2xl font-black">SI-KOMPETENSI</h2>
-          <p class="text-xs text-slate-400 mt-1">Sistem Informasi Manajemen Portofolio & Standar 20 JP</p>
+          <p class="text-xs text-slate-400 mt-1">Sistem Informasi Manajemen Portofolio & Standar JP ASN</p>
         </div>
         <div class="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-200 text-left">
           <p class="font-bold flex items-center gap-1.5"><i class="fa-solid fa-triangle-exclamation"></i> Single Sign-On Diperlukan</p>
@@ -188,17 +187,18 @@
             persen_capaian_20jp: 0,
             pegawai_lulus_20jp: 0,
             total_pegawai: 0,
-            total_ppns: 0,
-            total_damkar_certified: 0,
+            total_kualifikasi_aktif: 0,
+            total_kualifikasi_expiring_soon: 0,
+            total_jadwal_aktif: 0,
             total_usulan_diklat: 0,
             bulan_aktif: 'September 2026',
+            capaian_pns: { total: 0, lulus: 0, persen: 0, total_jp: 0, target_standar: '20 JP' },
+            capaian_pppk: { total: 0, lulus: 0, persen: 0, total_jp: 0, target_standar: '24 JP' },
             status_count: { disetujui: 0, menunggu: 0, ditolak: 0 },
             jenis_count: {},
             terbaru: [],
             jadwal_pelatihan: [],
             matriks_bulanan: [],
-            capaian_pns: [],
-            capaian_pppk: [],
             ai_insights: {
               tren_partisipasi: { naik: true, persen: 0, bulan_ini_jp: 0, bulan_lalu_jp: 0 },
               unit_terbaik: { nama: '-', rata_jp: 0 },
@@ -206,7 +206,31 @@
             }
           },
 
-          // State Riwayat / Portofolio (T_RIWAYAT_KOMPETENSI)
+          // State 1: Jadwal Diklat (T_JADWAL_DIKLAT)
+          jadwalList: [],
+          jadwalLoading: false,
+          showJadwalModal: false,
+          jadwalSaving: false,
+          jadwalForm: {
+            id: '', kode_jadwal: '', diklat_id: '', nama_kegiatan: '', rumpun: 'Teknis Pemadam & Rescue',
+            penyelenggara: 'BPSDM Jawa Timur', metode: 'Klasikal', jumlah_jp: 20, tgl_mulai: '',
+            tgl_selesai: '', bulan_periode: 'September 2026', tahun_periode: 2026, kuota_peserta: 10,
+            lokasi_pelaksanaan: '', link_pendaftaran: '', status_jadwal: 'Buka Pendaftaran', keterangan: ''
+          },
+
+          // State 2: Kualifikasi Khusus (T_KUALIFIKASI_KHUSUS)
+          kualifikasiList: [],
+          kualifikasiLoading: false,
+          showKualifikasiModal: false,
+          kualifikasiSaving: false,
+          kualifikasiForm: {
+            id: '', pegawai_id: '', jenis_kualifikasi: 'SK Pengangkatan Penyidik PPNS (Kemenkumham/Polri)',
+            nomor_sk_lisensi: '', no_registrasi_nasional: '', lembaga_penerbit: 'Kemenkumham RI',
+            tgl_sk_terbit: '', tgl_habis_berlaku: '', status_kualifikasi: 'AKTIF', file_sk_url: '',
+            catatan_perpanjangan: ''
+          },
+
+          // State 3: Riwayat Portofolio (T_RIWAYAT_KOMPETENSI)
           kompetensiList: [],
           kompetensiLoading: false,
           kompetensiSearch: '',
@@ -217,28 +241,18 @@
           isMandiriTraining: false,
           pdfCompressInfo: '',
           kompetensiForm: {
-            id: '', pegawai_id: '', diklat_id: '', nama_kegiatan: '', rumpun: 'Teknis Pemadam & Rescue',
+            id: '', pegawai_id: '', diklat_id: '', jadwal_id: '', nama_kegiatan: '', rumpun: 'Teknis Pemadam & Rescue',
             penyelenggara: '', no_sertifikat: '', tgl_terbit: '', tgl_mulai: '', tgl_selesai: '', tgl_kedaluwarsa: '',
             jumlah_jp: 20, metode: 'Klasikal', file_url: '', status_verifikasi: 'menunggu'
           },
 
-          // State Jadwal Pelatihan Admin (M_KATALOG_DIKLAT)
-          showJadwalModal: false,
-          jadwalSaving: false,
-          jadwalForm: {
-            id: '', kode_diklat: '', nama_diklat: '', rumpun: 'Teknis Pemadam & Rescue',
-            default_jp: 20, metode: 'Klasikal', penyelenggara_default: 'BPSDM Jawa Timur',
-            tgl_mulai_jadwal: '', tgl_selesai_jadwal: '', bulan_pelaksanaan: 'September 2026',
-            keterangan_jadwal: '', status_jadwal: 'Buka Pendaftaran'
-          },
-
-          // Verifikasi Berkas
+          // State 4: Verifikasi Sertifikat
           showVerifModal: false,
           selectedKompetensi: null,
           verifSaving: false,
           verifForm: { status: 'disetujui', catatan: '' },
 
-          // State Usulan Diklat (T_USULAN_DIKLAT)
+          // State 5: Usulan Diklat (T_USULAN_DIKLAT)
           usulanList: [],
           usulanLoading: false,
           showUsulanForm: false,
@@ -253,12 +267,12 @@
           reviewUsulanSaving: false,
           reviewUsulanForm: { status: 'disetujui_kasat', catatan: '' },
 
-          // State Analisa
+          // State 6: Analisa Kebutuhan (SKJ Gap)
           analisaTahun: 2026,
           analisaLoading: false,
           analisaData: { ringkasan: '', gap_count: 0, gap_details: [], temuan: [], rekomendasi: [] },
 
-          // Master Satelit (3 Tab)
+          // State 7: Master Satelit (Katalog, Standar, Referensi)
           activeMasterTab: 'katalog_diklat',
           katalogList: [],
           standarList: [],
@@ -364,6 +378,16 @@
           } catch(e) { return String(val); }
         },
 
+        isLicenseExpiringSoon(tglHabis) {
+          if (!tglHabis) return false;
+          try {
+            const expMs = new Date(tglHabis).getTime();
+            const nowMs = Date.now();
+            const ms90Days = 90 * 24 * 60 * 60 * 1000;
+            return !isNaN(expMs) && expMs > nowMs && (expMs - nowMs) <= ms90Days;
+          } catch(e) { return false; }
+        },
+
         // ================= DATA LOADERS =================
         async loadDashboard() {
           try {
@@ -384,6 +408,7 @@
               this.katalogList = res.data.katalog || [];
               this.standarList = res.data.standar_kompetensi || [];
               this.referensiList = res.data.referensi || [];
+              this.jadwalList = res.data.jadwal || [];
             }
           } catch(e) { console.error('Gagal load master satelit:', e); }
         },
@@ -395,6 +420,28 @@
               this.simpegLookup = res.data;
             }
           } catch(e) { console.error('Gagal load simpeg lookup:', e); }
+        },
+
+        async loadJadwal() {
+          this.jadwalLoading = true;
+          try {
+            const res = await this.callServer('get_jadwal_list');
+            if (res && res.success) {
+              this.jadwalList = res.data || [];
+            }
+          } catch(e) { console.error('Gagal load jadwal:', e); }
+          finally { this.jadwalLoading = false; }
+        },
+
+        async loadKualifikasi() {
+          this.kualifikasiLoading = true;
+          try {
+            const res = await this.callServer('get_kualifikasi_list');
+            if (res && res.success) {
+              this.kualifikasiList = res.data || [];
+            }
+          } catch(e) { console.error('Gagal load kualifikasi:', e); }
+          finally { this.kualifikasiLoading = false; }
         },
 
         async loadKompetensi(page = 1) {
@@ -539,7 +586,143 @@
           }
         },
 
-        // ================= ALUR INPUT SERTIFIKAT STREAMLINED =================
+        // ================= JADWAL PELATIHAN & KLAIM CEPAT =================
+        openJadwalModal() {
+          this.jadwalForm = {
+            id: '',
+            kode_jadwal: 'JDW-' + String(Date.now()).slice(-4),
+            diklat_id: '',
+            nama_kegiatan: '',
+            rumpun: 'Teknis Pemadam & Rescue',
+            penyelenggara: 'BPSDM Jawa Timur',
+            metode: 'Klasikal',
+            jumlah_jp: 20,
+            tgl_mulai: '',
+            tgl_selesai: '',
+            bulan_periode: this.dashboardData.bulan_aktif || 'September 2026',
+            tahun_periode: new Date().getFullYear(),
+            kuota_peserta: 10,
+            lokasi_pelaksanaan: '',
+            link_pendaftaran: '',
+            status_jadwal: 'Buka Pendaftaran',
+            keterangan: ''
+          };
+          this.showJadwalModal = true;
+        },
+
+        openEditJadwal(item) {
+          this.jadwalForm = Object.assign({}, item);
+          this.showJadwalModal = true;
+        },
+
+        async saveJadwalDiklat() {
+          this.jadwalSaving = true;
+          try {
+            const res = await this.callServer('save_jadwal', { record: this.jadwalForm });
+            if (res && res.success) {
+              this.showToast('Agenda jadwal pelatihan berhasil disimpan', 'success');
+              this.showJadwalModal = false;
+              await this.loadJadwal();
+              await this.loadDashboard();
+            } else {
+              this.showToast((res && res.error) || 'Gagal menyimpan agenda', 'error');
+            }
+          } catch(e) { this.showToast('Gagal: ' + e.message, 'error'); }
+          finally { this.jadwalSaving = false; }
+        },
+
+        async deleteJadwal(id) {
+          if (!confirm('Hapus jadwal pelatihan ini?')) return;
+          try {
+            const res = await this.callServer('delete_jadwal', { id: id });
+            if (res && res.success) {
+              this.showToast('Jadwal dihapus', 'success');
+              await this.loadJadwal();
+              await this.loadDashboard();
+            }
+          } catch(e) { this.showToast('Gagal: ' + e.message, 'error'); }
+        },
+
+        openClaimJadwalForm(jadwal) {
+          this.openKompetensiForm();
+          this.kompetensiForm.diklat_id = jadwal.diklat_id || jadwal.id;
+          this.kompetensiForm.jadwal_id = jadwal.id;
+          this.kompetensiForm.nama_kegiatan = jadwal.nama_kegiatan || jadwal.nama_diklat || '';
+          this.kompetensiForm.rumpun = jadwal.rumpun || this.kompetensiForm.rumpun;
+          this.kompetensiForm.jumlah_jp = Number(jadwal.jumlah_jp) || 20;
+          this.kompetensiForm.penyelenggara = jadwal.penyelenggara || '';
+          this.kompetensiForm.metode = jadwal.metode || 'Klasikal';
+          if (jadwal.tgl_mulai) this.kompetensiForm.tgl_mulai = jadwal.tgl_mulai;
+          if (jadwal.tgl_selesai) this.kompetensiForm.tgl_selesai = jadwal.tgl_selesai;
+        },
+
+        onJadwalPelatihanChanged() {
+          if (!this.kompetensiForm.diklat_id) return;
+          const j = this.jadwalList.find(x => String(x.id) === String(this.kompetensiForm.diklat_id)) ||
+                    this.katalogList.find(x => String(x.id) === String(this.kompetensiForm.diklat_id));
+          if (j) {
+            this.kompetensiForm.nama_kegiatan = j.nama_kegiatan || j.nama_diklat || '';
+            this.kompetensiForm.rumpun = j.rumpun || this.kompetensiForm.rumpun;
+            this.kompetensiForm.jumlah_jp = Number(j.jumlah_jp || j.default_jp) || this.kompetensiForm.jumlah_jp;
+            this.kompetensiForm.penyelenggara = j.penyelenggara || j.penyelenggara_default || '';
+            this.kompetensiForm.metode = j.metode || 'Klasikal';
+            if (j.tgl_mulai) this.kompetensiForm.tgl_mulai = j.tgl_mulai;
+            if (j.tgl_selesai) this.kompetensiForm.tgl_selesai = j.tgl_selesai;
+          }
+        },
+
+        // ================= KUALIFIKASI & LISENSI KHUSUS =================
+        openKualifikasiModal() {
+          this.kualifikasiForm = {
+            id: '',
+            pegawai_id: (this.simpegLookup.pegawai && this.simpegLookup.pegawai[0] && this.simpegLookup.pegawai[0].id) || '',
+            jenis_kualifikasi: 'SK Pengangkatan Penyidik PPNS (Kemenkumham/Polri)',
+            nomor_sk_lisensi: '',
+            no_registrasi_nasional: '',
+            lembaga_penerbit: 'Kemenkumham RI',
+            tgl_sk_terbit: '',
+            tgl_habis_berlaku: '',
+            status_kualifikasi: 'AKTIF',
+            file_sk_url: '',
+            catatan_perpanjangan: ''
+          };
+          this.showKualifikasiModal = true;
+        },
+
+        openEditKualifikasi(item) {
+          this.kualifikasiForm = Object.assign({}, item);
+          this.showKualifikasiModal = true;
+        },
+
+        async saveKualifikasi() {
+          this.kualifikasiSaving = true;
+          try {
+            const res = await this.callServer('save_kualifikasi', { record: this.kualifikasiForm });
+            if (res && res.success) {
+              this.showToast('Lisensi kualifikasi khusus disimpan', 'success');
+              this.showKualifikasiModal = false;
+              await this.loadKualifikasi();
+              await this.loadDashboard();
+            } else {
+              this.showToast((res && res.error) || 'Gagal menyimpan lisensi', 'error');
+            }
+          } catch(e) { this.showToast('Gagal: ' + e.message, 'error'); }
+          finally { this.kualifikasiSaving = false; }
+        },
+
+        async deleteKualifikasi(id) {
+          if (!confirm('Hapus data lisensi kualifikasi ini?')) return;
+          try {
+            const res = await this.callServer('delete_kualifikasi', { id: id });
+            if (res && res.success) {
+              this.showToast('Lisensi berhasil dihapus', 'success');
+              await this.loadKualifikasi();
+              await this.loadDashboard();
+            }
+          } catch(e) { this.showToast('Gagal: ' + e.message, 'error'); }
+        },
+
+        // ================= PORTOFOLIO RIWAYAT =================
         openKompetensiForm() {
           let defaultPegawaiId = '';
           if (this.currentUser && this.currentUser.email) {
@@ -556,6 +739,7 @@
             id: '',
             pegawai_id: defaultPegawaiId,
             diklat_id: '',
+            jadwal_id: '',
             nama_kegiatan: '',
             rumpun: 'Teknis Pemadam & Rescue',
             penyelenggara: '',
@@ -572,29 +756,9 @@
           this.showKompetensiForm = true;
         },
 
-        openClaimJadwalForm(jadwal) {
-          this.openKompetensiForm();
-          this.kompetensiForm.diklat_id = jadwal.id;
-          this.onJadwalPelatihanChanged();
-        },
-
-        onJadwalPelatihanChanged() {
-          if (!this.kompetensiForm.diklat_id) return;
-          const d = this.katalogList.find(x => String(x.id) === String(this.kompetensiForm.diklat_id));
-          if (d) {
-            this.kompetensiForm.nama_kegiatan = d.nama_diklat || '';
-            this.kompetensiForm.rumpun = d.rumpun || this.kompetensiForm.rumpun;
-            this.kompetensiForm.jumlah_jp = Number(d.default_jp) || this.kompetensiForm.jumlah_jp;
-            this.kompetensiForm.penyelenggara = d.penyelenggara_default || d.penyelenggara || '';
-            this.kompetensiForm.metode = d.metode || 'Klasikal';
-            if (d.tgl_mulai_jadwal) this.kompetensiForm.tgl_mulai = d.tgl_mulai_jadwal;
-            if (d.tgl_selesai_jadwal) this.kompetensiForm.tgl_selesai = d.tgl_selesai_jadwal;
-          }
-        },
-
         openEditKompetensi(item) {
           this.kompetensiForm = Object.assign({}, item);
-          this.isMandiriTraining = !item.diklat_id;
+          this.isMandiriTraining = !item.diklat_id && !item.jadwal_id;
           this.pdfCompressInfo = '';
           this.showKompetensiForm = true;
         },
@@ -656,46 +820,6 @@
             }
           } catch(e) { this.showToast('Gagal verifikasi: ' + e.message, 'error'); }
           finally { this.verifSaving = false; }
-        },
-
-        // ================= JADWAL PELATIHAN ADMIN =================
-        openJadwalModal() {
-          this.jadwalForm = {
-            id: '',
-            kode_diklat: 'DKL-' + String(Date.now()).slice(-4),
-            nama_diklat: '',
-            rumpun: 'Teknis Pemadam & Rescue',
-            default_jp: 20,
-            metode: 'Klasikal',
-            penyelenggara_default: 'BPSDM Jawa Timur',
-            tgl_mulai_jadwal: '',
-            tgl_selesai_jadwal: '',
-            bulan_pelaksanaan: this.dashboardData.bulan_aktif || 'September 2026',
-            keterangan_jadwal: '',
-            status_jadwal: 'Buka Pendaftaran'
-          };
-          this.showJadwalModal = true;
-        },
-
-        openEditJadwal(item) {
-          this.jadwalForm = Object.assign({}, item);
-          this.showJadwalModal = true;
-        },
-
-        async saveJadwalDiklat() {
-          this.jadwalSaving = true;
-          try {
-            const res = await this.callServer('save_katalog', { record: this.jadwalForm });
-            if (res && res.success) {
-              this.showToast('Agenda jadwal pelatihan berhasil disimpan', 'success');
-              this.showJadwalModal = false;
-              await this.loadMasterSatelit();
-              await this.loadDashboard();
-            } else {
-              this.showToast((res && res.error) || 'Gagal menyimpan agenda', 'error');
-            }
-          } catch(e) { this.showToast('Gagal: ' + e.message, 'error'); }
-          finally { this.jadwalSaving = false; }
         },
 
         // ================= USULAN DIKLAT =================
@@ -773,11 +897,35 @@
 
         // ================= MASTER SATELIT 1: KATALOG =================
         openKatalogModal() {
-          this.openJadwalModal();
+          this.katalogForm = {
+            id: '',
+            kode_diklat: 'DKL-' + String(Date.now()).slice(-4),
+            nama_diklat: '',
+            rumpun: 'Teknis Pemadam & Rescue',
+            kategori_keahlian: '',
+            penyelenggara_default: 'BPSDM Jawa Timur',
+            default_jp: 20,
+            estimasi_biaya_default: 0
+          };
+          this.showKatalogModal = true;
         },
 
         openEditKatalog(item) {
-          this.openEditJadwal(item);
+          this.katalogForm = Object.assign({}, item);
+          this.showKatalogModal = true;
+        },
+
+        async saveKatalog() {
+          this.katalogSaving = true;
+          try {
+            const res = await this.callServer('save_katalog', { record: this.katalogForm });
+            if (res && res.success) {
+              this.showToast('Program diklat tersimpan di katalog', 'success');
+              this.showKatalogModal = false;
+              await this.loadMasterSatelit();
+            }
+          } catch(e) { this.showToast('Gagal: ' + e.message, 'error'); }
+          finally { this.katalogSaving = false; }
         },
 
         async deleteKatalog(id) {
@@ -787,7 +935,6 @@
             if (res && res.success) {
               this.showToast('Diklat dihapus dari katalog', 'success');
               await this.loadMasterSatelit();
-              await this.loadDashboard();
             }
           } catch(e) { this.showToast('Gagal: ' + e.message, 'error'); }
         },
@@ -885,8 +1032,8 @@
           }
           const dataToExport = this.kompetensiList.map((k, i) => ({
             'No': i + 1,
-            'Nama Pegawai': k.nama_pegawai || this.namaPegawai(k.pegawai_id),
-            'NIP': k.nip_pegawai || k.pegawai_id,
+            'Nama Pegawai': this.namaPegawai(k.pegawai_id),
+            'NIP': k.pegawai_id,
             'Kegiatan Diklat': k.nama_kegiatan || '',
             'Rumpun': k.rumpun || '',
             'Penyelenggara': k.penyelenggara || '',
@@ -1008,8 +1155,10 @@
       menu: [
         { name: 'Utama', items: [
           { id: 'dashboard', label: 'Dashboard & Standar JP', icon: 'fa-solid fa-gauge-high' },
+          { id: 'jadwal_penugasan', label: 'Agenda & Penugasan', icon: 'fa-solid fa-calendar-days' },
+          { id: 'kualifikasi_khusus', label: 'Lisensi & SK Khusus', icon: 'fa-solid fa-id-badge' },
           { id: 'riwayat_laporan', label: 'Portofolio Diklat', icon: 'fa-solid fa-certificate' },
-          { id: 'usulan_diklat', label: 'Usulan Diklat', icon: 'fa-solid fa-paper-plane' },
+          { id: 'usulan_diklat', label: 'Usulan Diklat (AKD)', icon: 'fa-solid fa-paper-plane' },
           { id: 'analisa', label: 'Analisa Kebutuhan', icon: 'fa-solid fa-chart-pie' }
         ]},
         { name: 'Master Satelit', items: [
@@ -1023,6 +1172,8 @@
 
       pageIcons: {
         dashboard: 'fa-solid fa-gauge-high',
+        jadwal_penugasan: 'fa-solid fa-calendar-days',
+        kualifikasi_khusus: 'fa-solid fa-id-badge',
         riwayat_laporan: 'fa-solid fa-certificate',
         usulan_diklat: 'fa-solid fa-paper-plane',
         analisa: 'fa-solid fa-chart-pie',
@@ -1034,6 +1185,10 @@
       onNavigate(vm, page) {
         if (page === 'dashboard') {
           vm.loadDashboard();
+        } else if (page === 'jadwal_penugasan') {
+          vm.loadJadwal();
+        } else if (page === 'kualifikasi_khusus') {
+          vm.loadKualifikasi();
         } else if (page === 'riwayat_laporan') {
           vm.loadKompetensi(1);
         } else if (page === 'usulan_diklat') {
@@ -1051,6 +1206,8 @@
         await Promise.all([
           vm.loadSimpegLookup(),
           vm.loadMasterSatelit(),
+          vm.loadJadwal(),
+          vm.loadKualifikasi(),
           vm.loadDashboard(),
           vm.loadKompetensi(1),
           vm.loadUsulan(),
