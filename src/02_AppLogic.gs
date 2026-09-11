@@ -1,5 +1,5 @@
 // ============================================================
-// SI-KOMPETENSI - 02_AppLogic.gs (v2.4.0 — Opsi B 6-Sheet)
+// SI-KOMPETENSI - 02_AppLogic.gs (v2.5.0 — SIMPEG Master Read-Only)
 // Backend Routing, Business Logic & Standalone API Dispatcher
 // Satpol PP & Pemadam Kebakaran Kab. Trenggalek
 // ============================================================
@@ -152,6 +152,9 @@ function handleAction(payload) {
       case 'save_my_profile':
         return saveMyProfile_(data, sessionUser);
 
+      case 'refresh_master_cache':
+        return invalidateMasterCache();
+
       case 'setup_app':
       case 'init_database':
         return setupApp();
@@ -179,7 +182,7 @@ function handleAction(payload) {
         return { success: false, code: 'UNKNOWN_ACTION', error: 'Action "' + action + '" tidak dikenali.' };
     }
   } catch (err) {
-    Logger.log('[ERROR handleAction] ' + err.stack || err.message);
+    Logger.log('[ERROR handleAction] ' + (err.stack || err.message));
     return { success: false, error: err.message || 'Terjadi kesalahan pemrosesan server.' };
   }
 }
@@ -594,7 +597,7 @@ function getAnalytics_(data, sessionUser) {
 }
 
 /**
- * 11. Get Master Data SIMPEG & Katalog Diklat
+ * 11. Get Master Data SIMPEG & Katalog Diklat (Read-Only dari SIMPEG)
  */
 function getMasterSIMPEG_() {
   return {
@@ -624,24 +627,37 @@ function getMyProfile_(data, sessionUser) {
 }
 
 function saveMyProfile_(data, sessionUser) {
-  if (!sessionUser || !sessionUser.email) return { success: false, error: 'Sesi tidak valid.' };
-  var record = data && (data.record || data);
-  var saved = saveRecord_(LOCAL_SHEET_NAMES.M_PEGAWAI, record, sessionUser);
-  return { success: true, data: saved };
+  return {
+    success: false,
+    error: 'Pembaruan data profil pegawai hanya dapat dilakukan melalui aplikasi SIMPEG Pusat.'
+  };
 }
 
 // ==================== INITIALIZATION & SETUP LAUNCHER ====================
 
 /**
- * Inisialisasi struktur sheet dan header (Database Setup)
+ * Inisialisasi struktur sheet lokal SI-KOMPETENSI (Hanya Sheet Transaksional & Katalog)
  */
 function initDatabase() {
   var ss = getLocalSpreadsheet_();
   var created = [];
 
-  Object.keys(LOCAL_SHEET_NAMES).forEach(function(key) {
-    var sheetName = LOCAL_SHEET_NAMES[key];
-    var headers = LOCAL_SHEET_HEADERS[sheetName];
+  // Sheet transaksional yang wajib ada di spreadsheet lokal
+  var localMandatorySheets = [
+    LOCAL_SHEET_NAMES.M_KATALOG_DIKLAT,
+    LOCAL_SHEET_NAMES.T_KOMPETENSI_PEGAWAI,
+    LOCAL_SHEET_NAMES.T_USULAN_DIKLAT,
+    LOCAL_SHEET_NAMES.KONFIGURASI,
+    LOCAL_SHEET_NAMES.AUDIT_LOGS
+  ];
+
+  // Jika MASTER_SPREADSHEET_ID sama dengan SPREADSHEET_ID (mode single-spreadsheet), buat juga master referensi
+  if (!MASTER_SPREADSHEET_ID || MASTER_SPREADSHEET_ID === SPREADSHEET_ID) {
+    localMandatorySheets = Object.keys(LOCAL_SHEET_NAMES).map(function(k) { return LOCAL_SHEET_NAMES[k]; });
+  }
+
+  localMandatorySheets.forEach(function(sheetName) {
+    var headers = ALL_SHEET_HEADERS[sheetName];
     if (!headers) return;
 
     var sheet = ss.getSheetByName(sheetName);
@@ -670,21 +686,20 @@ function initDatabase() {
     }
   } catch (e) {}
 
-  Logger.log('✅ Inisialisasi basis data 6-Sheet selesai. Sheet baru dibuat: ' + (created.join(', ') || 'Tidak ada (sudah lengkap)'));
+  Logger.log('✅ Inisialisasi basis data transaksional selesai. Sheet dibuat: ' + (created.join(', ') || 'Tidak ada (sudah lengkap)'));
   return { success: true, created: created };
 }
 
 /**
- * Setup Lengkap Aplikasi SI-KOMPETENSI (Opsi B 6-Sheet)
- * Jalankan fungsi ini sekali dari menu Run di Editor Google Apps Script!
+ * Setup Lengkap Aplikasi SI-KOMPETENSI
  */
 function setupApp() {
-  Logger.log('🚀 Memulai Setup Lengkap SI-KOMPETENSI (Satpol PP & Damkar Trenggalek)...');
+  Logger.log('🚀 Memulai Setup SI-KOMPETENSI...');
 
-  // 1. Inisialisasi Sheet & Header
+  // 1. Inisialisasi Sheet Transaksional
   initDatabase();
 
-  // 2. Set Konfigurasi Default di Script Properties
+  // 2. Set Konfigurasi di Script Properties
   var props = appProps_();
   var activeId = SPREADSHEET_ID;
   if (!activeId) {
@@ -701,7 +716,7 @@ function setupApp() {
     'PLATFORM_API_URL': PLATFORM_API_URL
   });
 
-  // 3. Masukkan Master Data Awal (Seeder Realistis Satpol PP & Damkar)
+  // 3. Masukkan Master Kamus Diklat & Riwayat Awal
   if (typeof seedInitialData === 'function') {
     seedInitialData();
   }
@@ -709,7 +724,7 @@ function setupApp() {
   // 4. Set Konfigurasi Sistem di Sheet KONFIGURASI
   var defaultConfigs = [
     { key: 'app_name', value: APP_TITLE, keterangan: 'Nama Aplikasi' },
-    { key: 'app_version', value: '2.4.0', keterangan: 'Versi Aplikasi' },
+    { key: 'app_version', value: '2.5.0', keterangan: 'Versi Aplikasi' },
     { key: 'instansi', value: 'Pemerintah Kabupaten Trenggalek', keterangan: 'Nama Instansi' },
     { key: 'opd_name', value: 'Satuan Polisi Pamong Praja & Kebakaran', keterangan: 'Nama OPD' },
     { key: 'target_jp_tahunan', value: '20', keterangan: 'Standar Minimal Jam Pelajaran ASN per Tahun' },
@@ -720,17 +735,10 @@ function setupApp() {
     saveRecord_(LOCAL_SHEET_NAMES.KONFIGURASI, c, systemUser);
   });
 
-  Logger.log('🎉 ============================================================');
   Logger.log('🎉 SETUP SELESAI DENGAN SUKSES!');
-  Logger.log('🎉 Basis Data 6-Sheet Opsi B siap digunakan untuk Satpol PP & Damkar Trenggalek.');
-  Logger.log('🎉 ============================================================');
-
-  return { success: true, message: 'Setup SI-KOMPETENSI selesai dengan sukses.' };
+  return { success: true, message: 'Setup SI-KOMPETENSI selesai.' };
 }
 
-/**
- * Alias fungsi setup untuk kenyamanan eksekusi di editor
- */
 function setup() {
   return setupApp();
 }

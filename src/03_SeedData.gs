@@ -1,39 +1,12 @@
 // ============================================================
-// SI-KOMPETENSI - 03_SeedData.gs (Opsi B 6-Sheet)
-// Master Data Realistis Satpol PP & Pemadam Kebakaran Trenggalek
+// SI-KOMPETENSI - 03_SeedData.gs (v2.5.0 — SIMPEG Master Integrated)
+// Data Seeder Transaksional & Referensi Satpol PP & Damkar Trenggalek
 // ============================================================
 
 function seedInitialData() {
   var user = { id: 'SYSTEM_SEED', email: 'system@trenggalekkab.go.id', role: 'super' };
 
-  // 1. SEED M_UNIT_KERJA (7 Unit & Pos Wilayah Satpol PP & Damkar)
-  var units = [
-    { id: 'UNT-001', kode_unit: 'SATPOL-SEKR', nama_unit: 'Sekretariat Satpol PP & Damkar', kategori_unit: 'Sekretariat', lokasi: 'Mako Jl. Brigjend Soetran No. 9', kepala_nip: '198205142006041008', telepon: '(0355) 791112' },
-    { id: 'UNT-002', kode_unit: 'SATPOL-GAKDA', nama_unit: 'Bidang Penegakan Peraturan Perundang-undangan Daerah (Gakda)', kategori_unit: 'Bidang', lokasi: 'Mako Jl. Brigjend Soetran', kepala_nip: '198503122010011015', telepon: '(0355) 791113' },
-    { id: 'UNT-003', kode_unit: 'SATPOL-TIBUM', nama_unit: 'Bidang Ketertiban Umum, Ketenteraman & Pengawalan (Tibum)', kategori_unit: 'Bidang', lokasi: 'Mako Jl. Brigjend Soetran', kepala_nip: '199008212015032004', telepon: '(0355) 791114' },
-    { id: 'UNT-004', kode_unit: 'DAMKAR-KOTA', nama_unit: 'Bidang Pemadam Kebakaran & Penyelamatan (Pos Induk Kota)', kategori_unit: 'Pos Induk', lokasi: 'Pos Induk Jl. Soetran Trenggalek', kepala_nip: '199211052019021006', telepon: '113 / (0355) 791113' },
-    { id: 'UNT-005', kode_unit: 'DAMKAR-WATULIMO', nama_unit: 'Pos Damkar Wilayah Watulimo (Prigi)', kategori_unit: 'Pos Wilayah', lokasi: 'Jl. Raya Prigi, Kec. Watulimo', kepala_nip: '199304182019031005', telepon: '113 / 08123456781' },
-    { id: 'UNT-006', kode_unit: 'DAMKAR-PANGGUL', nama_unit: 'Pos Damkar Wilayah Panggul', kategori_unit: 'Pos Wilayah', lokasi: 'Jl. Raya Panggul, Kec. Panggul', kepala_nip: '199408252020121008', telepon: '113 / 08123456782' },
-    { id: 'UNT-007', kode_unit: 'SATPOL-LINMAS', nama_unit: 'Bidang Perlindungan Masyarakat (Linmas)', kategori_unit: 'Bidang', lokasi: 'Mako Jl. Brigjend Soetran', kepala_nip: '198807192011012009', telepon: '(0355) 791115' }
-  ];
-  units.forEach(function(u) { saveRecord_(LOCAL_SHEET_NAMES.M_UNIT_KERJA, u, user); });
-
-  // 2. SEED M_JABATAN (Jabatan Struktural & Fungsional Tertentu)
-  var jabatans = [
-    { id: 'JAB-001', kode_jabatan: 'JAB-KASAT', nama_jabatan: 'Kepala Satuan Polisi Pamong Praja & Kebakaran', rumpun_jabatan: 'Struktural', jenjang_jabatan: 'Eselon II/b', target_jp_tahunan: 20 },
-    { id: 'JAB-002', kode_jabatan: 'JAB-KABID-GAKDA', nama_jabatan: 'Kepala Bidang Penegakan Perda & Perbup', rumpun_jabatan: 'Struktural', jenjang_jabatan: 'Eselon III/b', target_jp_tahunan: 20 },
-    { id: 'JAB-003', kode_jabatan: 'JAB-KABID-TIBUM', nama_jabatan: 'Kepala Bidang Ketertiban Umum & Ketenteraman', rumpun_jabatan: 'Struktural', jenjang_jabatan: 'Eselon III/b', target_jp_tahunan: 20 },
-    { id: 'JAB-004', kode_jabatan: 'JAB-KABID-DAMKAR', nama_jabatan: 'Kepala Bidang Pencegahan, Penanggulangan Kebakaran & Penyelamatan', rumpun_jabatan: 'Struktural', jenjang_jabatan: 'Eselon III/b', target_jp_tahunan: 20 },
-    { id: 'JAB-005', kode_jabatan: 'JAB-KABID-LINMAS', nama_jabatan: 'Kepala Bidang Perlindungan Masyarakat', rumpun_jabatan: 'Struktural', jenjang_jabatan: 'Eselon III/b', target_jp_tahunan: 20 },
-    { id: 'JAB-006', kode_jabatan: 'JAB-KASI-PPNS', nama_jabatan: 'Kepala Seksi Penyelidikan & Penyidikan PPNS', rumpun_jabatan: 'Struktural', jenjang_jabatan: 'Eselon IV/a', target_jp_tahunan: 20 },
-    { id: 'JAB-007', kode_jabatan: 'JAB-DANRU-DAMKAR', nama_jabatan: 'Komandan Regu Operasional & Rescue Damkar', rumpun_jabatan: 'Fungsional Damkar', jenjang_jabatan: 'Mahir / Pelaksana Lanjutan', target_jp_tahunan: 30 },
-    { id: 'JAB-008', kode_jabatan: 'JAB-POLPP-AHLI', nama_jabatan: 'Polisi Pamong Praja Ahli Pertama', rumpun_jabatan: 'Fungsional Pol PP', jenjang_jabatan: 'Ahli Pertama', target_jp_tahunan: 20 },
-    { id: 'JAB-009', kode_jabatan: 'JAB-DAMKAR-TERAMPIL', nama_jabatan: 'Pemadam Kebakaran Terampil', rumpun_jabatan: 'Fungsional Damkar', jenjang_jabatan: 'Terampil', target_jp_tahunan: 25 },
-    { id: 'JAB-010', kode_jabatan: 'JAB-PENGADMIN', nama_jabatan: 'Pengadministrasi Umum & Kepegawaian', rumpun_jabatan: 'Staf Pelaksana', jenjang_jabatan: 'Pelaksana', target_jp_tahunan: 20 }
-  ];
-  jabatans.forEach(function(j) { saveRecord_(LOCAL_SHEET_NAMES.M_JABATAN, j, user); });
-
-  // 3. SEED M_KATALOG_DIKLAT (Kamus Resmi Pelatihan Bersertifikat)
+  // 1. SEED M_KATALOG_DIKLAT (Kamus Resmi Pelatihan Bersertifikat)
   var diklat = [
     { id: 'DKL-001', kode_diklat: 'DKL-PKA', nama_diklat: 'Pelatihan Kepemimpinan Administrator (PKA)', rumpun: 'Manajerial', kategori_keahlian: 'Kepemimpinan Struktural', penyelenggara_default: 'BPSDM Provinsi Jawa Timur', default_jp: 908, deskripsi: 'Peningkatan kompetensi kepemimpinan taktis & manajerial pejabat administrator.' },
     { id: 'DKL-002', kode_diklat: 'DKL-PPNS', nama_diklat: 'Diklat Pembentukan Penyidik Pegawai Negeri Sipil (PPNS) Penegak Perda', rumpun: 'Teknis', kategori_keahlian: 'Penyidikan PPNS', penyelenggara_default: 'Kementerian Dalam Negeri RI / Lemdiklat Polri', default_jp: 400, deskripsi: 'Kualifikasi resmi wewenang penyidikan tindak pidana pelanggaran Peraturan Daerah.' },
@@ -46,22 +19,7 @@ function seedInitialData() {
   ];
   diklat.forEach(function(d) { saveRecord_(LOCAL_SHEET_NAMES.M_KATALOG_DIKLAT, d, user); });
 
-  // 4. SEED M_PEGAWAI (10 Pegawai Realistis Satpol PP & Damkar Trenggalek)
-  var pegawai = [
-    { id: 'PEG-001', nip: '198205142006041008', nik: '3503011405820001', nama_lengkap: 'Miftachurrochim', gelar_depan: '', gelar_belakang: 'S.STP, M.AP', email: 'miftachurrochim@trenggalekkab.go.id', pangkat_gol: 'Pembina Tk. I (IV/b)', jabatan_id: 'JAB-001', unit_id: 'UNT-001', regu_pleton: 'Pimpinan', is_ppns: 'Ya', no_sk_ppns: 'AHU-00124.PPNS/2021', kualifikasi_damkar: 'Fire Inspector', status_aktif: 'aktif' },
-    { id: 'PEG-002', nip: '198503122010011015', nik: '3503011203850002', nama_lengkap: 'Bambang Sudarsono', gelar_depan: '', gelar_belakang: 'S.Sos', email: 'bambang.s@trenggalekkab.go.id', pangkat_gol: 'Pembina (IV/a)', jabatan_id: 'JAB-002', unit_id: 'UNT-002', regu_pleton: 'Gakda Terpadu', is_ppns: 'Ya', no_sk_ppns: 'AHU-00342.PPNS/2022', kualifikasi_damkar: '-', status_aktif: 'aktif' },
-    { id: 'PEG-003', nip: '199008212015032004', nik: '3503012108900003', nama_lengkap: 'Siti Rahmawati', gelar_depan: '', gelar_belakang: 'S.E.', email: 'siti.r@trenggalekkab.go.id', pangkat_gol: 'Penata Tk. I (III/d)', jabatan_id: 'JAB-003', unit_id: 'UNT-003', regu_pleton: 'Tibum Inti', is_ppns: 'Tidak', no_sk_ppns: '-', kualifikasi_damkar: '-', status_aktif: 'aktif' },
-    { id: 'PEG-004', nip: '199211052019021006', nik: '3503010511920004', nama_lengkap: 'Ahmad Fauzi', gelar_depan: '', gelar_belakang: 'S.Tr.IP', email: 'ahmad.f@trenggalekkab.go.id', pangkat_gol: 'Penata (III/c)', jabatan_id: 'JAB-004', unit_id: 'UNT-004', regu_pleton: 'Regu Siaga Kota A', is_ppns: 'Tidak', no_sk_ppns: '-', kualifikasi_damkar: 'Fire Rescue II & Hazmat', status_aktif: 'aktif' },
-    { id: 'PEG-005', nip: '198807192011012009', nik: '3503011907880005', nama_lengkap: 'Dewi Lestari', gelar_depan: '', gelar_belakang: 'S.IP', email: 'dewi.l@trenggalekkab.go.id', pangkat_gol: 'Penata Tk. I (III/d)', jabatan_id: 'JAB-005', unit_id: 'UNT-007', regu_pleton: 'Linmas Wilayah', is_ppns: 'Tidak', no_sk_ppns: '-', kualifikasi_damkar: '-', status_aktif: 'aktif' },
-    { id: 'PEG-006', nip: '199304182019031005', nik: '3503081804930006', nama_lengkap: 'Rudi Hartono', gelar_depan: '', gelar_belakang: 'A.Md.Kep', email: 'rudi.h@trenggalekkab.go.id', pangkat_gol: 'Penata Muda Tk. I (III/b)', jabatan_id: 'JAB-007', unit_id: 'UNT-005', regu_pleton: 'Regu Damkar Watulimo', is_ppns: 'Tidak', no_sk_ppns: '-', kualifikasi_damkar: 'Water Rescue & Fire I', status_aktif: 'aktif' },
-    { id: 'PEG-007', nip: '199408252020121008', nik: '3503092508940007', nama_lengkap: 'Wahyu Hidayat', gelar_depan: '', gelar_belakang: 'S.T.', email: 'wahyu.h@trenggalekkab.go.id', pangkat_gol: 'Penata Muda Tk. I (III/b)', jabatan_id: 'JAB-007', unit_id: 'UNT-006', regu_pleton: 'Regu Damkar Panggul', is_ppns: 'Tidak', no_sk_ppns: '-', kualifikasi_damkar: 'Vertical Rescue & Fire I', status_aktif: 'aktif' },
-    { id: 'PEG-008', nip: '199602102022031002', nik: '3503011002960008', nama_lengkap: 'Eko Prasetyo', gelar_depan: '', gelar_belakang: 'S.H.', email: 'eko.p@trenggalekkab.go.id', pangkat_gol: 'Penata Muda (III/a)', jabatan_id: 'JAB-008', unit_id: 'UNT-002', regu_pleton: 'PPNS Operasional', is_ppns: 'Ya', no_sk_ppns: 'AHU-00512.PPNS/2024', kualifikasi_damkar: '-', status_aktif: 'aktif' },
-    { id: 'PEG-009', nip: '199806152023011004', nik: '3503011506980009', nama_lengkap: 'Budi Santoso', gelar_depan: '', gelar_belakang: '', email: 'budi.s@trenggalekkab.go.id', pangkat_gol: 'Pengatur (II/c)', jabatan_id: 'JAB-009', unit_id: 'UNT-004', regu_pleton: 'Regu Siaga Kota B', is_ppns: 'Tidak', no_sk_ppns: '-', kualifikasi_damkar: 'Fire I', status_aktif: 'aktif' },
-    { id: 'PEG-010', nip: '199512302020122011', nik: '3503013012950010', nama_lengkap: 'Anisa Kusuma', gelar_depan: '', gelar_belakang: 'S.M.', email: 'anisa.k@trenggalekkab.go.id', pangkat_gol: 'Penata Muda (III/a)', jabatan_id: 'JAB-010', unit_id: 'UNT-001', regu_pleton: 'Sekretariat', is_ppns: 'Tidak', no_sk_ppns: '-', kualifikasi_damkar: '-', status_aktif: 'aktif' }
-  ];
-  pegawai.forEach(function(p) { saveRecord_(LOCAL_SHEET_NAMES.M_PEGAWAI, p, user); });
-
-  // 5. SEED T_KOMPETENSI_PEGAWAI (Riwayat Diklat & JP)
+  // 2. SEED T_KOMPETENSI_PEGAWAI (Riwayat Diklat & Pemenuhan 20 JP)
   var riwayat = [
     { id: 'KMP-001', pegawai_id: 'PEG-001', diklat_id: 'DKL-001', nama_kegiatan: 'Pelatihan Kepemimpinan Administrator (PKA)', rumpun: 'Manajerial', penyelenggara: 'BPSDM Provinsi Jawa Timur', no_sertifikat: '893.3/452/PKA/2025', tgl_terbit: '2025-06-20', tgl_mulai: '2025-02-10', tgl_selesai: '2025-06-15', tgl_kedaluwarsa: '', jumlah_jp: 908, metode: 'Klasikal', file_url: 'https://drive.google.com', status_verifikasi: 'disetujui', catatan_verifikator: 'Sertifikat PKA valid dan telah disinkronkan ke SIMPEG Trenggalek.', verifikator_id: 'bkpsdm@trenggalekkab.go.id', tanggal_verifikasi: '2025-06-25T08:00:00.000Z' },
     { id: 'KMP-002', pegawai_id: 'PEG-002', diklat_id: 'DKL-002', nama_kegiatan: 'Diklat Pembentukan PPNS Penegak Perda', rumpun: 'Teknis', penyelenggara: 'Kementerian Dalam Negeri RI / Lemdiklat Polri', no_sertifikat: 'PPNS/089/Kemendagri/2025', tgl_terbit: '2025-04-20', tgl_mulai: '2025-04-05', tgl_selesai: '2025-04-18', tgl_kedaluwarsa: '2028-04-20', jumlah_jp: 120, metode: 'Klasikal', file_url: 'https://drive.google.com', status_verifikasi: 'disetujui', catatan_verifikator: 'Surat Keputusan Pengangkatan PPNS telah diterbitkan.', verifikator_id: 'bkpsdm@trenggalekkab.go.id', tanggal_verifikasi: '2025-04-22T09:30:00.000Z' },
@@ -74,7 +32,7 @@ function seedInitialData() {
   ];
   riwayat.forEach(function(r) { saveRecord_(LOCAL_SHEET_NAMES.T_KOMPETENSI_PEGAWAI, r, user); });
 
-  // 6. SEED T_USULAN_DIKLAT (Usulan Bottom-Up dari Personel Satpol PP & Damkar)
+  // 3. SEED T_USULAN_DIKLAT (Usulan Bottom-Up dari Personel Satpol PP & Damkar)
   var usulan = [
     { id: 'USL-001', pegawai_id: 'PEG-009', diklat_id: 'DKL-003', nama_diklat_usulan: 'Diklat Kualifikasi Pemadam Kebakaran I & Fire Safety Rescue Operator', rumpun: 'Teknis', target_penyelenggara: 'Ciracas Fire Academy DKI Jakarta', alasan_usulan: 'Meningkatkan kesiapsiagaan personel baru regu pemadam kebakaran pos induk kota dalam penanganan api dan evakuasi gedung.', urgensi: 'Tinggi', estimasi_biaya: 7500000, status_usulan: 'disetujui_kasat', catatan_pimpinan: 'Disetujui diusulkan pada DPA Satpol PP & Damkar TA 2027.', tgl_pengajuan: '2026-02-01' },
     { id: 'USL-002', pegawai_id: 'PEG-008', diklat_id: 'DKL-002', nama_diklat_usulan: 'Diklat Lanjutan PPNS Penyidikan Tindak Pidana Ringan Tipiring Perda', rumpun: 'Teknis', target_penyelenggara: 'Lemdiklat Polri / Kemendagri', alasan_usulan: 'Memperkuat kapasitas penegakan hukum yustisial dan penuntutan denda pelanggaran perda tata ruang.', urgensi: 'Sedang', estimasi_biaya: 5000000, status_usulan: 'diajukan', catatan_pimpinan: '', tgl_pengajuan: '2026-02-10' },
@@ -82,5 +40,5 @@ function seedInitialData() {
   ];
   usulan.forEach(function(u) { saveRecord_(LOCAL_SHEET_NAMES.T_USULAN_DIKLAT, u, user); });
 
-  Logger.log('✅ Berhasil inisialisasi basis data 6 Sheet Opsi B untuk SI-KOMPETENSI Satpol PP & Damkar Trenggalek!');
+  Logger.log('✅ Berhasil seed data transaksional SI-KOMPETENSI!');
 }
