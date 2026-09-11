@@ -898,11 +898,6 @@
             this.kompetensiSaving = false;
           }
         },
-            this.showToast('Terjadi kesalahan: ' + e.message, 'error');
-          } finally {
-            this.kompetensiSaving = false;
-          }
-        },
 
         async deleteKompetensi(id) {
           if (!confirm('Apakah Anda yakin ingin menghapus data sertifikat ini?')) return;
