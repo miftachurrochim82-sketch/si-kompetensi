@@ -1,5 +1,5 @@
 // ============================================================
-// SI-KOMPETENSI - 01_ConfigAndBridge.gs (v3.0.0 — 5 Sheet Master Satelit)
+// SI-KOMPETENSI - 01_ConfigAndBridge.gs (v3.1.0 — SIMPEG Schema Matched)
 // Standar Spesifik Satpol PP & Pemadam Kebakaran Kab. Trenggalek
 // ============================================================
 
@@ -59,13 +59,17 @@ var LOCAL_SHEETS = {
 };
 
 // Sheet master eksternal SIMPEG (Read-Only)
-var SIMPEG_REFERENCE_SHEETS = ['M_PEGAWAI', 'M_UNIT_KERJA', 'M_JABATAN', 'pegawai', 'unit_kerja', 'jabatan'];
+var SIMPEG_REFERENCE_SHEETS = [
+  'PEGAWAI', 'M_PEGAWAI', 'pegawai',
+  'UNIT_KERJA', 'M_UNIT_KERJA', 'unit_kerja', 'units',
+  'JABATAN', 'M_JABATAN', 'jabatan'
+];
 
 function isSimpegSheet_(sheetName) {
   return SIMPEG_REFERENCE_SHEETS.indexOf(sheetName) !== -1;
 }
 
-// ==================== HEADER STRUKTUR 5 SHEET LOKAL ====================
+// ==================== HEADER STRUKTUR DATABASE ====================
 var ALL_SHEET_HEADERS = {
   // 1. Master Referensi Gabungan (Dropdown Opsi Sistem)
   M_REFERENSI: [
@@ -96,6 +100,14 @@ var ALL_SHEET_HEADERS = {
     'id', 'pegawai_id', 'diklat_id', 'nama_diklat_usulan', 'rumpun',
     'target_penyelenggara', 'alasan_usulan', 'urgensi', 'estimasi_biaya',
     'status_usulan', 'catatan_pimpinan', 'tgl_pengajuan', 'tahun_anggaran_target',
+    'created_at', 'updated_at', 'created_by', 'updated_by', 'deleted_at'
+  ],
+  // Header Referensi Master SIMPEG (Sesuai Struktur Asli SIMPEG)
+  PEGAWAI: [
+    'pegawai_id', 'nip', 'nik', 'nama', 'gelar_depan', 'gelar_belakang', 'jenis_kelamin',
+    'tempat_lahir', 'tanggal_lahir', 'pangkat_golongan', 'status_kepegawaian', 'pendidikan_terakhir',
+    'email', 'no_hp', 'alamat', 'foto_url', 'unit_id', 'jabatan_id', 'atasan_id', 'role',
+    'regu', 'is_ppns', 'no_sk_ppns', 'kualifikasi_damkar', 'status_aktif',
     'created_at', 'updated_at', 'created_by', 'updated_by', 'deleted_at'
   ]
 };
@@ -137,7 +149,7 @@ function getSpreadsheetForSheet_(sheetName) {
 }
 
 /**
- * Membaca Data Sheet sebagai JSON Objects dengan Dukungan In-Memory Cache
+ * Membaca Data Sheet sebagai JSON Objects dengan Dukungan In-Memory Cache & Normalisasi Kolom
  */
 function getSheetData_(sheetName) {
   var cacheKey = 'CACHE_' + APP_CODE + '_' + sheetName;
@@ -153,11 +165,24 @@ function getSheetData_(sheetName) {
   if (!ss) return [];
   var sheet = ss.getSheetByName(sheetName);
 
-  // Kompatibilitas alias sheet
-  if (!sheet && sheetName === 'T_KOMPETENSI_PEGAWAI') {
-    sheet = ss.getSheetByName('T_RIWAYAT_KOMPETENSI') || ss.getSheetByName('DATA_KOMPETENSI');
-  } else if (!sheet && sheetName === 'T_RIWAYAT_KOMPETENSI') {
-    sheet = ss.getSheetByName('T_KOMPETENSI_PEGAWAI') || ss.getSheetByName('DATA_KOMPETENSI');
+  // Resolusi alias penamaan sheet
+  if (!sheet) {
+    var aliasMap = {
+      'PEGAWAI': ['M_PEGAWAI', 'pegawai', 'Pegawai', 'm_pegawai'],
+      'M_PEGAWAI': ['PEGAWAI', 'pegawai', 'Pegawai', 'm_pegawai'],
+      'pegawai': ['PEGAWAI', 'M_PEGAWAI', 'Pegawai', 'm_pegawai'],
+      'UNIT_KERJA': ['M_UNIT_KERJA', 'unit_kerja', 'Unit_Kerja', 'units', 'm_unit_kerja'],
+      'M_UNIT_KERJA': ['UNIT_KERJA', 'unit_kerja', 'Unit_Kerja', 'units', 'm_unit_kerja'],
+      'JABATAN': ['M_JABATAN', 'jabatan', 'Jabatan', 'm_jabatan', 'roles'],
+      'M_JABATAN': ['JABATAN', 'jabatan', 'Jabatan', 'm_jabatan', 'roles'],
+      'T_RIWAYAT_KOMPETENSI': ['T_KOMPETENSI_PEGAWAI', 'DATA_KOMPETENSI', 'riwayat_kompetensi'],
+      'T_KOMPETENSI_PEGAWAI': ['T_RIWAYAT_KOMPETENSI', 'DATA_KOMPETENSI', 'riwayat_kompetensi']
+    };
+    var cand = aliasMap[sheetName] || [];
+    for (var i = 0; i < cand.length; i++) {
+      sheet = ss.getSheetByName(cand[i]);
+      if (sheet) break;
+    }
   }
 
   if (!sheet || sheet.getLastRow() <= 1) return [];
@@ -178,12 +203,24 @@ function getSheetData_(sheetName) {
       obj[headers[c]] = val !== undefined && val !== null ? val : '';
       if (val !== '' && val !== null && val !== undefined) hasData = true;
     }
+
     if (hasData && !obj.deleted_at) {
+      // Normalisasi otomatis atribut SIMPEG PEGAWAI agar kompatibel 100%
+      if (obj.pegawai_id && !obj.id) obj.id = obj.pegawai_id;
+      if (!obj.pegawai_id && obj.id) obj.pegawai_id = obj.id;
+      if (obj.nama && !obj.nama_lengkap) obj.nama_lengkap = obj.nama;
+      if (obj.nama_lengkap && !obj.nama) obj.nama = obj.nama_lengkap;
+      if (obj.pangkat_golongan && !obj.pangkat_gol) obj.pangkat_gol = obj.pangkat_golongan;
+      if (obj.pangkat_gol && !obj.pangkat_golongan) obj.pangkat_golongan = obj.pangkat_gol;
+      if (obj.regu && !obj.regu_pleton) obj.regu_pleton = obj.regu;
+      if (obj.regu_pleton && !obj.regu) obj.regu = obj.regu_pleton;
+      if (obj.no_hp && !obj.telepon) obj.telepon = obj.no_hp;
+
       records.push(obj);
     }
   }
 
-  // Cache data referensi / master satelit
+  // Cache data
   if (isSimpegSheet_(sheetName) || sheetName === LOCAL_SHEETS.M_REFERENSI || sheetName === LOCAL_SHEETS.M_KATALOG_DIKLAT || sheetName === LOCAL_SHEETS.M_STANDAR_KOMPETENSI) {
     try {
       cache.put(cacheKey, JSON.stringify(records), DATA_CACHE_TTL);
@@ -222,11 +259,12 @@ function saveRecord_(sheetName, record, actor) {
   }
 
   var pkIndex = headers.indexOf('id');
+  if (pkIndex === -1) pkIndex = headers.indexOf('pegawai_id');
   if (pkIndex === -1) pkIndex = 0;
 
   var rowIndex = -1;
   for (var i = 1; i < values.length; i++) {
-    if (String(values[i][pkIndex]) === String(record.id)) {
+    if (String(values[i][pkIndex]) === String(record.id || record.pegawai_id)) {
       rowIndex = i + 1;
       break;
     }
@@ -276,6 +314,7 @@ function softDeleteRecord_(sheetName, id, actor) {
   var values = sheet.getDataRange().getValues();
   var headers = values[0].map(function(h) { return String(h).trim(); });
   var pkIndex = headers.indexOf('id');
+  if (pkIndex === -1) pkIndex = headers.indexOf('pegawai_id');
   var delIndex = headers.indexOf('deleted_at');
   if (pkIndex === -1 || delIndex === -1) return false;
 
@@ -294,16 +333,13 @@ function softDeleteRecord_(sheetName, id, actor) {
 function findRecordById_(sheetName, id) {
   var records = getSheetData_(sheetName);
   for (var i = 0; i < records.length; i++) {
-    if (String(records[i].id) === String(id)) {
+    if (String(records[i].id) === String(id) || String(records[i].pegawai_id) === String(id)) {
       return records[i];
     }
   }
   return null;
 }
 
-/**
- * Helper Membaca Referensi Berdasarkan Kategori
- */
 function getReferencesByCategory_(kategori) {
   var refs = getSheetData_(LOCAL_SHEETS.M_REFERENSI);
   return refs.filter(function(r) {
@@ -314,9 +350,6 @@ function getReferencesByCategory_(kategori) {
   });
 }
 
-/**
- * Helper Pengiriman Log Audit Terpusat ke SI-PLATFORM (Non-Blocking)
- */
 function sendAuditLog_(actor, action, resourceType, resourceId, result, details) {
   try {
     var actorId = (actor && (actor.email || actor.id || actor.username)) || 'anonymous';
@@ -344,9 +377,6 @@ function sendAuditLog_(actor, action, resourceType, resourceId, result, details)
   }
 }
 
-/**
- * Helper JSON Response
- */
 function jsonResponse_(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
