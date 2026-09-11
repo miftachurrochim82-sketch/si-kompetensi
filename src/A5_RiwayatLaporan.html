@@ -138,7 +138,7 @@
           </tr>
 
           <!-- Empty State -->
-          <tr v-if="!riwayatList.length && !riwayatLoading">
+          <tr v-if="!(riwayatList || []).length && !riwayatLoading">
             <td colspan="9" class="py-12 text-center text-slate-400 dark:text-slate-500">
               <i class="fa-solid fa-folder-open text-4xl block mb-2 opacity-50"></i>
               <p class="text-xs font-semibold">Belum ada data riwayat laporan ditemukan.</p>
