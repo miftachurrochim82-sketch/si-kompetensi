@@ -75,7 +75,7 @@
 </head>
 <body>
   <div id="app" v-cloak>
-    <!-- 1. SPLASH SCREEN TRANSISI SSO -->
+    <!-- 1. SPLASH SCREEN TRANSISI SSO (Saat tiket SSO masuk) -->
     <div v-if="!token && (isProcessing || isSsoLoading || hasSsoTicket)"
          class="fixed inset-0 z-50 flex flex-col items-center justify-center p-6 bg-slate-950 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-emerald-950/70 via-slate-950 to-black text-white">
       
@@ -86,10 +86,11 @@
           <div class="relative w-24 h-24 rounded-3xl bg-gradient-to-tr from-slate-900 via-emerald-950 to-slate-900 border border-emerald-500/30 flex items-center justify-center text-4xl shadow-2xl">
             <i class="fa-solid fa-graduation-cap text-emerald-400 animate-bounce"></i>
           </div>
+          <div class="absolute -inset-3 border-2 border-emerald-500/20 border-t-emerald-400 rounded-full animate-spin"></div>
         </div>
 
-        <h2 class="text-xl font-black tracking-tight text-white mb-2">SI-KOMPETENSI</h2>
-        <p class="text-xs text-emerald-400/90 font-semibold tracking-wider uppercase mb-6">Satpol PP & Pemadam Kebakaran Trenggalek</p>
+        <h2 class="text-xl font-black tracking-tight text-white mb-1">SI-KOMPETENSI</h2>
+        <p class="text-xs text-emerald-400 font-semibold tracking-wider uppercase mb-6">Satpol PP & Pemadam Kebakaran Trenggalek</p>
 
         <div class="w-full bg-slate-800/80 rounded-2xl p-4 border border-slate-700/50 flex items-center gap-3 text-left">
           <i class="fa-solid fa-circle-notch animate-spin text-emerald-400 text-lg"></i>
@@ -101,44 +102,54 @@
       </div>
     </div>
 
-    <!-- 2. HALAMAN LOGIN JIKA TANPA TIKET & BELUM LOGIN -->
-    <div v-else-if="!token" class="fixed inset-0 z-40 flex items-center justify-center p-6 bg-slate-950 text-white">
-      <div class="w-full max-w-md bg-slate-900 p-8 rounded-3xl border border-slate-800 text-center space-y-6">
-        <div class="w-20 h-20 mx-auto rounded-3xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-3xl text-emerald-400">
-          <i class="fa-solid fa-graduation-cap"></i>
-        </div>
-        <div>
-          <h2 class="text-2xl font-black">SI-KOMPETENSI</h2>
-          <p class="text-xs text-slate-400 mt-1">Sistem Informasi Manajemen Portofolio & Standar JP ASN</p>
-        </div>
-        <div class="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-200 text-left">
-          <p class="font-bold flex items-center gap-1.5"><i class="fa-solid fa-triangle-exclamation"></i> Single Sign-On Diperlukan</p>
-          <p class="mt-1 text-slate-300">Silakan masuk melalui portal terpadu SI-PLATFORM untuk mengakses aplikasi ini secara terautentikasi.</p>
-        </div>
-        <a :href="platformUrl" class="btn btn-primary w-full py-3 text-xs flex items-center justify-center gap-2">
-          <i class="fa-solid fa-arrow-right-to-bracket"></i>
-          <span>Buka Portal SI-PLATFORM</span>
-        </a>
-      </div>
-    </div>
+    <!-- 2. LAYAR LOGIN JIKA DIBUKA LANGSUNG TANPA TIKET SSO -->
+    <app-login v-else-if="!token && !isProcessing && !isSsoLoading && !hasSsoTicket"
+               :is-processing="isProcessing"
+               :error-message="errorMessage"
+               :app-title="appTitle"
+               :app-subtitle="'Sistem Informasi Manajemen Portofolio, Jadwal & Lisensi Khusus ASN'"
+               :instansi="'Satpol PP & Pemadam Kebakaran Trenggalek'"
+               @login="goToPlatform">
+    </app-login>
 
-    <!-- 3. STRUKTUR UTAMA APLIKASI (SHELL LAYOUT) -->
-    <div v-else class="flex h-screen overflow-hidden bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans">
+    <!-- 3. STRUKTUR UTAMA APLIKASI (SHELL LAYOUT SAAT TOKEN AKTIF) -->
+    <div v-if="token" class="flex h-screen overflow-hidden bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans">
       
       <!-- Komponen Sidebar Dinamis -->
-      <app-sidebar></app-sidebar>
+      <app-sidebar :collapsed="sidebarCollapsed"
+                   :mobile-open="sidebarMobileOpen"
+                   :dark="isDarkMode"
+                   :current-page="currentPage"
+                   :is-admin="isAdmin"
+                   :user="currentUser"
+                   :brand="brand"
+                   :menu="menu"
+                   @navigate="navigateTo"
+                   @toggle="toggleSidebar"
+                   @close="sidebarMobileOpen = false"
+                   @logout="logout">
+      </app-sidebar>
 
       <!-- Kontainer Utama -->
       <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
         <!-- Header Universal Navbar -->
-        <app-header>
-          <template #extra-actions>
-            <button v-if="canInstallPwa" @click="installPwa" class="btn btn-secondary text-xs px-2.5 py-1.5 hidden sm:inline-flex items-center gap-1.5">
-              <i class="fa-solid fa-download text-emerald-500"></i>
-              <span>Install App</span>
-            </button>
-          </template>
-        </app-header>
+        <div class="px-4 sm:px-6 pt-4 shrink-0">
+          <app-header :dark="isDarkMode"
+                      :app-title="appTitle"
+                      :current-page="currentPage"
+                      :page-icons="pageIcons"
+                      :user="currentUser"
+                      @toggle-dark="toggleDarkMode"
+                      @toggle-mobile="sidebarMobileOpen = !sidebarMobileOpen"
+                      @navigate="navigateTo">
+            <template #extra-actions>
+              <button v-if="canInstallPwa" @click="installPwa" class="btn btn-secondary text-xs px-2.5 py-1.5 hidden sm:inline-flex items-center gap-1.5">
+                <i class="fa-solid fa-download text-emerald-500"></i>
+                <span>Install App</span>
+              </button>
+            </template>
+          </app-header>
+        </div>
 
         <!-- Konten Halaman Modular (Single Include V_Layout) -->
         <main class="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-6">
@@ -170,7 +181,7 @@
       data() {
         return {
           isSsoLoading: false,
-          ssoStatusMessage: '',
+          ssoStatusMessage: 'Memvalidasi tiket Single Sign-On...',
           showPanduan: false,
           pageSize: 10,
           canInstallPwa: false,
@@ -299,6 +310,15 @@
       },
 
       computed: {
+        hasSsoTicket() {
+          try {
+            const urlParams = new URLSearchParams(window.location.search);
+            return Boolean(window.__SSO_TICKET__ || urlParams.get('ticket'));
+          } catch(e) {
+            return false;
+          }
+        },
+
         filteredKatalogDiklat() {
           const q = String(this.katalogSearch || '').toLowerCase().trim();
           if (!q) return this.katalogList;
@@ -335,6 +355,23 @@
       },
 
       methods: {
+        // ================= SSO REDIRECT =================
+        goToPlatform() {
+          const platformUrl = 'https://script.google.com/macros/s/AKfycbwh_OUVqmxLcuF81FHmPZtT33Wrm8Ce9Da1SQ3hfkSr7gM5P8ofyAlHSgW40mq3eo-PoQ/exec';
+          const back = window.location.href.split('?')[0];
+          const sep = platformUrl.includes('?') ? '&' : '?';
+          const targetUrl = platformUrl + sep + 'redirect=' + encodeURIComponent(back);
+          try {
+            if (window.top && window.top !== window) {
+              window.top.location.href = targetUrl;
+            } else {
+              window.location.href = targetUrl;
+            }
+          } catch (e) {
+            window.open(targetUrl, '_top');
+          }
+        },
+
         // ================= LOOKUP HELPERS =================
         namaPegawai(id) {
           if (!id) return '-';
@@ -1201,6 +1238,10 @@
         }
       },
 
+      onDarkToggle(vm) {
+        if (vm.currentPage === 'dashboard') vm.renderDashboardCharts();
+      },
+
       async initApp(vm) {
         if (vm.dataLoaded) return;
         await Promise.all([
@@ -1220,6 +1261,9 @@
 
       mixins: [SIKompetensiMixin]
     });
+
+    // Wajib panggil mount agar Vue terpasang ke DOM dan v-cloak terlepas!
+    app.mount('#app');
   </script>
 </body>
 </html>
