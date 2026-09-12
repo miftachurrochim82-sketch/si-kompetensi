@@ -1,4 +1,25 @@
 
+
+var FALLBACK_UNIT_KERJA = [
+  { id: "UNT-001", unit_id: "UNT-001", kode_unit: "SEKR", nama_unit: "Sekretariat & Pimpinan Dinas", singkatan: "SEKR" },
+  { id: "UNT-002", unit_id: "UNT-002", kode_unit: "GAKDA", nama_unit: "Bidang Penegakan Perda & Perbup", singkatan: "GAKDA" },
+  { id: "UNT-003", unit_id: "UNT-003", kode_unit: "DAMKAR", nama_unit: "Bidang Pemadam Kebakaran & Penyelamatan", singkatan: "DAMKAR" },
+  { id: "UNT-004", unit_id: "UNT-004", kode_unit: "LINMAS", nama_unit: "Bidang Perlindungan Masyarakat (Satlinmas)", singkatan: "LINMAS" }
+];
+
+var FALLBACK_JABATAN = [
+  { id: "JAB-001", jabatan_id: "JAB-001", kode_jabatan: "KASAT", nama_jabatan: "Kepala Satuan Polisi Pamong Praja & Pemadam Kebakaran", target_jp_tahunan: 20 },
+  { id: "JAB-002", jabatan_id: "JAB-002", kode_jabatan: "KABID_GAKDA", nama_jabatan: "Kepala Bidang Penegakan Perda & Perbup", target_jp_tahunan: 20 },
+  { id: "JAB-003", jabatan_id: "JAB-003", kode_jabatan: "PPNS_PERTAMA", nama_jabatan: "Penyidik PPNS Penegak Perda Ahli Pertama", target_jp_tahunan: 20 },
+  { id: "JAB-004", jabatan_id: "JAB-004", kode_jabatan: "KABID_DAMKAR", nama_jabatan: "Kepala Bidang Pemadam Kebakaran & Penyelamatan", target_jp_tahunan: 20 },
+  { id: "JAB-005", jabatan_id: "JAB-005", kode_jabatan: "PENGAWAS_LINMAS", nama_jabatan: "Pengawas Tata Operasional Linmas & Bencana", target_jp_tahunan: 20 },
+  { id: "JAB-006", jabatan_id: "JAB-006", kode_jabatan: "OPERATOR_WATER", nama_jabatan: "Operator Damkar & Water Rescue Pos Watulimo", target_jp_tahunan: 20 },
+  { id: "JAB-007", jabatan_id: "JAB-007", kode_jabatan: "DANRU_RESCUE", nama_jabatan: "Komandan Regu Rescue Damkar & Vertical Rescue", target_jp_tahunan: 20 },
+  { id: "JAB-008", jabatan_id: "JAB-008", kode_jabatan: "POLPP_PERTAMA", nama_jabatan: "Polisi Pamong Praja Ahli Pertama (Trantibum)", target_jp_tahunan: 20 },
+  { id: "JAB-009", jabatan_id: "JAB-009", kode_jabatan: "DAMKAR_TERAMPIL", nama_jabatan: "Pranata Pemadam Kebakaran Terampil", target_jp_tahunan: 24 },
+  { id: "JAB-010", jabatan_id: "JAB-010", kode_jabatan: "RESCUER_TERAMPIL", nama_jabatan: "Petugas Penyelamat Rescue Terampil", target_jp_tahunan: 24 }
+];
+
 var FALLBACK_PEGAWAI = [
   { id: "PEG-001", pegawai_id: "PEG-001", nip: "197709081998021001", nama_lengkap: "PURWO EDI PRAWITO, S.Sos.", nama: "PURWO EDI PRAWITO, S.Sos.", pangkat_golongan: "Pembina (IV/a)", unit_id: "UNT-001", jabatan_id: "JAB-001", status_pegawai: "PNS", is_ppns: true },
   { id: "PEG-002", pegawai_id: "PEG-002", nip: "198205122005011002", nama_lengkap: "MIFTACHUR ROCHIM, S.AP.", nama: "MIFTACHUR ROCHIM, S.AP.", pangkat_golongan: "Penata Tk.I (III/d)", unit_id: "UNT-002", jabatan_id: "JAB-002", status_pegawai: "PNS", is_ppns: true },
@@ -253,6 +274,12 @@ function getSheetData_(sheetName) {
   if (!sheet || sheet.getLastRow() <= 1) {
     if (sheetName === "PEGAWAI" || sheetName === "M_PEGAWAI" || sheetName === "pegawai") {
       return FALLBACK_PEGAWAI.slice();
+    }
+    if (sheetName === "UNIT_KERJA" || sheetName === "M_UNIT_KERJA" || sheetName === "unit_kerja" || sheetName === "units") {
+      return FALLBACK_UNIT_KERJA.slice();
+    }
+    if (sheetName === "JABATAN" || sheetName === "M_JABATAN" || sheetName === "jabatan") {
+      return FALLBACK_JABATAN.slice();
     }
     return [];
   }

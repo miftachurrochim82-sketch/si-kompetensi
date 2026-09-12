@@ -127,7 +127,21 @@
         // State 6: Analisa Kebutuhan (SKJ Gap)
         analisaTahun: 2026,
         analisaLoading: false,
-        analisaData: { ringkasan: "", gap_count: 0, gap_details: [], temuan: [], rekomendasi: [] },
+        analisaSearch: "",
+        analisaFilterUnit: "",
+        analisaFilterKebutuhan: "",
+        analisaData: {
+          total_evaluasi: 0,
+          gap_count: 0,
+          total_wajib_gap: 0,
+          total_disarankan_gap: 0,
+          persen_kepatuhan: 100,
+          total_pegawai_terdampak: 0,
+          gap_details: [],
+          temuan: [],
+          rekomendasi: [],
+          tahun: 2026
+        },
 
         // State 7: Master Satelit (Katalog, Standar, Referensi)
         activeMasterTab: "katalog_diklat",
@@ -206,6 +220,29 @@
         } catch(e) {
           return false;
         }
+      },
+
+      hasAnalisaTemuan() {
+        return Boolean(this.analisaData && this.analisaData.temuan && this.analisaData.temuan.length > 0);
+      },
+      filteredAnalisaGap() {
+        const q = String(this.analisaSearch || "").toLowerCase().trim();
+        const unit = String(this.analisaFilterUnit || "").trim().toLowerCase();
+        const keb = String(this.analisaFilterKebutuhan || "").trim().toUpperCase();
+
+        return (this.analisaData.gap_details || []).filter(g => {
+          const peg = String(g.nama_pegawai || this.namaPegawai(g.pegawai_id) || "").toLowerCase();
+          const nip = String(g.nip || "").toLowerCase();
+          const jab = String(g.nama_jabatan || "").toLowerCase();
+          const dkl = String(g.nama_diklat || "").toLowerCase();
+          const un = String(g.nama_unit || "").toLowerCase();
+
+          const matchQ = !q || peg.includes(q) || nip.includes(q) || jab.includes(q) || dkl.includes(q) || un.includes(q);
+          const matchUnit = !unit || un.includes(unit) || String(g.unit_id || "").toLowerCase() === unit;
+          const matchKeb = !keb || String(g.tingkat_kebutuhan || "").toUpperCase() === keb;
+
+          return matchQ && matchUnit && matchKeb;
+        });
       },
 
       filteredKatalogDiklat() {

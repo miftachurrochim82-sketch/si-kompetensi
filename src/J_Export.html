@@ -159,7 +159,7 @@
         this.showToast("Rekap Rencana Diklat Tahunan berhasil diekspor ke Excel.", "success");
       },
 
-      // ================= CETAK ANALISIS PDF =================
+      // ================= CETAK ANALISIS PDF & EXCEL =================
 
       cetakAnalisaPDF() {
         if (typeof jspdf === 'undefined') {
@@ -167,34 +167,91 @@
           return;
         }
         const { jsPDF } = window.jspdf;
-        const doc = new jsPDF('p', 'mm', 'a4');
+        const doc = new jsPDF('l', 'mm', 'a4');
 
-        doc.setFontSize(14);
+        // Header
+        doc.setFontSize(13);
         doc.setFont('helvetica', 'bold');
-        doc.text('Analisis Kebutuhan Kompetensi Satpol PP & Damkar Trenggalek', 14, 16);
-        doc.setFontSize(10);
+        doc.text('LAPORAN ANALISIS KESENJANGAN STANDAR KOMPETENSI JABATAN (SKJ)', 14, 15);
+        
+        doc.setFontSize(9);
         doc.setFont('helvetica', 'normal');
-        doc.text(`Tahun Evaluasi: ${this.analisaTahun} | Dicetak: ${new Date().toLocaleDateString('id-ID')}`, 14, 23);
+        doc.setTextColor(75, 85, 99);
+        doc.text('Satuan Polisi Pamong Praja dan Pemadam Kebakaran Kabupaten Trenggalek', 14, 21);
+        doc.text(`Tahun Evaluasi: ${this.analisaTahun} | Kepatuhan SKJ: ${this.analisaData.persen_kepatuhan || 0}% | Total Gap: ${this.analisaData.gap_count || 0} (${this.analisaData.total_wajib_gap || 0} Wajib) | Dicetak: ${new Date().toLocaleDateString('id-ID')}`, 14, 26);
 
-        const rows = (this.analisaData.gap_details || []).map((g, i) => [
+        const rows = (this.filteredAnalisaGap || this.analisaData.gap_details || []).map((g, i) => [
           i + 1,
-          this.formatNamaPegawai(g.nama_pegawai),
+          `${this.formatNamaPegawai(g.nama_pegawai)}\nNIP. ${g.nip || '-'}`,
+          g.nama_unit || '-',
           g.nama_jabatan || '-',
-          g.nama_diklat || '-',
-          g.tingkat_kebutuhan || 'WAJIB'
+          `${g.nama_diklat || '-'}\n(${g.rumpun || '-'})`,
+          `${g.minimal_jp || 20} JP`,
+          g.tingkat_kebutuhan || 'WAJIB',
+          g.rekomendasi_tindak_lanjut || 'Prioritaskan masuk Rencana Diklat'
         ]);
 
         doc.autoTable({
-          startY: 28,
-          head: [['No', 'Nama Pegawai', 'Jabatan', 'Standar Diklat Diperlukan', 'Urgensi']],
+          startY: 31,
+          head: [['No', 'Pegawai & NIP', 'Unit Kerja / Bidang', 'Posisi Jabatan', 'Standar Diklat SKJ', 'Min. JP', 'Kategori', 'Rekomendasi Tindak Lanjut']],
           body: rows,
           theme: 'grid',
-          headStyles: { fillColor: [5, 150, 105], textColor: 255, fontStyle: 'bold' },
-          styles: { fontSize: 8, cellPadding: 3 }
+          headStyles: { fillColor: [5, 150, 105], textColor: 255, fontStyle: 'bold', fontSize: 8, halign: 'center' },
+          bodyStyles: { fontSize: 7.5, cellPadding: 2.5 },
+          columnStyles: {
+            0: { halign: 'center', cellWidth: 10 },
+            1: { cellWidth: 48 },
+            2: { cellWidth: 40 },
+            3: { cellWidth: 42 },
+            4: { cellWidth: 50 },
+            5: { halign: 'center', cellWidth: 16 },
+            6: { halign: 'center', cellWidth: 20 },
+            7: { cellWidth: 42 }
+          }
         });
 
-        doc.save(`Laporan_Analisis_Kompetensi_${this.analisaTahun}.pdf`);
-        this.showToast('Laporan Analisis berhasil diunduh.', 'success');
+        doc.save(`Laporan_Analisis_Kesenjangan_SKJ_${this.analisaTahun}.pdf`);
+        this.showToast('Laporan Analisis Kesenjangan PDF berhasil diunduh.', 'success');
+      },
+
+      exportAnalisaExcel() {
+        const data = this.filteredAnalisaGap || this.analisaData.gap_details || [];
+        if (!data.length) {
+          this.showToast('Tidak ada data analisis untuk diekspor.', 'warning');
+          return;
+        }
+
+        const headers = ['No', 'NIP', 'Nama Pegawai', 'Unit Kerja', 'Posisi Jabatan', 'Standar Diklat SKJ', 'Rumpun Diklat', 'Target Min JP', 'Realisasi JP', 'Kategori Kebutuhan', 'Status Gap', 'Rekomendasi Tindak Lanjut'];
+        const csvRows = [headers.join(',')];
+
+        data.forEach((g, idx) => {
+          const row = [
+            idx + 1,
+            `"${g.nip || ''}"`,
+            `"${(g.nama_pegawai || '').replace(/"/g, '""')}"`,
+            `"${(g.nama_unit || '').replace(/"/g, '""')}"`,
+            `"${(g.nama_jabatan || '').replace(/"/g, '""')}"`,
+            `"${(g.nama_diklat || '').replace(/"/g, '""')}"`,
+            `"${(g.rumpun || '').replace(/"/g, '""')}"`,
+            g.minimal_jp || 20,
+            g.realisasi_jp || 0,
+            `"${g.tingkat_kebutuhan || 'WAJIB'}"`,
+            `"${(g.status_gap || '').replace(/"/g, '""')}"`,
+            `"${(g.rekomendasi_tindak_lanjut || '').replace(/"/g, '""')}"`
+          ];
+          csvRows.push(row.join(','));
+        });
+
+        const csvContent = '\uFEFF' + csvRows.join('\r\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', `Analisis_Kesenjangan_SKJ_${this.analisaTahun}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        this.showToast('Data Analisis Kesenjangan berhasil diekspor ke CSV/Excel.', 'success');
       }
     }
   };

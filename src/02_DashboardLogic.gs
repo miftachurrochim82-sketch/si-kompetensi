@@ -256,25 +256,43 @@ function getAnalytics_(params, user) {
     var unitList = (simpeg && simpeg.data && simpeg.data.unit) || [];
     var jabatanList = (simpeg && simpeg.data && simpeg.data.jabatan) || [];
 
+    if (!pegawaiList.length && typeof FALLBACK_PEGAWAI !== 'undefined') {
+      pegawaiList = FALLBACK_PEGAWAI.slice();
+    }
+    if (!unitList.length && typeof FALLBACK_UNIT_KERJA !== 'undefined') {
+      unitList = FALLBACK_UNIT_KERJA.slice();
+    }
+    if (!jabatanList.length && typeof FALLBACK_JABATAN !== 'undefined') {
+      jabatanList = FALLBACK_JABATAN.slice();
+    }
+
     var gapDetails = [];
     var temuan = [];
     var rekomendasi = [];
+    var totalEvaluasi = 0;
 
     // Matriks Gap Analisis per Jabatan
     standar.forEach(function(std) {
-      var jid = String(std.jabatan_id);
-      var did = String(std.diklat_id);
+      var jid = String(std.jabatan_id || '').trim();
+      var did = String(std.diklat_id || '').trim();
       var minJp = Number(std.minimal_jp) || 20;
 
-      var targetPegawai = pegawaiList.filter(function(p) { return String(p.jabatan_id) === jid; });
+      var targetPegawai = pegawaiList.filter(function(p) {
+        return String(p.jabatan_id || '').trim().toLowerCase() === jid.toLowerCase();
+      });
       var dObj = katalog.find(function(k) { return String(k.id) === did; });
       var jObj = jabatanList.find(function(j) { return String(j.id) === jid; });
 
       var namaDiklat = dObj ? dObj.nama_diklat : did;
+      var rumpunDiklat = dObj ? (dObj.rumpun || 'Teknis Operasional') : 'Teknis Operasional';
       var namaJabatan = jObj ? (jObj.nama_jabatan || jObj.nama) : jid;
 
       targetPegawai.forEach(function(p) {
-        var pid = String(p.id);
+        totalEvaluasi++;
+        var pid = String(p.id || p.pegawai_id);
+        var uObj = unitList.find(function(u) { return String(u.id) === String(p.unit_id); });
+        var namaUnit = uObj ? (uObj.nama_unit || uObj.nama) : 'Satpol PP & Damkar';
+
         var sertif = riwayat.find(function(r) {
           return String(r.pegawai_id) === pid &&
                  (String(r.diklat_id) === did || String(r.nama_kegiatan || '').toLowerCase().indexOf(namaDiklat.toLowerCase()) !== -1) &&
@@ -282,41 +300,66 @@ function getAnalytics_(params, user) {
         });
 
         if (!sertif) {
+          var isWajib = String(std.tingkat_kebutuhan).toUpperCase() === 'WAJIB';
           gapDetails.push({
             pegawai_id: pid,
             nama_pegawai: p.nama_lengkap || p.nama || pid,
+            nip: p.nip || '-',
+            unit_id: p.unit_id || '',
+            nama_unit: namaUnit,
             jabatan_id: jid,
             nama_jabatan: namaJabatan,
             diklat_id: did,
             nama_diklat: namaDiklat,
-            tingkat_kebutuhan: std.tingkat_kebutuhan || 'WAJIB',
+            rumpun: rumpunDiklat,
+            tingkat_kebutuhan: isWajib ? 'WAJIB' : 'DISARANKAN',
             minimal_jp: minJp,
-            status_gap: 'Belum Mengikuti Diklat Wajib'
+            realisasi_jp: 0,
+            status_gap: isWajib ? 'Belum Memenuhi Syarat Wajib' : 'Disarankan Pelatihan Lanjutan',
+            rekomendasi_tindak_lanjut: isWajib ? 'Prioritaskan masuk Rencana Diklat Tahunan (TW I/II)' : 'Fasilitasi melalui E-Learning / MOOC BPSDM'
           });
         }
       });
     });
 
+    var totalWajibGap = gapDetails.filter(function(g) { return g.tingkat_kebutuhan === 'WAJIB'; }).length;
+    var totalDisarankanGap = gapDetails.filter(function(g) { return g.tingkat_kebutuhan !== 'WAJIB'; }).length;
+    var uniquePegawaiTerdampak = [];
+    gapDetails.forEach(function(g) {
+      if (uniquePegawaiTerdampak.indexOf(g.pegawai_id) === -1) uniquePegawaiTerdampak.push(g.pegawai_id);
+    });
+
+    var persenKepatuhan = totalEvaluasi > 0 ? Math.round(((totalEvaluasi - gapDetails.length) / totalEvaluasi) * 100) : 100;
+
     if (gapDetails.length > 0) {
       temuan.push({
         level: 'PERINGATAN',
-        pesan: 'Ditemukan ' + gapDetails.length + ' kesenjangan kompetensi standar jabatan (SKJ) yang belum terpenuhi personel.'
+        pesan: 'Terdeteksi ' + gapDetails.length + ' kesenjangan kompetensi standar jabatan pada ' + uniquePegawaiTerdampak.length + ' personel aktif (' + totalWajibGap + ' Wajib, ' + totalDisarankanGap + ' Disarankan).'
       });
       rekomendasi.push({
-        prioritas: 'Prioritas 1',
-        tindakan: 'Usulkan pelaksanaan in-house training teknis Satpol PP & Damkar Trenggalek untuk menutup gap kompetensi wajib.'
+        prioritas: 'Prioritas 1 (Mendesak)',
+        tindakan: 'Akomodasikan ' + totalWajibGap + ' pelatihan wajib ke dalam Rencana Diklat Tahunan ' + tahun + ' / usulan DPA dinas.'
+      });
+      rekomendasi.push({
+        prioritas: 'Prioritas 2 (Dukungan)',
+        tindakan: 'Arahkan personel terkait untuk mengikuti program pembelajaran mandiri (MOOC ASN BerAKHLAK / Webinar BPSDM Jatim).'
       });
     } else {
       temuan.push({
         level: 'OPTIMAL',
-        pesan: 'Seluruh pejabat struktural dan fungsional telah memenuhi standar kompetensi minimal jabatan.'
+        pesan: 'Seluruh pejabat struktural dan personel operasional telah memenuhi standar kompetensi minimal jabatan (Tingkat Kepatuhan 100%).'
       });
     }
 
     return {
       success: true,
       data: {
+        total_evaluasi: totalEvaluasi,
         gap_count: gapDetails.length,
+        total_wajib_gap: totalWajibGap,
+        total_disarankan_gap: totalDisarankanGap,
+        persen_kepatuhan: persenKepatuhan,
+        total_pegawai_terdampak: uniquePegawaiTerdampak.length,
         gap_details: gapDetails,
         temuan: temuan,
         rekomendasi: rekomendasi,

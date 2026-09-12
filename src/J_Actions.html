@@ -359,6 +359,24 @@
         this.showUsulanForm = true;
       },
 
+      usulkanDariGap(g) {
+        if (!g) return;
+        this.usulanForm = {
+          id: '',
+          pegawai_id: g.pegawai_id || '',
+          diklat_id: g.diklat_id || '',
+          nama_diklat_usulan: g.nama_diklat || '',
+          rumpun: g.rumpun || 'Teknis Pemadam & Rescue',
+          target_penyelenggara: 'BPSDM Jawa Timur',
+          alasan_usulan: 'Pemenuhan Standar Kompetensi Jabatan (SKJ) untuk posisi ' + (g.nama_jabatan || 'terkait') + '.',
+          urgensi: g.tingkat_kebutuhan === 'WAJIB' ? 'Sangat Mendesak (Prioritas 1)' : 'Mendesak (Prioritas 2)',
+          estimasi_biaya: 0,
+          status_usulan: 'diajukan'
+        };
+        this.showUsulanForm = true;
+        this.showToast('Data kesenjangan otomatis diisikan ke formulir rencana diklat.', 'info');
+      },
+
       openEditUsulan(u) {
         this.usulanForm = Object.assign({}, u);
         this.showUsulanForm = true;

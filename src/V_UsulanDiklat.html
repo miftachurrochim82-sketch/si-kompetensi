@@ -1,5 +1,5 @@
-<!-- SI-KOMPETENSI - V_UsulanDiklat.html (Rencana Diklat Tahunan & Tracking Realisasi) -->
-<!-- Perencanaan target kompetensi tahunan berbasis kebutuhan jabatan & pemantauan realisasi pelatihan ASN -->
+<!-- SI-KOMPETENSI - V_UsulanDiklat.html (Rencana Diklat Tahunan &amp; Tracking Realisasi) -->
+<!-- Perencanaan target kompetensi tahunan berbasis kebutuhan jabatan &amp; pemantauan realisasi pelatihan ASN -->
 
 <section v-if="currentPage === 'usulan_diklat' || currentPage === 'rencana_diklat'" class="space-y-6">
   
@@ -79,7 +79,7 @@
     </div>
   </div>
 
-  <!-- Filter & Kontrol Pencarian -->
+  <!-- Filter &amp; Kontrol Pencarian -->
   <div class="card p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row gap-3">
     <div class="flex-1 relative">
       <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
@@ -129,7 +129,7 @@
                 {{ u.pegawai_id ? (namaPegawai(u.pegawai_id) || formatNamaPegawai(u.nama_pegawai)) : (namaJabatan(u.jabatan_id) || 'Semua Personel Bidang') }}
               </div>
               <div class="text-[11px] text-slate-500 mt-0.5">
-                <i class="fa-solid fa-sitemap text-[10px] text-slate-400"></i> {{ namaUnit(u.unit_id) || 'Satpol PP & Damkar' }}
+                <i class="fa-solid fa-sitemap text-[10px] text-slate-400"></i> {{ namaUnit(u.unit_id) || 'Satpol PP &amp; Damkar' }}
               </div>
             </td>
 
@@ -144,14 +144,14 @@
               </div>
             </td>
 
-            <!-- Kolom Rumpun & Target JP -->
+            <!-- Kolom Rumpun &amp; Target JP -->
             <td class="py-3 px-3">
               <span class="badge badge-info text-xs font-black">{{ u.target_jp || u.jumlah_jp || 20 }} JP</span>
               <div class="text-[10px] text-slate-400 mt-1">{{ u.rumpun || 'Teknis Operasional' }}</div>
               <div class="text-[10px] text-slate-500">{{ u.metode || 'Klasikal' }}</div>
             </td>
 
-            <!-- Kolom Periode TW & Anggaran -->
+            <!-- Kolom Periode TW &amp; Anggaran -->
             <td class="py-3 px-3">
               <div class="font-bold text-slate-800 dark:text-slate-200">{{ u.periode_triwulan || ('TA ' + (u.tahun_anggaran || u.tahun_anggaran_target || 2026)) }}</div>
               <div class="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
