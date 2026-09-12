@@ -1,0 +1,250 @@
+<script>
+  window.SIKompetensiState = {
+    data() {
+      return {
+        isSsoLoading: false,
+        ssoStatusMessage: "Memvalidasi tiket Single Sign-On...",
+        showPanduan: false,
+        pageSize: 10,
+        canInstallPwa: false,
+        deferredPwaPrompt: null,
+
+        // Chart instances
+        chart20JpInstance: null,
+        chartRumpunInstance: null,
+
+        // State Dashboard & AI Insights
+        dashboardData: {
+          total_kompetensi: 0,
+          total_jp_tahun: 0,
+          persen_capaian_20jp: 0,
+          pegawai_lulus_20jp: 0,
+          total_pegawai: 0,
+          total_kualifikasi_aktif: 0,
+          total_kualifikasi_expiring_soon: 0,
+          total_jadwal_aktif: 0,
+          total_usulan_diklat: 0,
+          bulan_aktif: "September 2026",
+          capaian_pns: { total: 0, lulus: 0, persen: 0, total_jp: 0, target_standar: "20 JP" },
+          capaian_pppk: { total: 0, lulus: 0, persen: 0, total_jp: 0, target_standar: "24 JP" },
+          status_count: { disetujui: 0, menunggu: 0, ditolak: 0 },
+          jenis_count: {},
+          terbaru: [],
+          jadwal_pelatihan: [],
+          matriks_bulanan: [],
+          ai_insights: {
+            tren_partisipasi: { naik: true, persen: 0, bulan_ini_jp: 0, bulan_lalu_jp: 0 },
+            unit_terbaik: { nama: "-", rata_jp: 0 },
+            prediksi_tidak_capai: { total_berisiko: 0, sisa_bulan: 3, daftar: [] }
+          }
+        },
+
+        // State 1: Jadwal Diklat & Portofolio (1 Menu 2 Tab)
+        diklatSubTab: "jadwal",
+        jadwalList: [],
+        jadwalLoading: false,
+        showJadwalModal: false,
+        jadwalSaving: false,
+        jadwalPenyelenggaraSelect: "BPSDM Provinsi Jawa Timur",
+        jadwalPenyelenggaraCustom: "",
+        jadwalForm: {
+          id: "", kode_jadwal: "", diklat_id: "", nama_kegiatan: "", rumpun: "Teknis Pemadam & Rescue",
+          penyelenggara: "BPSDM Provinsi Jawa Timur", metode: "Klasikal", jumlah_jp: 20, tgl_mulai: "",
+          tgl_selesai: "", bulan_periode: "September 2026", tahun_periode: 2026, kuota_peserta: 0,
+          lokasi_pelaksanaan: "", link_pendaftaran: "", status_jadwal: "Terjadwal", keterangan: ""
+        },
+
+        // State 2: Kualifikasi Khusus (T_KUALIFIKASI_KHUSUS)
+        kualifikasiList: [],
+        kualifikasiLoading: false,
+        showKualifikasiModal: false,
+        kualifikasiSaving: false,
+        kualifikasiForm: {
+          id: "", pegawai_id: "", jenis_kualifikasi: "SK Pengangkatan Penyidik PPNS (Kemenkumham/Polri)",
+          nomor_sk_lisensi: "", no_registrasi_nasional: "", lembaga_penerbit: "Kemenkumham RI",
+          tgl_sk_terbit: "", tgl_habis_berlaku: "", status_kualifikasi: "AKTIF", file_sk_url: "",
+          catatan_perpanjangan: ""
+        },
+
+        // State 3: Portofolio Sertifikat (T_RIWAYAT_KOMPETENSI)
+        kompetensiList: [],
+        kompetensiLoading: false,
+        kompetensiSearch: "",
+        filterRumpun: "",
+        filterStatusVerif: "",
+        showKompetensiForm: false,
+        kompetensiSaving: false,
+        kompetensiForm: {
+          id: "", pegawai_id: "", diklat_id: "", jadwal_id: "", nama_kegiatan: "", rumpun: "Teknis Pemadam & Rescue",
+          penyelenggara: "BPSDM Provinsi Jawa Timur", no_sertifikat: "", tgl_terbit: "", tgl_mulai: "",
+          tgl_selesai: "", tgl_kedaluwarsa: "", jumlah_jp: 20, metode: "Klasikal", file_url: "",
+          status_verifikasi: "disetujui", catatan_verifikator: ""
+        },
+        pdfCompressInfo: "",
+
+        // State 4: Verifikasi Sertifikat (Audit Kasubbag)
+        showVerifModal: false,
+        selectedKompetensi: null,
+        verifSaving: false,
+        verifForm: { status: "disetujui", catatan: "" },
+
+        // State 5: Usulan Diklat (T_USULAN_DIKLAT)
+        usulanList: [],
+        usulanLoading: false,
+        showUsulanForm: false,
+        usulanSaving: false,
+        usulanForm: {
+          id: "", pegawai_id: "", diklat_id: "", nama_diklat_usulan: "", rumpun: "Teknis Pemadam & Rescue",
+          target_penyelenggara: "BPSDM Jawa Timur", alasan_usulan: "", urgensi: "Sangat Mendesak (Prioritas 1)",
+          estimasi_biaya: 0, status_usulan: "diajukan"
+        },
+        showReviewUsulanModal: false,
+        selectedUsulan: null,
+        reviewUsulanSaving: false,
+        reviewUsulanForm: { status: "disetujui_kasat", catatan: "" },
+
+        // State 6: Analisa Kebutuhan (SKJ Gap)
+        analisaTahun: 2026,
+        analisaLoading: false,
+        analisaData: { ringkasan: "", gap_count: 0, gap_details: [], temuan: [], rekomendasi: [] },
+
+        // State 7: Master Satelit (Katalog, Standar, Referensi)
+        activeMasterTab: "katalog_diklat",
+        katalogList: [],
+        standarList: [],
+        referensiList: [],
+        katalogSearch: "",
+        filterKategoriRef: "",
+
+        // SIMPEG Lookup (Pegawai, Unit, Jabatan)
+        simpegLookup: { pegawai: [], unit: [], jabatan: [] },
+
+        // Master Pegawai Default (Fallback & Instant Display)
+        masterPegawaiList: [
+          { id: "PEG-001", pegawai_id: "PEG-001", nip: "197709081998021001", nama_lengkap: "PURWO EDI PRAWITO, S.Sos.", status_pegawai: "PNS" },
+          { id: "PEG-002", pegawai_id: "PEG-002", nip: "198205122005011002", nama_lengkap: "MIFTACHUR ROCHIM, S.AP.", status_pegawai: "PNS" },
+          { id: "PEG-003", pegawai_id: "PEG-003", nip: "198603152010011003", nama_lengkap: "AGUS PRASETYO, S.H.", status_pegawai: "PNS" },
+          { id: "PEG-004", pegawai_id: "PEG-004", nip: "198911202014021004", nama_lengkap: "BAMBANG HERMAWAN", status_pegawai: "PNS" },
+          { id: "PEG-005", pegawai_id: "PEG-005", nip: "199204102019031005", nama_lengkap: "DENI KURNIAWAN, S.Tr.IP.", status_pegawai: "PNS" },
+          { id: "PEG-006", pegawai_id: "PEG-006", nip: "199507182020121006", nama_lengkap: "EKO WAHYUDI", status_pegawai: "PNS" },
+          { id: "PEG-007", pegawai_id: "PEG-007", nip: "199702252022031007", nama_lengkap: "FAJAR NUGROHO", status_pegawai: "PNS" },
+          { id: "PEG-008", pegawai_id: "PEG-008", nip: "199906302024051008", nama_lengkap: "GILANG RAMADHAN", status_pegawai: "PNS" },
+          { id: "PEG-009", pegawai_id: "PEG-009", nip: "199408122023211009", nama_lengkap: "HENDRA WIJAYA", status_pegawai: "PPPK" },
+          { id: "PEG-010", pegawai_id: "PEG-010", nip: "199612052023211010", nama_lengkap: "IRWAN SANTOSO", status_pegawai: "PPPK" }
+        ],
+
+        // Modal Forms Master Satelit
+        showKatalogModal: false,
+        katalogSaving: false,
+        katalogForm: { id: "", kode_diklat: "", nama_diklat: "", rumpun: "Teknis Pemadam & Rescue", kategori_keahlian: "", penyelenggara_default: "", default_jp: 20, estimasi_biaya_default: 0 },
+
+        showStandarModal: false,
+        standarSaving: false,
+        standarForm: { id: "", jabatan_id: "", diklat_id: "", tingkat_kebutuhan: "WAJIB", minimal_jp: 20, keterangan: "" },
+
+        showReferensiModal: false,
+        referensiSaving: false,
+        referensiForm: { id: "", kategori: "RUMPUN_KOMPETENSI", kode: "", nama_nilai: "", urutan: 1, status_aktif: "true", keterangan: "" }
+      };
+    },
+
+    computed: {
+      showAuthSplash() {
+        return !this.token && (this.isProcessing || this.isSsoLoading || this.hasSsoTicket);
+      },
+      showAuthLogin() {
+        return !this.token && !this.isProcessing && !this.isSsoLoading && !this.hasSsoTicket;
+      },
+      showSettingsTab() {
+        return this.currentPage === "pengaturan" && this.isAdmin;
+      },
+      hasSsoTicket() {
+        try {
+          const urlParams = new URLSearchParams(window.location.search);
+          return Boolean(window.__SSO_TICKET__ || urlParams.get("ticket"));
+        } catch(e) {
+          return false;
+        }
+      },
+
+      filteredKatalogDiklat() {
+        const q = String(this.katalogSearch || "").toLowerCase().trim();
+        if (!q) return this.katalogList;
+        return this.katalogList.filter(d =>
+          String(d.nama_diklat || "").toLowerCase().includes(q) ||
+          String(d.kode_diklat || "").toLowerCase().includes(q) ||
+          String(d.kategori_keahlian || "").toLowerCase().includes(q)
+        );
+      },
+
+      filteredReferensi() {
+        if (!this.filterKategoriRef) return this.referensiList;
+        return this.referensiList.filter(r => r.kategori === this.filterKategoriRef);
+      },
+
+      optionsRumpun() {
+        const ref = (this.referensiList || []).filter(r => r.kategori === "RUMPUN_KOMPETENSI");
+        if (ref.length > 0) return ref;
+        return [
+          { id: "1", nama_nilai: "Manajerial & Kepemimpinan" },
+          { id: "2", nama_nilai: "Teknis Penegakan Perda (PPNS)" },
+          { id: "3", nama_nilai: "Teknis Pemadam & Rescue" },
+          { id: "4", nama_nilai: "Jabatan Fungsional Pol PP & Damkar" },
+          { id: "5", nama_nilai: "Bimbingan Teknis & Workshop" }
+        ];
+      },
+
+      optionsPenyelenggara() {
+        const ref = (this.referensiList || []).filter(r => r.kategori === "PENYELENGGARA");
+        if (ref.length > 0) return ref.map(r => r.nama_nilai);
+        return [
+          "BPSDM Provinsi Jawa Timur",
+          "BPSDM Kementerian Dalam Negeri",
+          "BKPSDM Kabupaten Trenggalek",
+          "Pusdiklat Penanggulangan Kebakaran & Penyelamatan Ciracas",
+          "Badan Nasional Pencarian & Pertolongan (BASARNAS)",
+          "Lembaga Administrasi Negara (LAN RI)",
+          "Satpol PP & Damkar Kabupaten Trenggalek",
+          "Kementerian Hukum dan HAM RI",
+          "Lainnya (Tulis Manual)..."
+        ];
+      },
+
+      optionsUrgensi() {
+        const ref = (this.referensiList || []).filter(r => r.kategori === "URGENSI_USULAN");
+        if (ref.length > 0) return ref;
+        return [
+          { id: "1", nama_nilai: "Sangat Mendesak (Prioritas 1)" },
+          { id: "2", nama_nilai: "Mendesak (Prioritas 2)" },
+          { id: "3", nama_nilai: "Dukungan Reguler (Prioritas 3)" }
+        ];
+      },
+
+      sortedPegawaiList() {
+        const list = (this.simpegLookup && this.simpegLookup.pegawai && this.simpegLookup.pegawai.length)
+          ? this.simpegLookup.pegawai
+          : (this.masterPegawaiList || []);
+        return list.slice().sort((a, b) => {
+          const nameA = String(a.nama_lengkap || a.nama || "").toUpperCase();
+          const nameB = String(b.nama_lengkap || b.nama || "").toUpperCase();
+          return nameA.localeCompare(nameB);
+        });
+      },
+
+      currentYearJadwalList() {
+        const currentYear = new Date().getFullYear();
+        return (this.jadwalList || [])
+          .filter(j => {
+            if (!j.tahun_periode && !j.tgl_mulai) return true;
+            const y = Number(j.tahun_periode) || (j.tgl_mulai ? new Date(j.tgl_mulai).getFullYear() : currentYear);
+            return y === currentYear;
+          })
+          .sort((a, b) => {
+            const dateA = a.tgl_mulai ? new Date(a.tgl_mulai).getTime() : 0;
+            const dateB = b.tgl_mulai ? new Date(b.tgl_mulai).getTime() : 0;
+            return dateB - dateA;
+          });
+      }
+    }
+  };
+</script>

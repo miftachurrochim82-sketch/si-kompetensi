@@ -1,0 +1,127 @@
+<script>
+  window.SIKompetensiHelpers = {
+    methods: {
+      showToast(message, type = "info") {
+        const id = Date.now() + Math.random().toString(36).substr(2, 4);
+        this.toasts.push({ id, message, type });
+        setTimeout(() => {
+          this.toasts = this.toasts.filter(t => t.id !== id);
+        }, 4000);
+      },
+
+      goToPlatform() {
+        const platformUrl = window.__PLATFORM_URL__ || "https://script.google.com/macros/s/AKfycbwh_OUVqmxLcuF81FHmPZtT33Wrm8Ce9Da1SQ3hfkSr7gM5P8ofyAlHSgW40mq3eo-PoQ/exec";
+        const returnUrl = encodeURIComponent(window.location.href);
+        const sep = platformUrl.includes("?") ? "&" : "?";
+        const targetUrl = `${platformUrl}${sep}app=SIKOMPETENSI&return_url=${returnUrl}`;
+        try {
+          if (window.top && window.top !== window) {
+            window.top.location.href = targetUrl;
+          } else {
+            window.location.href = targetUrl;
+          }
+        } catch (e) {
+          window.open(targetUrl, "_top");
+        }
+      },
+
+      formatNamaPegawai(str) {
+        if (!str || str === "-") return "-";
+        const s = String(str).trim();
+        if (s.includes(",")) {
+          const parts = s.split(",");
+          const namaDepan = parts[0].trim().toLowerCase().replace(/(^|\s)\S/g, c => c.toUpperCase());
+          const gelar = parts.slice(1).join(",").trim();
+          return namaDepan + ", " + gelar;
+        }
+        return s.toLowerCase().replace(/(^|\s)\S/g, c => c.toUpperCase());
+      },
+
+      namaPegawai(id) {
+        if (!id) return "-";
+        const list = (this.simpegLookup && this.simpegLookup.pegawai && this.simpegLookup.pegawai.length)
+          ? this.simpegLookup.pegawai
+          : (this.masterPegawaiList || []);
+        const target = String(id).trim().toLowerCase();
+        const p = list.find(x => 
+          String(x.id || "").trim().toLowerCase() === target ||
+          String(x.pegawai_id || "").trim().toLowerCase() === target ||
+          String(x.nip || "").trim().toLowerCase() === target ||
+          String(x.nama_lengkap || "").trim().toLowerCase() === target
+        );
+        if (p) return this.formatNamaPegawai(p.nama_lengkap || p.nama || p.display_name || id);
+
+        const fb = (this.masterPegawaiList || []).find(x =>
+          String(x.id || "").trim().toLowerCase() === target ||
+          String(x.pegawai_id || "").trim().toLowerCase() === target ||
+          String(x.nip || "").trim().toLowerCase() === target
+        );
+        return fb ? this.formatNamaPegawai(fb.nama_lengkap || fb.nama || id) : id;
+      },
+
+      nipPegawai(id) {
+        if (!id) return "-";
+        const list = (this.simpegLookup && this.simpegLookup.pegawai && this.simpegLookup.pegawai.length)
+          ? this.simpegLookup.pegawai
+          : (this.masterPegawaiList || []);
+        const target = String(id).trim().toLowerCase();
+        const p = list.find(x => 
+          String(x.id || "").trim().toLowerCase() === target ||
+          String(x.pegawai_id || "").trim().toLowerCase() === target ||
+          String(x.nip || "").trim().toLowerCase() === target
+        );
+        if (p) return p.nip || id;
+
+        const fb = (this.masterPegawaiList || []).find(x =>
+          String(x.id || "").trim().toLowerCase() === target ||
+          String(x.pegawai_id || "").trim().toLowerCase() === target ||
+          String(x.nip || "").trim().toLowerCase() === target
+        );
+        return fb ? (fb.nip || id) : id;
+      },
+
+      namaJabatan(id) {
+        if (!id) return "-";
+        const list = (this.simpegLookup.jabatan && this.simpegLookup.jabatan.length)
+          ? this.simpegLookup.jabatan
+          : (this.masterJabatanList || []);
+        const j = list.find(x => String(x.id || x.jabatan_id || x.kode_jabatan) === String(id));
+        return j ? (j.nama_jabatan || j.kode_jabatan || j.nama || j.id) : id;
+      },
+
+      namaUnit(id) {
+        if (!id) return "-";
+        const list = (this.simpegLookup.unit && this.simpegLookup.unit.length)
+          ? this.simpegLookup.unit
+          : (this.masterUnitList || []);
+        const u = list.find(x => String(x.id || x.unit_id || x.kode_unit) === String(id));
+        return u ? (u.nama_unit || u.nama || u.id) : id;
+      },
+
+      namaDiklat(id) {
+        if (!id) return "-";
+        const d = (this.katalogList || []).find(x => String(x.id) === String(id));
+        return d ? d.nama_diklat : id;
+      },
+
+      formatDate(val) {
+        if (!val) return "-";
+        try {
+          const d = new Date(val);
+          if (isNaN(d.getTime())) return String(val);
+          return d.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+        } catch(e) { return String(val); }
+      },
+
+      isLicenseExpiringSoon(tglHabis) {
+        if (!tglHabis) return false;
+        try {
+          const expMs = new Date(tglHabis).getTime();
+          const nowMs = Date.now();
+          const ms90Days = 90 * 24 * 60 * 60 * 1000;
+          return !isNaN(expMs) && expMs > nowMs && (expMs - nowMs) <= ms90Days;
+        } catch(e) { return false; }
+      }
+    }
+  };
+</script>

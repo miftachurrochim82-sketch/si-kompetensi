@@ -1,0 +1,110 @@
+<script>
+  // Gabungkan seluruh modul JavaScript ke dalam SIKompetensiMixin
+  const SIKompetensiMixin = {
+    data() {
+      return Object.assign({}, window.SIKompetensiState.data());
+    },
+    computed: Object.assign({}, window.SIKompetensiState.computed),
+    methods: Object.assign(
+      {},
+      window.SIKompetensiHelpers.methods,
+      window.SIKompetensiApi.methods,
+      window.SIKompetensiActions.methods,
+      window.SIKompetensiExport.methods
+    )
+  };
+
+  // Inisialisasi Aplikasi Terpadu SI-KOMPETENSI
+  const app = AppCore.create({
+    appCode: 'SIKOMPETENSI',
+    appTitle: 'SI-KOMPETENSI',
+    defaultPage: 'dashboard',
+
+    brand: {
+      name: 'SI-KOMPETENSI',
+      subtitle: 'Satpol PP & Damkar Trenggalek',
+      icon: 'fa-solid fa-graduation-cap'
+    },
+
+    menu: [
+      { name: 'Utama', items: [
+        { id: 'dashboard', label: 'Dashboard & Standar JP', icon: 'fa-solid fa-gauge-high' },
+        { id: 'diklat_portofolio', label: 'Diklat & Portofolio', icon: 'fa-solid fa-graduation-cap' },
+        { id: 'kualifikasi_khusus', label: 'Lisensi & SK Khusus', icon: 'fa-solid fa-id-badge' },
+        { id: 'usulan_diklat', label: 'Usulan Diklat (AKD)', icon: 'fa-solid fa-paper-plane' },
+        { id: 'analisa', label: 'Analisis Kesenjangan', icon: 'fa-solid fa-chart-pie' }
+      ]},
+      { name: 'Master Satelit', items: [
+        { id: 'master_data', label: 'Kamus Master Diklat', icon: 'fa-solid fa-database', adminOnly: true }
+      ]},
+      { name: 'Sistem', items: [
+        { id: 'pengaturan', label: 'Pengaturan', icon: 'fa-solid fa-gear', adminOnly: true }
+      ]}
+    ],
+
+    pageIcons: {
+      dashboard: 'fa-solid fa-gauge-high',
+      diklat_portofolio: 'fa-solid fa-graduation-cap',
+      jadwal_penugasan: 'fa-solid fa-calendar-days',
+      riwayat_laporan: 'fa-solid fa-certificate',
+      kualifikasi_khusus: 'fa-solid fa-id-badge',
+      usulan_diklat: 'fa-solid fa-paper-plane',
+      analisa: 'fa-solid fa-chart-pie',
+      master_data: 'fa-solid fa-database',
+      profil: 'fa-solid fa-user-tie',
+      pengaturan: 'fa-solid fa-gear'
+    },
+
+    onNavigate(vm, page) {
+      if (page === 'dashboard') {
+        vm.loadDashboard();
+      } else if (page === 'diklat_portofolio') {
+        vm.loadJadwal();
+        vm.loadKompetensi(1);
+      } else if (page === 'jadwal_penugasan') {
+        vm.currentPage = 'diklat_portofolio';
+        vm.diklatSubTab = 'jadwal';
+        vm.loadJadwal();
+      } else if (page === 'riwayat_laporan') {
+        vm.currentPage = 'diklat_portofolio';
+        vm.diklatSubTab = 'portofolio';
+        vm.loadKompetensi(1);
+      } else if (page === 'kualifikasi_khusus') {
+        vm.loadKualifikasi();
+      } else if (page === 'usulan_diklat') {
+        vm.loadUsulan();
+      } else if (page === 'analisa') {
+        vm.loadAnalisa();
+      } else if (page === 'master_data') {
+        vm.loadMasterSatelit();
+        vm.loadSimpegLookup();
+      }
+    },
+
+    onDarkToggle(vm) {
+      if (vm.currentPage === 'dashboard') vm.renderDashboardCharts();
+    },
+
+    async initApp(vm) {
+      if (vm.dataLoaded) return;
+      await Promise.all([
+        vm.loadSimpegLookup(),
+        vm.loadMasterSatelit(),
+        vm.loadJadwal(),
+        vm.loadKualifikasi(),
+        vm.loadDashboard(),
+        vm.loadKompetensi(1),
+        vm.loadUsulan(),
+        vm.loadAnalisa()
+      ]);
+      vm.$nextTick(() => {
+        setTimeout(() => vm.renderDashboardCharts(), 200);
+      });
+    },
+
+    mixins: [SIKompetensiMixin]
+  });
+
+  // Wajib panggil mount agar Vue terpasang ke DOM dan v-cloak terlepas!
+  app.mount('#app');
+</script>

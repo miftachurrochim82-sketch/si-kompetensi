@@ -196,7 +196,16 @@ function doPost(e) {
 }
 
 function include(filename) {
-  return HtmlService.createTemplateFromFile(filename).evaluate().getContent();
+  try {
+    return HtmlService.createTemplateFromFile(filename).evaluate().getContent();
+  } catch (err) {
+    try {
+      return HtmlService.createTemplateFromFile(filename.toLowerCase()).evaluate().getContent();
+    } catch (e2) {
+      Logger.log('[WARN] Error including ' + filename + ': ' + e2.message);
+      return '<!-- Error loading ' + filename + ': ' + e2.message + ' -->';
+    }
+  }
 }
 
 // ==================== SSO & SESSION BRIDGE ====================
@@ -1017,7 +1026,7 @@ function saveRiwayat_(params, user) {
     if (!record.nama_kegiatan) return { success: false, error: 'Nama kegiatan pelatihan / agenda diklat wajib dipilih.' };
 
     if (record.jumlah_jp === undefined || record.jumlah_jp === '') record.jumlah_jp = 20;
-    if (!record.status_verifikasi) record.status_verifikasi = 'menunggu';
+    if (!record.status_verifikasi) record.status_verifikasi = 'disetujui';
 
     var saved = saveRecord_(LOCAL_SHEETS.T_RIWAYAT_KOMPETENSI, record, user);
     sendAuditLog_(user, 'SAVE_RIWAYAT', 'T_RIWAYAT_KOMPETENSI', saved.id, 'SUCCESS', 'Simpan riwayat kompetensi: ' + saved.nama_kegiatan);

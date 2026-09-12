@@ -1,0 +1,172 @@
+<script>
+  window.SIKompetensiExport = {
+    methods: {
+      // ================= CHART RENDERING =================
+      renderDashboardCharts() {
+        if (typeof Chart === 'undefined') return;
+
+        // 1. Chart Donut Target JP
+        const el20Jp = document.getElementById('chart20JpCanvas');
+        if (el20Jp) {
+          if (this.chart20JpInstance) {
+            this.chart20JpInstance.destroy();
+          }
+          const lulus = this.dashboardData.pegawai_lulus_20jp || 0;
+          const total = this.dashboardData.total_pegawai || 10;
+          const sisa = Math.max(0, total - lulus);
+
+          this.chart20JpInstance = new Chart(el20Jp, {
+            type: 'doughnut',
+            data: {
+              labels: ['Tuntas Target', 'Dalam Proses'],
+              datasets: [{
+                data: [lulus, sisa],
+                backgroundColor: ['#10b981', '#cbd5e1'],
+                borderWidth: 0,
+                hoverOffset: 4
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { display: false }
+              },
+              cutout: '72%'
+            }
+          });
+        }
+
+        // 2. Chart Bar Rumpun
+        const elRumpun = document.getElementById('chartRumpunCanvas');
+        if (elRumpun) {
+          if (this.chartRumpunInstance) {
+            this.chartRumpunInstance.destroy();
+          }
+          const jc = this.dashboardData.jenis_count || {};
+          const labels = ['Manajerial', 'Teknis Gakda', 'Teknis Damkar', 'Fungsional', 'Bimtek'];
+          const dataCounts = [
+            jc['Manajerial & Kepemimpinan'] || 0,
+            jc['Teknis Penegakan Perda (PPNS)'] || 0,
+            jc['Teknis Pemadam & Rescue'] || 0,
+            jc['Jabatan Fungsional Pol PP & Damkar'] || 0,
+            jc['Bimbingan Teknis & Workshop'] || 0
+          ];
+
+          this.chartRumpunInstance = new Chart(elRumpun, {
+            type: 'bar',
+            data: {
+              labels: labels,
+              datasets: [{
+                label: 'Jumlah Pelatihan',
+                data: dataCounts,
+                backgroundColor: ['#10b981', '#14b8a6', '#f59e0b', '#6366f1', '#f43f5e'],
+                borderRadius: 8
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { display: false }
+              },
+              scales: {
+                y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+                x: { grid: { display: false } }
+              }
+            }
+          });
+        }
+      },
+
+      // ================= EXPORT EXCEL (.XLSX) =================
+      async exportKompetensiExcel() {
+        if (typeof XLSX === 'undefined') {
+          this.showToast('Pustaka Excel sedang dimuat...', 'info');
+          return;
+        }
+        const dataToExport = this.kompetensiList.map((k, i) => ({
+          'No': i + 1,
+          'Nama Pegawai': k.nama_pegawai || this.namaPegawai(k.pegawai_id),
+          'NIP': k.nip || this.nipPegawai(k.pegawai_id),
+          'Kegiatan Diklat': k.nama_kegiatan || '',
+          'Rumpun': k.rumpun || '',
+          'Penyelenggara': k.penyelenggara || '',
+          'No. Sertifikat': k.no_sertifikat || '',
+          'Jumlah JP': k.jumlah_jp || 0,
+          'Tgl Mulai': this.formatDate(k.tgl_mulai),
+          'Tgl Selesai': this.formatDate(k.tgl_selesai),
+          'Status': k.status_verifikasi || 'disetujui'
+        }));
+        const ws = XLSX.utils.json_to_sheet(dataToExport);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Data_Kompetensi');
+        XLSX.writeFile(wb, `SI-KOMPETENSI_Portofolio_${new Date().getFullYear()}.xlsx`);
+        this.showToast('Data Portofolio Diklat berhasil diekspor ke Excel.', 'success');
+      },
+
+      async exportMatriksExcel() {
+        if (typeof XLSX === 'undefined') {
+          this.showToast('Pustaka Excel sedang dimuat...', 'info');
+          return;
+        }
+        const matriks = this.dashboardData.matriks_bulanan || [];
+        const rows = matriks.map((m, idx) => ({
+          'No': idx + 1,
+          'Nama Pegawai': m.nama_pegawai || this.namaPegawai(m.pegawai_id),
+          'NIP': m.nip || this.nipPegawai(m.pegawai_id),
+          'Status': m.status_pegawai || 'PNS',
+          'Unit Kerja': m.unit_nama || '',
+          'Jan': m.bulan[0], 'Feb': m.bulan[1], 'Mar': m.bulan[2], 'Apr': m.bulan[3],
+          'Mei': m.bulan[4], 'Jun': m.bulan[5], 'Jul': m.bulan[6], 'Agt': m.bulan[7],
+          'Sep': m.bulan[8], 'Okt': m.bulan[9], 'Nov': m.bulan[10], 'Des': m.bulan[11],
+          'Total JP': m.total_jp,
+          'Target Standar': m.target_jp + ' JP',
+          'Status Capaian': m.total_jp >= m.target_jp ? 'TUNTAS' : 'DALAM PROSES'
+        }));
+        const ws = XLSX.utils.json_to_sheet(rows);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Matriks_12_Bulan_JP');
+        XLSX.writeFile(wb, `SI-KOMPETENSI_Matriks_JP_${new Date().getFullYear()}.xlsx`);
+        this.showToast('Matriks Akumulasi JP berhasil diekspor ke Excel.', 'success');
+      },
+
+      // ================= CETAK ANALISIS PDF =================
+      cetakAnalisaPDF() {
+        if (typeof jspdf === 'undefined') {
+          this.showToast('Pustaka PDF sedang dimuat...', 'info');
+          return;
+        }
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('p', 'mm', 'a4');
+
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Analisis Kebutuhan Kompetensi Satpol PP & Damkar Trenggalek', 14, 16);
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Tahun Evaluasi: ${this.analisaTahun} | Dicetak: ${new Date().toLocaleDateString('id-ID')}`, 14, 23);
+
+        const rows = (this.analisaData.gap_details || []).map((g, i) => [
+          i + 1,
+          this.formatNamaPegawai(g.nama_pegawai),
+          g.nama_jabatan || '-',
+          g.nama_diklat || '-',
+          g.tingkat_kebutuhan || 'WAJIB'
+        ]);
+
+        doc.autoTable({
+          startY: 28,
+          head: [['No', 'Nama Pegawai', 'Jabatan', 'Standar Diklat Diperlukan', 'Urgensi']],
+          body: rows,
+          theme: 'grid',
+          headStyles: { fillColor: [5, 150, 105], textColor: 255, fontStyle: 'bold' },
+          styles: { fontSize: 8, cellPadding: 3 }
+        });
+
+        doc.save(`Laporan_Analisis_Kompetensi_${this.analisaTahun}.pdf`);
+        this.showToast('Laporan Analisis berhasil diunduh.', 'success');
+      }
+    }
+  };
+</script>

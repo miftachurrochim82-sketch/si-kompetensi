@@ -1,0 +1,98 @@
+<script>
+  window.SIKompetensiApi = {
+    methods: {
+      async loadDashboard() {
+        try {
+          const res = await this.callServer('dashboard');
+          if (res && res.success && res.data) {
+            this.dashboardData = Object.assign(this.dashboardData, res.data);
+            this.$nextTick(() => {
+              setTimeout(() => this.renderDashboardCharts(), 150);
+            });
+          }
+        } catch(e) { console.error('Gagal load dashboard:', e); }
+      },
+
+      async loadMasterSatelit() {
+        try {
+          const res = await this.callServer('get_master_satelit');
+          if (res && res.success && res.data) {
+            this.katalogList = res.data.katalog || [];
+            this.standarList = res.data.standar_kompetensi || [];
+            this.referensiList = res.data.referensi || [];
+            this.jadwalList = res.data.jadwal || [];
+          }
+        } catch(e) { console.error('Gagal load master satelit:', e); }
+      },
+
+      async loadSimpegLookup() {
+        try {
+          const res = await this.callServer('get_simpeg_lookup');
+          if (res && res.success && res.data) {
+            this.simpegLookup = res.data;
+          }
+        } catch(e) { console.error('Gagal load simpeg lookup:', e); }
+      },
+
+      async loadJadwal() {
+        this.jadwalLoading = true;
+        try {
+          const res = await this.callServer('get_jadwal_list');
+          if (res && res.success) {
+            this.jadwalList = res.data || [];
+          }
+        } catch(e) { console.error('Gagal load jadwal:', e); }
+        finally { this.jadwalLoading = false; }
+      },
+
+      async loadKualifikasi() {
+        this.kualifikasiLoading = true;
+        try {
+          const res = await this.callServer('get_kualifikasi_list');
+          if (res && res.success) {
+            this.kualifikasiList = res.data || [];
+          }
+        } catch(e) { console.error('Gagal load kualifikasi:', e); }
+        finally { this.kualifikasiLoading = false; }
+      },
+
+      async loadKompetensi(page = 1) {
+        this.kompetensiLoading = true;
+        try {
+          const res = await this.callServer('get_riwayat_list', {
+            page: page,
+            limit: 50,
+            search: this.kompetensiSearch,
+            filters: { rumpun: this.filterRumpun, status: this.filterStatusVerif }
+          });
+          if (res && res.success) {
+            this.kompetensiList = res.data || [];
+          }
+        } catch(e) { console.error('Gagal load riwayat:', e); }
+        finally { this.kompetensiLoading = false; }
+      },
+
+      async loadUsulan() {
+        this.usulanLoading = true;
+        try {
+          const res = await this.callServer('get_usulan_list');
+          if (res && res.success) {
+            this.usulanList = res.data || [];
+          }
+        } catch(e) { console.error('Gagal load usulan:', e); }
+        finally { this.usulanLoading = false; }
+      },
+
+      async loadAnalisa() {
+        this.analisaLoading = true;
+        try {
+          const res = await this.callServer('analytics', { tahun: this.analisaTahun });
+          if (res && res.success) {
+            this.analisaData = Object.assign(this.analisaData, res.data || {});
+          }
+        } catch(e) { console.error('Gagal load analisa:', e); }
+        finally { this.analisaLoading = false; }
+      }
+    }
+  };
+</script>
