@@ -144,11 +144,13 @@ var ALL_SHEET_HEADERS = {
     'created_at', 'updated_at', 'created_by', 'updated_by', 'deleted_at'
   ],
 
-  // 8. Usulan Pelatihan Bottom-Up (AKD / Analisis Kebutuhan Diklat Unit)
+  // 8. Rencana Pengembangan Kompetensi Tahunan (Annual Competency Plan & AKD)
   T_USULAN_DIKLAT: [
-    'id', 'pegawai_id', 'diklat_id', 'nama_diklat_usulan', 'rumpun', 'target_penyelenggara',
-    'alasan_usulan', 'urgensi', 'estimasi_biaya', 'status_usulan', 'catatan_pimpinan',
-    'tgl_pengajuan', 'tahun_anggaran_target',
+    'id', 'tahun_anggaran', 'periode_triwulan', 'unit_id', 'jabatan_id', 'pegawai_id',
+    'diklat_id', 'nama_program_diklat', 'nama_diklat_usulan', 'rumpun', 'metode', 'penyelenggara', 'target_penyelenggara',
+    'target_jp', 'estimasi_biaya', 'sumber_dana', 'urgensi', 'alasan_justifikasi', 'alasan_usulan',
+    'status_rencana', 'status_usulan', 'catatan_pimpinan', 'catatan_evaluasi',
+    'tgl_pengajuan', 'tgl_penetapan', 'tahun_anggaran_target',
     'created_at', 'updated_at', 'created_by', 'updated_by', 'deleted_at'
   ],
 

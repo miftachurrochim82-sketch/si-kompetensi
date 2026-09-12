@@ -131,7 +131,36 @@
         this.showToast('Matriks Akumulasi JP berhasil diekspor ke Excel.', 'success');
       },
 
+            async exportRencanaExcel() {
+        if (typeof XLSX === "undefined") {
+          this.showToast("Pustaka Excel sedang dimuat...", "info");
+          return;
+        }
+        const dataToExport = (this.filteredRencanaList || []).map((u, i) => ({
+          "No": i + 1,
+          "Tahun Anggaran": u.tahun_anggaran || u.tahun_anggaran_target || 2026,
+          "Periode": u.periode_triwulan || "TW I",
+          "Unit Kerja": this.namaUnit(u.unit_id) || "Semua Bidang",
+          "Sasaran Personel": u.pegawai_id ? (this.namaPegawai(u.pegawai_id) || u.nama_pegawai) : "Semua Personel",
+          "Program Pelatihan Terencana": u.nama_program_diklat || u.nama_diklat_usulan || "",
+          "Rumpun": u.rumpun || "",
+          "Metode": u.metode || "Klasikal",
+          "Target JP": Number(u.target_jp || u.jumlah_jp || 20),
+          "Penyelenggara": u.penyelenggara || u.target_penyelenggara || "",
+          "Sumber Dana": u.sumber_dana || "APBD Kabupaten Trenggalek",
+          "Estimasi Biaya (Rp)": Number(u.estimasi_biaya || 0),
+          "Status Realisasi": u.status_rencana || (u.is_terealisasi ? "Terealisasi" : "Direncanakan"),
+          "Alasan / Justifikasi": u.alasan_justifikasi || u.alasan_usulan || ""
+        }));
+        const ws = XLSX.utils.json_to_sheet(dataToExport);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Rencana_Diklat_Tahunan");
+        XLSX.writeFile(wb, `SI-KOMPETENSI_Rencana_Diklat_${new Date().getFullYear()}.xlsx`);
+        this.showToast("Rekap Rencana Diklat Tahunan berhasil diekspor ke Excel.", "success");
+      },
+
       // ================= CETAK ANALISIS PDF =================
+
       cetakAnalisaPDF() {
         if (typeof jspdf === 'undefined') {
           this.showToast('Pustaka PDF sedang dimuat...', 'info');

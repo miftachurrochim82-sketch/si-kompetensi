@@ -303,20 +303,20 @@
     </div>
   </div>
 
-  <!-- Modal 5: Form Pengajuan Usulan Diklat (AKD) -->
+  <!-- Modal 5: Form Rencana Diklat Tahunan (Annual Competency Plan) -->
   <div v-if="showUsulanForm" class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 md:p-8 bg-slate-950/75 backdrop-blur-md overflow-y-auto">
     <div class="relative w-full max-w-2xl bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col my-auto max-h-[92vh]">
       
       <div class="px-7 py-5 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-100 dark:border-slate-700/60 flex items-center justify-between shrink-0">
         <div class="flex items-center gap-3.5">
           <div class="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center text-2xl shadow-sm">
-            <i class="fa-solid fa-paper-plane"></i>
+            <i class="fa-solid fa-clipboard-list"></i>
           </div>
           <div>
             <h3 class="font-black text-base sm:text-lg text-slate-900 dark:text-white">
-              {{ usulanForm.id ? "Edit Usulan Diklat" : "Form Pengajuan Kebutuhan Diklat (AKD)" }}
+              {{ usulanForm.id ? "Edit Rencana Diklat Tahunan" : "Susun Rencana Diklat Tahunan Baru" }}
             </h3>
-            <p class="text-xs text-slate-500 dark:text-slate-400">Usulan bottom-up perencanaan DPA dinas</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Target pengembangan kompetensi berbasis kebutuhan jabatan</p>
           </div>
         </div>
         <button @click="showUsulanForm = false" class="w-9 h-9 rounded-full bg-slate-200/60 dark:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-white flex items-center justify-center transition text-base">
@@ -325,55 +325,125 @@
       </div>
 
       <form @submit.prevent="saveUsulan" class="p-6 sm:p-7 overflow-y-auto space-y-5 flex-1 text-sm">
-        <div>
-          <label class="block font-bold text-sm text-slate-800 dark:text-slate-200 mb-2">Pegawai yang Diusulkan *</label>
-          <select v-model="usulanForm.pegawai_id" required class="input text-sm w-full py-3 px-4 rounded-2xl font-medium">
-            <option value="" disabled>-- Pilih Pegawai --</option>
-            <option v-for="p in sortedPegawaiList" :key="p.id" :value="p.id">{{ p.nama_lengkap }}</option>
-          </select>
-        </div>
-
-        <div>
-          <label class="block font-bold text-sm text-slate-800 dark:text-slate-200 mb-2">Nama Program Diklat yang Diusulkan *</label>
-          <input type="text" v-model="usulanForm.nama_diklat_usulan" required placeholder="Contoh: Diklat Penyelidikan Tipiring Lanjutan..." class="input text-sm w-full py-3 px-4 rounded-2xl font-medium">
-        </div>
-
+        <!-- 1. Grid Tahun Anggaran & Periode Triwulan -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
           <div>
-            <label class="block font-bold text-sm text-slate-800 dark:text-slate-200 mb-2">Rumpun *</label>
+            <label class="block font-bold text-sm text-slate-800 dark:text-slate-200 mb-2">Tahun Anggaran *</label>
+            <input type="number" v-model.number="usulanForm.tahun_anggaran" required min="2025" max="2035" class="input text-sm w-full py-3 px-4 rounded-2xl font-bold">
+          </div>
+          <div>
+            <label class="block font-bold text-sm text-slate-800 dark:text-slate-200 mb-2">Target Periode Triwulan *</label>
+            <select v-model="usulanForm.periode_triwulan" required class="input text-sm w-full py-3 px-4 rounded-2xl font-medium">
+              <option value="TW I (Jan - Mar)">TW I (Jan - Mar)</option>
+              <option value="TW II (Apr - Jun)">TW II (Apr - Jun)</option>
+              <option value="TW III (Jul - Sep)">TW III (Jul - Sep)</option>
+              <option value="TW IV (Okt - Des)">TW IV (Okt - Des)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 2. Grid Bidang & Sasaran Jabatan / Pegawai -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+          <div>
+            <label class="block font-bold text-sm text-slate-800 dark:text-slate-200 mb-2">Bidang / Unit Kerja</label>
+            <select v-model="usulanForm.unit_id" class="input text-sm w-full py-3 px-4 rounded-2xl font-medium">
+              <option value="">Semua Bidang Satpol PP &amp; Damkar</option>
+              <option v-for="u in simpegLookup.unit" :key="u.id" :value="u.id">{{ u.nama_unit }}</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-bold text-sm text-slate-800 dark:text-slate-200 mb-2">Sasaran Personel (Opsional)</label>
+            <select v-model="usulanForm.pegawai_id" class="input text-sm w-full py-3 px-4 rounded-2xl font-medium">
+              <option value="">-- Terbuka untuk Seluruh Personel Bidang --</option>
+              <option v-for="p in sortedPegawaiList" :key="p.id" :value="p.id">{{ p.nama_lengkap }}</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 3. Nama Program Pelatihan Terencana -->
+        <div>
+          <label class="block font-bold text-sm text-slate-800 dark:text-slate-200 mb-2">Nama Program Pelatihan Terencana *</label>
+          <input type="text" v-model="usulanForm.nama_program_diklat" required placeholder="Contoh: Diklat Investigasi Kebakaran &amp; Penyelamatan..." class="input text-sm w-full py-3 px-4 rounded-2xl font-medium">
+        </div>
+
+        <!-- 4. Grid Rumpun & Metode Pelatihan -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+          <div>
+            <label class="block font-bold text-sm text-slate-800 dark:text-slate-200 mb-2">Rumpun Kompetensi *</label>
             <select v-model="usulanForm.rumpun" required class="input text-sm w-full py-3 px-4 rounded-2xl font-medium">
               <option v-for="r in optionsRumpun" :key="r.id" :value="r.nama_nilai">{{ r.nama_nilai }}</option>
             </select>
           </div>
           <div>
-            <label class="block font-bold text-sm text-slate-800 dark:text-slate-200 mb-2">Target Penyelenggara</label>
-            <input type="text" v-model="usulanForm.target_penyelenggara" placeholder="BPSDM Jatim / Kemendagri..." class="input text-sm w-full py-3 px-4 rounded-2xl font-medium">
+            <label class="block font-bold text-sm text-slate-800 dark:text-slate-200 mb-2">Metode Pelatihan</label>
+            <select v-model="usulanForm.metode" class="input text-sm w-full py-3 px-4 rounded-2xl font-medium">
+              <option value="Klasikal">Klasikal (Tatap Muka)</option>
+              <option value="Non-Klasikal / E-Learning">Non-Klasikal (E-Learning / MOOC)</option>
+              <option value="Blended Learning">Blended Learning</option>
+            </select>
           </div>
         </div>
 
+        <!-- 5. Grid Target JP & Penyelenggara -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
           <div>
-            <label class="block font-bold text-sm text-slate-800 dark:text-slate-200 mb-2">Tingkat Urgensi *</label>
-            <select v-model="usulanForm.urgensi" required class="input text-sm w-full py-3 px-4 rounded-2xl font-bold">
-              <option v-for="u in optionsUrgensi" :key="u.id" :value="u.nama_nilai">{{ u.nama_nilai }}</option>
+            <label class="block font-bold text-sm text-slate-800 dark:text-slate-200 mb-2">Target JP (Jam Pelajaran) *</label>
+            <input type="number" v-model.number="usulanForm.target_jp" required min="1" placeholder="20" class="input text-sm w-full py-3 px-4 rounded-2xl font-bold">
+          </div>
+          <div>
+            <label class="block font-bold text-sm text-slate-800 dark:text-slate-200 mb-2">Target Penyelenggara</label>
+            <input type="text" v-model="usulanForm.penyelenggara" placeholder="BPSDM Jatim / Kemendagri / Basarnas..." class="input text-sm w-full py-3 px-4 rounded-2xl font-medium">
+          </div>
+        </div>
+
+        <!-- 6. Grid Sumber Dana & Estimasi Biaya -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+          <div>
+            <label class="block font-bold text-sm text-slate-800 dark:text-slate-200 mb-2">Sumber Pendanaan</label>
+            <select v-model="usulanForm.sumber_dana" class="input text-sm w-full py-3 px-4 rounded-2xl font-medium">
+              <option value="APBD Kabupaten Trenggalek">APBD Kabupaten Trenggalek</option>
+              <option value="Beasiswa BPSDM Provinsi Jawa Timur">Beasiswa BPSDM Provinsi Jawa Timur</option>
+              <option value="Bantuan Kemendagri / Pemerintah Pusat">Bantuan Kemendagri / Pemerintah Pusat</option>
+              <option value="Non-Budgeting / MOOC Gratis">Non-Budgeting / MOOC Gratis</option>
+              <option value="Mandiri Pegawai">Mandiri Pegawai</option>
             </select>
           </div>
           <div>
             <label class="block font-bold text-sm text-slate-800 dark:text-slate-200 mb-2">Estimasi Biaya (Rp)</label>
-            <input type="number" v-model="usulanForm.estimasi_biaya" placeholder="0" class="input text-sm w-full py-3 px-4 rounded-2xl font-medium">
+            <input type="number" v-model.number="usulanForm.estimasi_biaya" placeholder="0" class="input text-sm w-full py-3 px-4 rounded-2xl font-medium">
           </div>
         </div>
 
-        <div>
-          <label class="block font-bold text-sm text-slate-800 dark:text-slate-200 mb-2">Alasan Kebutuhan / Justifikasi Teknis *</label>
-          <textarea v-model="usulanForm.alasan_usulan" required rows="3" placeholder="Jelaskan kebutuhan penunjang tugas operasional di pos/bidang..." class="input text-sm w-full py-3 px-4 rounded-2xl"></textarea>
+        <!-- 7. Status Rencana & Keselarasan -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+          <div>
+            <label class="block font-bold text-sm text-slate-800 dark:text-slate-200 mb-2">Status Rencana *</label>
+            <select v-model="usulanForm.status_rencana" class="input text-sm w-full py-3 px-4 rounded-2xl font-bold text-emerald-700 dark:text-emerald-300">
+              <option value="Direncanakan">Direncanakan</option>
+              <option value="Terjadwal">Terjadwal</option>
+              <option value="Terealisasi">Terealisasi (Tuntas)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-bold text-sm text-slate-800 dark:text-slate-200 mb-2">Tingkat Urgensi</label>
+            <select v-model="usulanForm.urgensi" class="input text-sm w-full py-3 px-4 rounded-2xl font-bold">
+              <option v-for="u in optionsUrgensi" :key="u.id" :value="u.nama_nilai">{{ u.nama_nilai }}</option>
+            </select>
+          </div>
         </div>
 
+        <!-- 8. Alasan Kebutuhan & Justifikasi -->
+        <div>
+          <label class="block font-bold text-sm text-slate-800 dark:text-slate-200 mb-2">Alasan Kebutuhan / Justifikasi Jabatan</label>
+          <textarea v-model="usulanForm.alasan_justifikasi" rows="3" placeholder="Jelaskan kebutuhan penunjang tugas operasional dan target keselarasan jabatan..." class="input text-sm w-full py-3 px-4 rounded-2xl"></textarea>
+        </div>
+
+        <!-- Footer Buttons -->
         <div class="pt-5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-3.5">
           <button type="button" @click="showUsulanForm = false" class="btn btn-secondary text-sm px-6 py-3 rounded-2xl">Batal</button>
           <button type="submit" :disabled="usulanSaving" class="btn btn-primary text-sm px-8 py-3 rounded-2xl font-bold flex items-center gap-2.5 shadow-lg shadow-rose-900/20">
             <i v-if="usulanSaving" class="fa-solid fa-circle-notch animate-spin"></i>
-            <span>{{ usulanSaving ? "Mengirim..." : "Kirim Usulan" }}</span>
+            <span>{{ usulanSaving ? "Menyimpan..." : "Simpan Rencana" }}</span>
           </button>
         </div>
       </form>

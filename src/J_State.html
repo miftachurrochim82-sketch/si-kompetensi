@@ -88,15 +88,36 @@
         verifSaving: false,
         verifForm: { status: "disetujui", catatan: "" },
 
-        // State 5: Usulan Diklat (T_USULAN_DIKLAT)
+        // State 5: Rencana Diklat Tahunan (T_USULAN_DIKLAT)
         usulanList: [],
         usulanLoading: false,
         showUsulanForm: false,
         usulanSaving: false,
+        filterRencanaSearch: "",
+        filterRencanaTw: "",
+        filterRencanaStatus: "",
         usulanForm: {
-          id: "", pegawai_id: "", diklat_id: "", nama_diklat_usulan: "", rumpun: "Teknis Pemadam & Rescue",
-          target_penyelenggara: "BPSDM Jawa Timur", alasan_usulan: "", urgensi: "Sangat Mendesak (Prioritas 1)",
-          estimasi_biaya: 0, status_usulan: "diajukan"
+          id: "",
+          tahun_anggaran: new Date().getFullYear(),
+          periode_triwulan: "TW I (Jan - Mar)",
+          unit_id: "",
+          jabatan_id: "",
+          pegawai_id: "",
+          diklat_id: "",
+          nama_program_diklat: "",
+          nama_diklat_usulan: "",
+          rumpun: "Teknis Pemadam & Rescue",
+          metode: "Klasikal",
+          penyelenggara: "BPSDM Provinsi Jawa Timur",
+          target_penyelenggara: "BPSDM Provinsi Jawa Timur",
+          target_jp: 20,
+          estimasi_biaya: 0,
+          sumber_dana: "APBD Kabupaten Trenggalek",
+          urgensi: "Sangat Mendesak (Prioritas 1)",
+          alasan_justifikasi: "",
+          alasan_usulan: "",
+          status_rencana: "Direncanakan",
+          status_usulan: "Direncanakan"
         },
         showReviewUsulanModal: false,
         selectedUsulan: null,
@@ -149,6 +170,26 @@
     },
 
     computed: {
+      filteredRencanaList() {
+        const q = String(this.filterRencanaSearch || "").toLowerCase().trim();
+        const tw = String(this.filterRencanaTw || "").trim();
+        const st = String(this.filterRencanaStatus || "").trim();
+
+        return (this.usulanList || []).filter(u => {
+          const prog = String(u.nama_program_diklat || u.nama_diklat_usulan || "").toLowerCase();
+          const peg = String(this.namaPegawai(u.pegawai_id) || "").toLowerCase();
+          const unit = String(this.namaUnit(u.unit_id) || "").toLowerCase();
+          const matchQ = !q || prog.includes(q) || peg.includes(q) || unit.includes(q);
+
+          const triwulan = String(u.periode_triwulan || "");
+          const matchTw = !tw || triwulan.includes(tw);
+
+          const status = String(u.status_rencana || (u.is_terealisasi ? "Terealisasi" : "Direncanakan"));
+          const matchSt = !st || status.toLowerCase() === st.toLowerCase();
+
+          return matchQ && matchTw && matchSt;
+        });
+      },
       showAuthSplash() {
         return !this.token && (this.isProcessing || this.isSsoLoading || this.hasSsoTicket);
       },
