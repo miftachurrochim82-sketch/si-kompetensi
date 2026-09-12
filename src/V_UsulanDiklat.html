@@ -31,7 +31,7 @@
             <tr v-for="(u, idx) in usulanList" :key="u.id" class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
               <td class="py-3 px-3 font-bold text-slate-400">{{ idx + 1 }}</td>
               <td class="py-3 px-4">
-                <div class="font-bold text-slate-900 dark:text-white">{{ u.nama_pegawai || namaPegawai(u.pegawai_id) }}</div>
+                <div class="font-bold text-slate-900 dark:text-white">{{ namaPegawai(u.pegawai_id) || formatNamaPegawai(u.nama_pegawai) }}</div>
                 <div class="text-[10px] text-slate-400">Pengajuan: {{ formatDate(u.tgl_pengajuan) }}</div>
               </td>
               <td class="py-3 px-4">

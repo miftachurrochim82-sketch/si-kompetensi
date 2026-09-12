@@ -423,7 +423,7 @@
             <tr v-for="(m, idx) in (dashboardData.matriks_bulanan || []).slice(0, 15)" :key="m.pegawai_id" class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
               <td class="py-2 px-3 font-bold text-slate-400">{{ idx + 1 }}</td>
               <td class="py-2 px-3">
-                <div class="font-bold text-slate-900 dark:text-white">{{ m.nama_pegawai }}</div>
+                <div class="font-bold text-slate-900 dark:text-white">{{ namaPegawai(m.pegawai_id) || formatNamaPegawai(m.nama_pegawai) }}</div>
                 <div class="text-[10px] text-slate-400">{{ m.nip }} • {{ m.unit_nama }}</div>
               </td>
               <td class="py-2 px-3">

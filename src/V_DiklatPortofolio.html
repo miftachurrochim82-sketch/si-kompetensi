@@ -154,7 +154,7 @@
               <tr v-for="(k, idx) in kompetensiList" :key="k.id" class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
                 <td class="py-3 px-3 font-bold text-slate-400">{{ idx + 1 }}</td>
                 <td class="py-3 px-4">
-                  <div class="font-bold text-slate-900 dark:text-white text-sm">{{ k.nama_pegawai || namaPegawai(k.pegawai_id) }}</div>
+                  <div class="font-bold text-slate-900 dark:text-white text-sm">{{ namaPegawai(k.pegawai_id) || formatNamaPegawai(k.nama_pegawai) }}</div>
                   <div class="text-[10px] text-slate-400 font-mono">{{ k.nip || nipPegawai(k.pegawai_id) }}</div>
                 </td>
                 <td class="py-3 px-4">

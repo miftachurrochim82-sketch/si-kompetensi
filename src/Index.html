@@ -441,6 +441,18 @@
         },
 
         // ================= LOOKUP HELPERS =================
+        formatNamaPegawai(str) {
+          if (!str || str === '-') return '-';
+          const s = String(str).trim();
+          if (s.includes(',')) {
+            const parts = s.split(',');
+            const namaDepan = parts[0].trim().toLowerCase().replace(/(^|\s)\S/g, c => c.toUpperCase());
+            const gelar = parts.slice(1).join(',').trim();
+            return namaDepan + ', ' + gelar;
+          }
+          return s.toLowerCase().replace(/(^|\s)\S/g, c => c.toUpperCase());
+        },
+
         namaPegawai(id) {
           if (!id) return '-';
           const list = (this.simpegLookup && this.simpegLookup.pegawai && this.simpegLookup.pegawai.length)
@@ -453,14 +465,14 @@
             String(x.nip || '').trim().toLowerCase() === target ||
             String(x.nama_lengkap || '').trim().toLowerCase() === target
           );
-          if (p) return p.nama_lengkap || p.nama || p.display_name || id;
+          if (p) return this.formatNamaPegawai(p.nama_lengkap || p.nama || p.display_name || id);
 
           const fb = (this.masterPegawaiList || []).find(x =>
             String(x.id || '').trim().toLowerCase() === target ||
             String(x.pegawai_id || '').trim().toLowerCase() === target ||
             String(x.nip || '').trim().toLowerCase() === target
           );
-          return fb ? (fb.nama_lengkap || fb.nama || id) : id;
+          return fb ? this.formatNamaPegawai(fb.nama_lengkap || fb.nama || id) : id;
         },
 
         nipPegawai(id) {
