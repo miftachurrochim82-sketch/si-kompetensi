@@ -303,6 +303,20 @@
           // SIMPEG Lookup (Pegawai, Unit, Jabatan)
           simpegLookup: { pegawai: [], unit: [], jabatan: [] },
 
+          // Master Pegawai Default (Fallback & Instant Display)
+          masterPegawaiList: [
+            { id: 'PEG-001', pegawai_id: 'PEG-001', nip: '197709081998021001', nama_lengkap: 'PURWO EDI PRAWITO, S.Sos.', status_pegawai: 'PNS' },
+            { id: 'PEG-002', pegawai_id: 'PEG-002', nip: '198205122005011002', nama_lengkap: 'MIFTACHUR ROCHIM, S.AP.', status_pegawai: 'PNS' },
+            { id: 'PEG-003', pegawai_id: 'PEG-003', nip: '198603152010011003', nama_lengkap: 'AGUS PRASETYO, S.H.', status_pegawai: 'PNS' },
+            { id: 'PEG-004', pegawai_id: 'PEG-004', nip: '198911202014021004', nama_lengkap: 'BAMBANG HERMAWAN', status_pegawai: 'PNS' },
+            { id: 'PEG-005', pegawai_id: 'PEG-005', nip: '199204102019031005', nama_lengkap: 'DENI KURNIAWAN, S.Tr.IP.', status_pegawai: 'PNS' },
+            { id: 'PEG-006', pegawai_id: 'PEG-006', nip: '199507182020121006', nama_lengkap: 'EKO WAHYUDI', status_pegawai: 'PNS' },
+            { id: 'PEG-007', pegawai_id: 'PEG-007', nip: '199702252022031007', nama_lengkap: 'FAJAR NUGROHO', status_pegawai: 'PNS' },
+            { id: 'PEG-008', pegawai_id: 'PEG-008', nip: '199906302024051008', nama_lengkap: 'GILANG RAMADHAN', status_pegawai: 'PNS' },
+            { id: 'PEG-009', pegawai_id: 'PEG-009', nip: '199408122023211009', nama_lengkap: 'HENDRA WIJAYA', status_pegawai: 'PPPK' },
+            { id: 'PEG-010', pegawai_id: 'PEG-010', nip: '199612052023211010', nama_lengkap: 'IRWAN SANTOSO', status_pegawai: 'PPPK' }
+          ],
+
           // Modal Forms Master Satelit
           showKatalogModal: false,
           katalogSaving: false,
@@ -439,7 +453,14 @@
             String(x.nip || '').trim().toLowerCase() === target ||
             String(x.nama_lengkap || '').trim().toLowerCase() === target
           );
-          return p ? (p.nama_lengkap || p.nama || p.display_name || id) : id;
+          if (p) return p.nama_lengkap || p.nama || p.display_name || id;
+
+          const fb = (this.masterPegawaiList || []).find(x =>
+            String(x.id || '').trim().toLowerCase() === target ||
+            String(x.pegawai_id || '').trim().toLowerCase() === target ||
+            String(x.nip || '').trim().toLowerCase() === target
+          );
+          return fb ? (fb.nama_lengkap || fb.nama || id) : id;
         },
 
         nipPegawai(id) {
@@ -453,7 +474,14 @@
             String(x.pegawai_id || '').trim().toLowerCase() === target ||
             String(x.nip || '').trim().toLowerCase() === target
           );
-          return p ? (p.nip || id) : id;
+          if (p) return p.nip || id;
+
+          const fb = (this.masterPegawaiList || []).find(x =>
+            String(x.id || '').trim().toLowerCase() === target ||
+            String(x.pegawai_id || '').trim().toLowerCase() === target ||
+            String(x.nip || '').trim().toLowerCase() === target
+          );
+          return fb ? (fb.nip || id) : id;
         },
 
         namaJabatan(id) {
@@ -1186,8 +1214,8 @@
           }
           const dataToExport = this.kompetensiList.map((k, i) => ({
             'No': i + 1,
-            'Nama Pegawai': this.namaPegawai(k.pegawai_id),
-            'NIP': k.pegawai_id,
+            'Nama Pegawai': k.nama_pegawai || this.namaPegawai(k.pegawai_id),
+            'NIP': k.nip || this.nipPegawai(k.pegawai_id),
             'Kegiatan Diklat': k.nama_kegiatan || '',
             'Rumpun': k.rumpun || '',
             'Penyelenggara': k.penyelenggara || '',

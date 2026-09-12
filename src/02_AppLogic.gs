@@ -385,16 +385,31 @@ function enrichWithPegawai_(list) {
   try {
     var simpeg = getSimpegLookup_();
     var pegawaiList = (simpeg && simpeg.data && simpeg.data.pegawai) || [];
+    if (!pegawaiList.length && typeof FALLBACK_PEGAWAI !== 'undefined') {
+      pegawaiList = FALLBACK_PEGAWAI.slice();
+    }
+
     var pegawaiMap = {};
     pegawaiList.forEach(function(p) {
       if (p.id) pegawaiMap[String(p.id).trim().toLowerCase()] = p;
       if (p.pegawai_id) pegawaiMap[String(p.pegawai_id).trim().toLowerCase()] = p;
       if (p.nip) pegawaiMap[String(p.nip).trim().toLowerCase()] = p;
+      if (p.nama_lengkap) pegawaiMap[String(p.nama_lengkap).trim().toLowerCase()] = p;
     });
 
+    if (typeof FALLBACK_PEGAWAI !== 'undefined') {
+      FALLBACK_PEGAWAI.forEach(function(p) {
+        var pid = String(p.id).trim().toLowerCase();
+        if (!pegawaiMap[pid]) pegawaiMap[pid] = p;
+        if (p.nip && !pegawaiMap[String(p.nip).trim().toLowerCase()]) {
+          pegawaiMap[String(p.nip).trim().toLowerCase()] = p;
+        }
+      });
+    }
+
     return list.map(function(item) {
-      var key = String(item.pegawai_id || item.id || '').trim().toLowerCase();
-      var p = pegawaiMap[key];
+      var targetId = String(item.pegawai_id || item.id_pegawai || '').trim().toLowerCase();
+      var p = targetId ? pegawaiMap[targetId] : null;
       if (p) {
         item.nama_pegawai = p.nama_lengkap || p.nama || item.pegawai_id;
         item.nip = p.nip || item.pegawai_id;

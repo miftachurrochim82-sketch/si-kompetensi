@@ -1,3 +1,17 @@
+
+var FALLBACK_PEGAWAI = [
+  { id: "PEG-001", pegawai_id: "PEG-001", nip: "197709081998021001", nama_lengkap: "PURWO EDI PRAWITO, S.Sos.", nama: "PURWO EDI PRAWITO, S.Sos.", pangkat_golongan: "Pembina (IV/a)", unit_id: "UNT-001", jabatan_id: "JAB-001", status_pegawai: "PNS", is_ppns: true },
+  { id: "PEG-002", pegawai_id: "PEG-002", nip: "198205122005011002", nama_lengkap: "MIFTACHUR ROCHIM, S.AP.", nama: "MIFTACHUR ROCHIM, S.AP.", pangkat_golongan: "Penata Tk.I (III/d)", unit_id: "UNT-002", jabatan_id: "JAB-002", status_pegawai: "PNS", is_ppns: true },
+  { id: "PEG-003", pegawai_id: "PEG-003", nip: "198603152010011003", nama_lengkap: "AGUS PRASETYO, S.H.", nama: "AGUS PRASETYO, S.H.", pangkat_golongan: "Penata (III/c)", unit_id: "UNT-002", jabatan_id: "JAB-003", status_pegawai: "PNS", is_ppns: true },
+  { id: "PEG-004", pegawai_id: "PEG-004", nip: "198911202014021004", nama_lengkap: "BAMBANG HERMAWAN", nama: "BAMBANG HERMAWAN", pangkat_golongan: "Penata Muda Tk.I (III/b)", unit_id: "UNT-003", jabatan_id: "JAB-004", status_pegawai: "PNS", is_ppns: false, kualifikasi_damkar: "Damkar I, SCBA" },
+  { id: "PEG-005", pegawai_id: "PEG-005", nip: "199204102019031005", nama_lengkap: "DENI KURNIAWAN, S.Tr.IP.", nama: "DENI KURNIAWAN, S.Tr.IP.", pangkat_golongan: "Penata Muda (III/a)", unit_id: "UNT-004", jabatan_id: "JAB-005", status_pegawai: "PNS", is_ppns: false },
+  { id: "PEG-006", pegawai_id: "PEG-006", nip: "199507182020121006", nama_lengkap: "EKO WAHYUDI", nama: "EKO WAHYUDI", pangkat_golongan: "Pengatur Tk.I (II/d)", unit_id: "UNT-003", jabatan_id: "JAB-006", status_pegawai: "PNS", is_ppns: false, kualifikasi_damkar: "Water Rescue" },
+  { id: "PEG-007", pegawai_id: "PEG-007", nip: "199702252022031007", nama_lengkap: "FAJAR NUGROHO", nama: "FAJAR NUGROHO", pangkat_golongan: "Pengatur (II/c)", unit_id: "UNT-003", jabatan_id: "JAB-007", status_pegawai: "PNS", is_ppns: false, kualifikasi_damkar: "Vertical Rescue" },
+  { id: "PEG-008", pegawai_id: "PEG-008", nip: "199906302024051008", nama_lengkap: "GILANG RAMADHAN", nama: "GILANG RAMADHAN", pangkat_golongan: "Pengatur Muda Tk.I (II/b)", unit_id: "UNT-002", jabatan_id: "JAB-008", status_pegawai: "PNS", is_ppns: false },
+  { id: "PEG-009", pegawai_id: "PEG-009", nip: "199408122023211009", nama_lengkap: "HENDRA WIJAYA", nama: "HENDRA WIJAYA", pangkat_golongan: "Golongan VII", unit_id: "UNT-003", jabatan_id: "JAB-009", status_pegawai: "PPPK", is_ppns: false, kualifikasi_damkar: "Damkar I" },
+  { id: "PEG-010", pegawai_id: "PEG-010", nip: "199612052023211010", nama_lengkap: "IRWAN SANTOSO", nama: "IRWAN SANTOSO", pangkat_golongan: "Golongan VII", unit_id: "UNT-003", jabatan_id: "JAB-010", status_pegawai: "PPPK", is_ppns: false, kualifikasi_damkar: "Water Rescue" }
+];
+
 // ============================================================
 // SI-KOMPETENSI - 01_ConfigAndBridge.gs (v4.0.0 — 8-Sheet Ideal Architecture)
 // Sistem Informasi Manajemen Portofolio, Jadwal & Lisensi Khusus ASN
@@ -234,7 +248,12 @@ function getSheetData_(sheetName) {
     }
   }
 
-  if (!sheet || sheet.getLastRow() <= 1) return [];
+  if (!sheet || sheet.getLastRow() <= 1) {
+    if (sheetName === "PEGAWAI" || sheetName === "M_PEGAWAI" || sheetName === "pegawai") {
+      return FALLBACK_PEGAWAI.slice();
+    }
+    return [];
+  }
 
   var values = sheet.getDataRange().getValues();
   var headers = values[0].map(function(h) { return String(h).trim(); });
