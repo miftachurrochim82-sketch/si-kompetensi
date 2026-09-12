@@ -138,7 +138,7 @@
             <select v-model="jadwalPenyelenggaraSelect" class="input text-sm w-full py-3 px-4 rounded-2xl font-medium">
               <option v-for="peny in optionsPenyelenggara" :key="peny" :value="peny">{{ peny }}</option>
             </select>
-            <div v-if="jadwalPenyelenggaraSelect === "Lainnya (Tulis Manual)..."" class="pt-2">
+            <div v-if="jadwalPenyelenggaraSelect === 'Lainnya (Tulis Manual)...'" class="pt-2">
               <input type="text" v-model="jadwalPenyelenggaraCustom" required placeholder="Ketik nama lembaga penyelenggara di sini..." class="input text-sm w-full py-3 px-4 rounded-2xl border-emerald-500 bg-emerald-50/30 dark:bg-emerald-950/20 font-medium">
             </div>
           </div>
