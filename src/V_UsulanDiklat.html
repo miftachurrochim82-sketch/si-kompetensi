@@ -1,0 +1,69 @@
+<section v-if="currentPage === 'usulan_diklat'" class="space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div>
+        <h2 class="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+          <i class="fa-solid fa-paper-plane text-rose-500"></i>
+          <span>Pengajuan Usulan Diklat (AKD Unit Kerja)</span>
+        </h2>
+        <p class="text-xs text-slate-500 mt-1">Formulir usulan pelatihan bottom-up dari personel/seksi untuk diakomodasi dalam DPA OPD tahun anggaran berikutnya.</p>
+      </div>
+      <button @click="openUsulanForm()" class="btn btn-primary text-xs px-3.5 py-2 flex items-center gap-2 shadow-sm">
+        <i class="fa-solid fa-plus"></i>
+        <span>Ajukan Usulan Baru</span>
+      </button>
+    </div>
+
+    <!-- Table Usulan Diklat -->
+    <div class="card p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+      <div class="overflow-x-auto">
+        <table class="table-custom w-full text-left text-xs">
+          <thead>
+            <tr class="bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300">
+              <th class="py-3 px-3 font-bold w-12">No</th>
+              <th class="py-3 px-4 font-bold min-w-[200px]">Pegawai Pengusul</th>
+              <th class="py-3 px-4 font-bold min-w-[220px]">Program Diklat yang Diusulkan</th>
+              <th class="py-3 px-3 font-bold">Urgensi &amp; Anggaran</th>
+              <th class="py-3 px-3 font-bold">Status Usulan</th>
+              <th class="py-3 px-4 font-bold text-center min-w-[160px]">Aksi Review</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+            <tr v-for="(u, idx) in usulanList" :key="u.id" class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
+              <td class="py-3 px-3 font-bold text-slate-400">{{ idx + 1 }}</td>
+              <td class="py-3 px-4">
+                <div class="font-bold text-slate-900 dark:text-white">{{ u.nama_pegawai || namaPegawai(u.pegawai_id) }}</div>
+                <div class="text-[10px] text-slate-400">Pengajuan: {{ formatDate(u.tgl_pengajuan) }}</div>
+              </td>
+              <td class="py-3 px-4">
+                <div class="font-bold text-slate-800 dark:text-slate-200">{{ u.nama_diklat_usulan }}</div>
+                <div class="text-[11px] text-slate-500 mt-0.5"><i class="fa-solid fa-bullseye text-[10px]"></i> Target: {{ u.target_penyelenggara }}</div>
+              </td>
+              <td class="py-3 px-3">
+                <span class="badge text-[10px]" :class="String(u.urgensi).includes('1') ? 'badge-danger' : 'badge-warning'">{{ u.urgensi }}</span>
+                <div class="text-[10px] text-slate-400 mt-0.5">TA Target: {{ u.tahun_anggaran_target || '2027' }}</div>
+              </td>
+              <td class="py-3 px-3">
+                <span class="badge" :class="u.status_usulan === 'disetujui_kasat' ? 'badge-success' : (u.status_usulan === 'direkomendasikan_bkpsdm' ? 'badge-info' : 'badge-warning')">
+                  {{ u.status_usulan }}
+                </span>
+              </td>
+              <td class="py-3 px-4 text-center">
+                <div class="flex items-center justify-center gap-1.5">
+                  <button v-if="isAdmin" @click="openReviewUsulanModal(u)" class="btn bg-purple-50 hover:bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300 text-xs px-2.5 py-1.5 rounded-lg flex items-center gap-1" title="Review Kasat">
+                    <i class="fa-solid fa-gavel"></i>
+                    <span>Review</span>
+                  </button>
+                  <button @click="openEditUsulan(u)" class="btn btn-secondary text-xs px-2 py-1.5 rounded-lg">
+                    <i class="fa-solid fa-pen"></i>
+                  </button>
+                  <button v-if="isAdmin" @click="deleteUsulan(u.id)" class="btn btn-danger text-xs px-2 py-1.5 rounded-lg">
+                    <i class="fa-solid fa-trash-can"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>

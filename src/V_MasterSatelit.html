@@ -1,0 +1,159 @@
+<section v-if="currentPage === 'master_data'" class="space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div>
+        <h2 class="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+          <i class="fa-solid fa-database text-emerald-500"></i>
+          <span>Master Data Satelit SI-KOMPETENSI</span>
+        </h2>
+        <p class="text-xs text-slate-500 mt-1">Pengelolaan kamus katalog program diklat, standar kompetensi per jabatan, dan opsi referensi gabungan.</p>
+      </div>
+    </div>
+
+    <!-- 3 Tabs Selector -->
+    <div class="flex border-b border-slate-200 dark:border-slate-800 gap-2">
+      <button @click="activeMasterTab = 'katalog_diklat'" class="tab-btn px-4 py-2.5 text-xs font-bold transition border-b-2 flex items-center gap-2" :class="activeMasterTab === 'katalog_diklat' ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-t-xl' : 'border-transparent text-slate-500 hover:text-slate-700'">
+        <i class="fa-solid fa-book-open"></i>
+        <span>1. Katalog Master Diklat ({{ katalogList.length }})</span>
+      </button>
+      <button @click="activeMasterTab = 'standar_jabatan'" class="tab-btn px-4 py-2.5 text-xs font-bold transition border-b-2 flex items-center gap-2" :class="activeMasterTab === 'standar_jabatan' ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-t-xl' : 'border-transparent text-slate-500 hover:text-slate-700'">
+        <i class="fa-solid fa-award"></i>
+        <span>2. Standar Kompetensi Jabatan ({{ standarList.length }})</span>
+      </button>
+      <button @click="activeMasterTab = 'referensi'" class="tab-btn px-4 py-2.5 text-xs font-bold transition border-b-2 flex items-center gap-2" :class="activeMasterTab === 'referensi' ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-t-xl' : 'border-transparent text-slate-500 hover:text-slate-700'">
+        <i class="fa-solid fa-sliders"></i>
+        <span>3. Opsi Referensi Gabungan ({{ referensiList.length }})</span>
+      </button>
+    </div>
+
+    <!-- Tab 1: Katalog Master Diklat -->
+    <div v-if="activeMasterTab === 'katalog_diklat'" class="card p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+      <div class="flex justify-between items-center">
+        <input type="text" v-model="katalogSearch" placeholder="Cari nama atau kode diklat..." class="input text-xs w-72">
+        <button v-if="isAdmin" @click="openKatalogModal()" class="btn btn-primary text-xs px-3.5 py-2 flex items-center gap-1.5">
+          <i class="fa-solid fa-plus"></i>
+          <span>Tambah Katalog</span>
+        </button>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="table-custom w-full text-left text-xs">
+          <thead>
+            <tr class="bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300">
+              <th class="py-3 px-3 font-bold w-12">No</th>
+              <th class="py-3 px-3 font-bold w-28">Kode</th>
+              <th class="py-3 px-4 font-bold min-w-[220px]">Nama Program Diklat</th>
+              <th class="py-3 px-3 font-bold">Rumpun</th>
+              <th class="py-3 px-3 font-bold">Default JP</th>
+              <th class="py-3 px-3 font-bold">Penyelenggara</th>
+              <th class="py-3 px-4 font-bold text-center w-28">Aksi</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+            <tr v-for="(d, idx) in filteredKatalogDiklat" :key="d.id" class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
+              <td class="py-2.5 px-3 font-bold text-slate-400">{{ idx + 1 }}</td>
+              <td class="py-2.5 px-3 font-mono font-bold text-emerald-600">{{ d.kode_diklat }}</td>
+              <td class="py-2.5 px-4 font-bold text-slate-900 dark:text-white">{{ d.nama_diklat }}</td>
+              <td class="py-2.5 px-3 text-slate-600 dark:text-slate-300">{{ d.rumpun }}</td>
+              <td class="py-2.5 px-3 font-black text-emerald-700 dark:text-emerald-400">{{ d.default_jp }} JP</td>
+              <td class="py-2.5 px-3 text-slate-500">{{ d.penyelenggara_default || '-' }}</td>
+              <td class="py-2.5 px-4 text-center">
+                <div class="flex items-center justify-center gap-1.5">
+                  <button v-if="isAdmin" @click="openEditKatalog(d)" class="btn btn-secondary text-xs px-2 py-1"><i class="fa-solid fa-pen"></i></button>
+                  <button v-if="isAdmin" @click="deleteKatalog(d.id)" class="btn btn-danger text-xs px-2 py-1"><i class="fa-solid fa-trash-can"></i></button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tab 2: Standar Kompetensi Jabatan -->
+    <div v-if="activeMasterTab === 'standar_jabatan'" class="card p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+      <div class="flex justify-between items-center">
+        <span class="text-xs text-slate-500">Menghubungkan posisi jabatan SIMPEG dengan syarat diklat wajib di SI-KOMPETENSI.</span>
+        <button v-if="isAdmin" @click="openStandarModal()" class="btn btn-primary text-xs px-3.5 py-2 flex items-center gap-1.5">
+          <i class="fa-solid fa-plus"></i>
+          <span>Tambah Standar Jabatan</span>
+        </button>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="table-custom w-full text-left text-xs">
+          <thead>
+            <tr class="bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300">
+              <th class="py-3 px-3 font-bold w-12">No</th>
+              <th class="py-3 px-4 font-bold min-w-[200px]">Posisi Jabatan</th>
+              <th class="py-3 px-4 font-bold min-w-[220px]">Syarat Program Diklat</th>
+              <th class="py-3 px-3 font-bold">Kategori Syarat</th>
+              <th class="py-3 px-3 font-bold">Minimal JP</th>
+              <th class="py-3 px-4 font-bold text-center w-28">Aksi</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+            <tr v-for="(s, idx) in standarList" :key="s.id" class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
+              <td class="py-2.5 px-3 font-bold text-slate-400">{{ idx + 1 }}</td>
+              <td class="py-2.5 px-4 font-bold text-slate-900 dark:text-white">{{ namaJabatan(s.jabatan_id) }}</td>
+              <td class="py-2.5 px-4 font-bold text-emerald-700 dark:text-emerald-300">{{ namaDiklat(s.diklat_id) }}</td>
+              <td class="py-2.5 px-3"><span class="badge badge-danger text-[10px]">{{ s.tingkat_kebutuhan }}</span></td>
+              <td class="py-2.5 px-3 font-black">{{ s.minimal_jp }} JP</td>
+              <td class="py-2.5 px-4 text-center">
+                <div class="flex items-center justify-center gap-1.5">
+                  <button v-if="isAdmin" @click="openEditStandar(s)" class="btn btn-secondary text-xs px-2 py-1"><i class="fa-solid fa-pen"></i></button>
+                  <button v-if="isAdmin" @click="deleteStandar(s.id)" class="btn btn-danger text-xs px-2 py-1"><i class="fa-solid fa-trash-can"></i></button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tab 3: Opsi Referensi Gabungan -->
+    <div v-if="activeMasterTab === 'referensi'" class="card p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+      <div class="flex justify-between items-center gap-3">
+        <select v-model="filterKategoriRef" class="input text-xs w-64">
+          <option value="">Semua Kategori Referensi</option>
+          <option value="RUMPUN_KOMPETENSI">RUMPUN_KOMPETENSI</option>
+          <option value="METODE_PELATIHAN">METODE_PELATIHAN</option>
+          <option value="PENYELENGGARA">PENYELENGGARA</option>
+          <option value="URGENSI_USULAN">URGENSI_USULAN</option>
+          <option value="JENIS_KUALIFIKASI_KHUSUS">JENIS_KUALIFIKASI_KHUSUS</option>
+        </select>
+        <button v-if="isAdmin" @click="openReferensiModal()" class="btn btn-primary text-xs px-3.5 py-2 flex items-center gap-1.5">
+          <i class="fa-solid fa-plus"></i>
+          <span>Tambah Referensi</span>
+        </button>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="table-custom w-full text-left text-xs">
+          <thead>
+            <tr class="bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300">
+              <th class="py-3 px-3 font-bold w-12">No</th>
+              <th class="py-3 px-4 font-bold">Kategori</th>
+              <th class="py-3 px-3 font-bold">Kode</th>
+              <th class="py-3 px-4 font-bold min-w-[200px]">Nama Nilai Opsi</th>
+              <th class="py-3 px-4 font-bold">Keterangan</th>
+              <th class="py-3 px-4 font-bold text-center w-28">Aksi</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+            <tr v-for="(r, idx) in filteredReferensi" :key="r.id" class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
+              <td class="py-2.5 px-3 font-bold text-slate-400">{{ idx + 1 }}</td>
+              <td class="py-2.5 px-4 font-mono text-[11px] font-bold text-slate-600 dark:text-slate-300">{{ r.kategori }}</td>
+              <td class="py-2.5 px-3 font-mono font-bold text-emerald-600">{{ r.kode }}</td>
+              <td class="py-2.5 px-4 font-bold text-slate-900 dark:text-white">{{ r.nama_nilai }}</td>
+              <td class="py-2.5 px-4 text-slate-500 text-[11px]">{{ r.keterangan || '-' }}</td>
+              <td class="py-2.5 px-4 text-center">
+                <div class="flex items-center justify-center gap-1.5">
+                  <button v-if="isAdmin" @click="openEditReferensi(r)" class="btn btn-secondary text-xs px-2 py-1"><i class="fa-solid fa-pen"></i></button>
+                  <button v-if="isAdmin" @click="deleteReferensi(r.id)" class="btn btn-danger text-xs px-2 py-1"><i class="fa-solid fa-trash-can"></i></button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
