@@ -1,5 +1,34 @@
+<!-- ============================================================
+     SI-KOMPETENSI - V_AnalisaGap.html (v5.4.0)
+     Analisis Kesenjangan Standar Kompetensi Jabatan (SKJ)
+     ============================================================
+     Changelog v5.4.0 (2026-09-14):
+     - 🎨 UI/UX: 4 card insight (Prediksi Risiko, Unit Teraktif,
+       Tren Partisipasi, Rekomendasi Pimpinan) diubah dari GELAP
+       (slate-900/rose-900) menjadi TERANG dengan gradient soft
+       sesuai warna masing-masing (rose/teal/emerald).
+     - 🎨 FILTER: Rincian Matriks Kesenjangan — filter diubah jadi
+       grid 4 kolom @25% (Search, Unit, Kategori, Status baru).
+       Tombol Reset dipindah ke baris judul (kanan).
+     - 🆕 ADD: Filter Status Pegawai (Semua / PNS / PPPK) di
+       Rincian Matriks Kesenjangan.
+     - 🎨 MATRIKS JP: Kolom Nama Pegawai dirampingkan
+       (min-w-[200px] → min-w-[140px]). NIP ditampilkan inline.
+       Hapus `min-w-[1400px]` → ganti `min-w-[900px]` agar tidak
+       scroll di tablet/desktop (tetap scroll di HP).
+     - 🎨 KPI SKJ: Progress bar warna dinamis (< 50% merah,
+       50-75% kuning, > 75% hijau) — sesuai tingkat kepatuhan.
+     - 🟡 TABLE: Rincian Matriks Kesenjangan pastikan scroll
+       horizontal aktif (parent div overflow-x-auto, card
+       tidak overflow-hidden).
+     Changelog v5.3.0 (2026-09-13):
+     - Toolbar filter 2 baris; min-w tabel Matriks JP [1400px]
+       & Rincian [1100px].
+     ============================================================ -->
+
 <section v-if="currentPage === 'analisa'" class="space-y-6">
-  <!-- Page Header and Action Controls -->
+
+  <!-- Header + Toolbar -->
   <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
     <div class="space-y-1">
       <div class="flex items-center gap-2">
@@ -15,19 +44,12 @@
       </p>
     </div>
 
-    <!-- Toolbar Filters and Actions -->
     <div class="flex flex-wrap items-center gap-2 self-start md:self-center">
-      <!-- Year Switcher -->
-      <div class="inline-flex rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100/80 dark:bg-slate-800 p-0.5 text-xs font-bold">
-        <button v-for="yr in [2025, 2026, 2027]" :key="yr"
-                @click="analisaTahun = yr; loadAnalisa();"
-                :class="analisaTahun === yr ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
-                class="px-3 py-1.5 rounded-lg transition-all">
-          {{ yr }}
-        </button>
-      </div>
+      <select v-model.number="analisaTahun" @change="loadAnalisa()"
+              class="input text-xs py-2 px-3 rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-bold">
+        <option v-for="y in optionsTahun" :key="'ay-' + y" :value="y">Tahun {{ y }}</option>
+      </select>
 
-      <!-- Refresh Button -->
       <button @click="loadAnalisa()" :disabled="analisaLoading"
               class="btn btn-secondary text-xs px-3 py-2 flex items-center gap-1.5 rounded-xl border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
               title="Muat Ulang Analisa">
@@ -35,14 +57,12 @@
         <span class="hidden sm:inline">Refresh</span>
       </button>
 
-      <!-- Export CSV/Excel -->
       <button @click="exportAnalisaExcel()"
               class="btn btn-secondary text-xs px-3 py-2 flex items-center gap-1.5 rounded-xl border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/40">
         <i class="fa-solid fa-file-excel text-emerald-600"></i>
         <span>Excel</span>
       </button>
 
-      <!-- Export PDF -->
       <button @click="cetakAnalisaPDF()"
               class="btn btn-secondary text-xs px-3.5 py-2 flex items-center gap-1.5 rounded-xl border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/40 shadow-xs">
         <i class="fa-solid fa-file-pdf text-rose-600"></i>
@@ -51,22 +71,39 @@
     </div>
   </div>
 
-  <!-- Executive Summary KPI Cards -->
+  <!-- KPI Cards -->
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-    <!-- Card 1: Kepatuhan SKJ -->
-    <div class="card p-4.5 bg-gradient-to-br from-emerald-500/10 via-white to-white dark:from-emerald-950/30 dark:via-slate-900 dark:to-slate-900 rounded-2xl border border-emerald-200/80 dark:border-emerald-800/60 shadow-xs flex flex-col justify-between">
+
+    <!-- Card 1: Kepatuhan SKJ (v5.4.0: warna dinamis) -->
+    <div class="card p-5 rounded-2xl border shadow-xs flex flex-col justify-between"
+         :class="(analisaData.persen_kepatuhan || 0) < 50
+           ? 'bg-gradient-to-br from-rose-500/10 via-white to-white dark:from-rose-950/30 dark:via-slate-900 dark:to-slate-900 border-rose-200/80 dark:border-rose-800/60'
+           : ((analisaData.persen_kepatuhan || 0) < 75
+             ? 'bg-gradient-to-br from-amber-500/10 via-white to-white dark:from-amber-950/30 dark:via-slate-900 dark:to-slate-900 border-amber-200/80 dark:border-amber-800/60'
+             : 'bg-gradient-to-br from-emerald-500/10 via-white to-white dark:from-emerald-950/30 dark:via-slate-900 dark:to-slate-900 border-emerald-200/80 dark:border-emerald-800/60')">
       <div class="flex items-center justify-between">
         <span class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Kepatuhan SKJ</span>
-        <span class="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-sm font-bold">
+        <span class="w-8 h-8 rounded-xl flex items-center justify-center text-sm font-bold"
+              :class="(analisaData.persen_kepatuhan || 0) < 50
+                ? 'bg-rose-500/20 text-rose-600 dark:text-rose-400'
+                : ((analisaData.persen_kepatuhan || 0) < 75
+                  ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400'
+                  : 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400')">
           <i class="fa-solid fa-shield-halved"></i>
         </span>
       </div>
       <div class="my-2">
-        <div class="text-2xl font-black text-slate-900 dark:text-white">
+        <div class="text-2xl font-black"
+             :class="(analisaData.persen_kepatuhan || 0) < 50 ? 'text-rose-600 dark:text-rose-400' : ((analisaData.persen_kepatuhan || 0) < 75 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-900 dark:text-white')">
           {{ analisaData.persen_kepatuhan || 0 }}%
         </div>
         <div class="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full mt-2 overflow-hidden">
-          <div class="bg-gradient-to-r from-emerald-500 to-teal-400 h-2 rounded-full transition-all duration-500"
+          <div class="h-2 rounded-full transition-all duration-500 bg-gradient-to-r"
+               :class="(analisaData.persen_kepatuhan || 0) < 50
+                 ? 'from-rose-500 to-rose-400'
+                 : ((analisaData.persen_kepatuhan || 0) < 75
+                   ? 'from-amber-500 to-amber-400'
+                   : 'from-emerald-500 to-teal-400')"
                :style="{ width: (analisaData.persen_kepatuhan || 0) + '%' }"></div>
         </div>
       </div>
@@ -77,7 +114,7 @@
     </div>
 
     <!-- Card 2: Total Gap -->
-    <div class="card p-4.5 bg-gradient-to-br from-amber-500/10 via-white to-white dark:from-amber-950/30 dark:via-slate-900 dark:to-slate-900 rounded-2xl border border-amber-200/80 dark:border-amber-800/60 shadow-xs flex flex-col justify-between">
+    <div class="card p-5 bg-gradient-to-br from-amber-500/10 via-white to-white dark:from-amber-950/30 dark:via-slate-900 dark:to-slate-900 rounded-2xl border border-amber-200/80 dark:border-amber-800/60 shadow-xs flex flex-col justify-between">
       <div class="flex items-center justify-between">
         <span class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Kesenjangan</span>
         <span class="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center text-sm font-bold">
@@ -89,13 +126,11 @@
           {{ analisaData.gap_count || 0 }} <span class="text-xs font-normal text-slate-500">Kesenjangan</span>
         </div>
       </div>
-      <p class="text-[11px] text-slate-500 dark:text-slate-400">
-        Kebutuhan diklat kompetensi yang belum bersertifikat
-      </p>
+      <p class="text-[11px] text-slate-500 dark:text-slate-400">Kebutuhan diklat kompetensi yang belum bersertifikat</p>
     </div>
 
-    <!-- Card 3: Gap Wajib (Prioritas 1) -->
-    <div class="card p-4.5 bg-gradient-to-br from-rose-500/10 via-white to-white dark:from-rose-950/30 dark:via-slate-900 dark:to-slate-900 rounded-2xl border border-rose-200/80 dark:border-rose-800/60 shadow-xs flex flex-col justify-between">
+    <!-- Card 3: Gap Wajib -->
+    <div class="card p-5 bg-gradient-to-br from-rose-500/10 via-white to-white dark:from-rose-950/30 dark:via-slate-900 dark:to-slate-900 rounded-2xl border border-rose-200/80 dark:border-rose-800/60 shadow-xs flex flex-col justify-between">
       <div class="flex items-center justify-between">
         <span class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Diklat Wajib Belum Diikuti</span>
         <span class="w-8 h-8 rounded-xl bg-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center justify-center text-sm font-bold">
@@ -107,13 +142,11 @@
           {{ analisaData.total_wajib_gap || 0 }} <span class="text-xs font-normal text-slate-500">Prioritas 1</span>
         </div>
       </div>
-      <p class="text-[11px] text-slate-500 dark:text-slate-400">
-        Syarat mutlak penugasan operasional Satpol &amp; Damkar
-      </p>
+      <p class="text-[11px] text-slate-500 dark:text-slate-400">Syarat mutlak penugasan operasional Satpol &amp; Damkar</p>
     </div>
 
     <!-- Card 4: Personel Terdampak -->
-    <div class="card p-4.5 bg-gradient-to-br from-sky-500/10 via-white to-white dark:from-sky-950/30 dark:via-slate-900 dark:to-slate-900 rounded-2xl border border-sky-200/80 dark:border-sky-800/60 shadow-xs flex flex-col justify-between">
+    <div class="card p-5 bg-gradient-to-br from-sky-500/10 via-white to-white dark:from-sky-950/30 dark:via-slate-900 dark:to-slate-900 rounded-2xl border border-sky-200/80 dark:border-sky-800/60 shadow-xs flex flex-col justify-between">
       <div class="flex items-center justify-between">
         <span class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Personel Perlu Diklat</span>
         <span class="w-8 h-8 rounded-xl bg-sky-500/20 text-sky-600 dark:text-sky-400 flex items-center justify-center text-sm font-bold">
@@ -125,35 +158,99 @@
           {{ analisaData.total_pegawai_terdampak || 0 }} <span class="text-xs font-normal text-slate-500">Personel</span>
         </div>
       </div>
-      <p class="text-[11px] text-slate-500 dark:text-slate-400">
-        ASN yang perlu diikutsertakan program pengembangan
+      <p class="text-[11px] text-slate-500 dark:text-slate-400">ASN yang perlu diikutsertakan program pengembangan</p>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       INSIGHT CARDS — v5.4.0: TERANG (sebelumnya gelap)
+       ============================================================ -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+    <!-- Insight 1: Prediksi Risiko Akhir Tahun -->
+    <div class="card p-5 bg-gradient-to-br from-rose-50 via-white to-white dark:from-rose-950/30 dark:via-slate-900 dark:to-slate-900 rounded-2xl border border-rose-200/80 dark:border-rose-800/60 shadow-xs relative overflow-hidden">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="w-10 h-10 rounded-xl bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center text-lg">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
+        <div>
+          <h4 class="text-xs font-bold uppercase tracking-wider text-rose-700 dark:text-rose-300">Prediksi Risiko Akhir Tahun</h4>
+          <div class="text-lg font-black text-rose-700 dark:text-rose-300">
+            {{ dashboardData.ai_insights.prediksi_tidak_capai.total_berisiko || 0 }} Pegawai
+          </div>
+        </div>
+      </div>
+      <p class="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+        Diprediksi <strong>{{ dashboardData.ai_insights.prediksi_tidak_capai.total_berisiko || 0 }} pegawai</strong> tidak akan memenuhi target JP tahun {{ analisaTahun }}.
+        Sisa <strong>{{ dashboardData.ai_insights.prediksi_tidak_capai.sisa_bulan || 0 }} bulan</strong> efektif.
+      </p>
+      <p class="text-[11px] text-rose-700/80 dark:text-rose-300/80 mt-2 italic">
+        <i class="fa-solid fa-lightbulb"></i> Segera delegasikan ke agenda bimtek &amp; MOOC LAN.
+      </p>
+    </div>
+
+    <!-- Insight 2: Unit Terbaik -->
+    <div class="card p-5 bg-gradient-to-br from-teal-50 via-white to-white dark:from-teal-950/30 dark:via-slate-900 dark:to-slate-900 rounded-2xl border border-teal-200/80 dark:border-teal-800/60 shadow-xs relative overflow-hidden">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="w-10 h-10 rounded-xl bg-teal-500/15 text-teal-600 dark:text-teal-400 flex items-center justify-center text-lg">
+          <i class="fa-solid fa-trophy"></i>
+        </div>
+        <div>
+          <h4 class="text-xs font-bold uppercase tracking-wider text-teal-700 dark:text-teal-300">Unit Teraktif</h4>
+          <div class="text-base font-black text-teal-700 dark:text-teal-300 truncate max-w-[220px]">
+            {{ dashboardData.ai_insights.unit_terbaik.nama || '-' }}
+          </div>
+        </div>
+      </div>
+      <p class="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+        Rata-rata <strong>{{ dashboardData.ai_insights.unit_terbaik.rata_jp || 0 }} JP/pegawai</strong>. Memimpin capaian kompetensi unit.
+      </p>
+    </div>
+
+    <!-- Insight 3: Tren Partisipasi -->
+    <div class="card p-5 bg-gradient-to-br from-emerald-50 via-white to-white dark:from-emerald-950/30 dark:via-slate-900 dark:to-slate-900 rounded-2xl border border-emerald-200/80 dark:border-emerald-800/60 shadow-xs relative overflow-hidden">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-lg">
+          <i class="fa-solid fa-arrow-trend-up"></i>
+        </div>
+        <div>
+          <h4 class="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">Tren Partisipasi Bulanan</h4>
+          <div class="text-lg font-black"
+               :class="dashboardData.ai_insights.tren_partisipasi.naik ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'">
+            {{ dashboardData.ai_insights.tren_partisipasi.naik ? '+' : '-' }}{{ dashboardData.ai_insights.tren_partisipasi.persen }}%
+          </div>
+        </div>
+      </div>
+      <p class="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+        Bulan ini: <strong>{{ dashboardData.ai_insights.tren_partisipasi.bulan_ini_jp }} JP</strong> (bulan lalu: {{ dashboardData.ai_insights.tren_partisipasi.bulan_lalu_jp }} JP).
       </p>
     </div>
   </div>
 
-  <!-- AI Diagnostic Insights and Rekomendasi Pimpinan -->
+  <!-- Rekomendasi & Insight Pimpinan (v5.4.0: TERANG) -->
   <div v-if="hasAnalisaTemuan"
-       class="card p-5 bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-2xl border border-slate-800 shadow-md relative overflow-hidden">
+       class="card p-5 bg-gradient-to-r from-emerald-50 via-white to-white dark:from-emerald-950/20 dark:via-slate-900 dark:to-slate-900 rounded-2xl border border-emerald-200/80 dark:border-emerald-800/60 shadow-xs relative overflow-hidden">
     <div class="absolute -right-6 -bottom-6 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none"></div>
     <div class="flex flex-col md:flex-row md:items-start justify-between gap-4 relative z-10">
       <div class="space-y-2 flex-1">
         <div class="flex items-center gap-2">
-          <span class="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[11px] font-bold border border-emerald-500/30 flex items-center gap-1.5">
-            <i class="fa-solid fa-robot"></i>
-            <span>Diagnostik AI &amp; Rekomendasi Pimpinan</span>
+          <span class="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 text-[11px] font-bold border border-emerald-500/30 flex items-center gap-1.5">
+            <i class="fa-solid fa-lightbulb"></i>
+            <span>Rekomendasi &amp; Insight Pimpinan</span>
           </span>
-          <span class="text-[11px] text-slate-400">Tahun Anggaran {{ analisaTahun }}</span>
+          <span class="text-[11px] text-slate-500">Tahun Anggaran {{ analisaTahun }}</span>
         </div>
-        <div v-for="(t, idx) in analisaData.temuan" :key="'t-'+idx" class="text-sm font-semibold text-slate-100 leading-relaxed flex items-start gap-2">
-          <i class="fa-solid fa-bullhorn text-amber-400 mt-1 shrink-0 text-xs"></i>
+        <div v-for="(t, idx) in analisaData.temuan" :key="'t-'+idx" class="text-sm font-semibold text-slate-800 dark:text-slate-200 leading-relaxed flex items-start gap-2">
+          <i class="fa-solid fa-bullhorn text-amber-500 mt-1 shrink-0 text-xs"></i>
           <span>{{ t.pesan }}</span>
         </div>
         <div class="pt-2 grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
-          <div v-for="(r, idx) in analisaData.rekomendasi" :key="'r-'+idx" class="p-2.5 rounded-xl bg-white/5 border border-white/10 flex items-start gap-2">
-            <i class="fa-solid fa-circle-check text-emerald-400 mt-0.5 shrink-0"></i>
+          <div v-for="(r, idx) in analisaData.rekomendasi" :key="'r-'+idx"
+               class="p-2.5 rounded-xl bg-white dark:bg-slate-800/60 border border-emerald-100 dark:border-slate-700 flex items-start gap-2 shadow-xs">
+            <i class="fa-solid fa-circle-check text-emerald-600 mt-0.5 shrink-0"></i>
             <div>
-              <span class="font-bold text-emerald-300 block text-[11px]">{{ r.prioritas }}</span>
-              <span class="text-slate-300">{{ r.tindakan }}</span>
+              <span class="font-bold text-emerald-700 dark:text-emerald-400 block text-[11px]">{{ r.prioritas }}</span>
+              <span class="text-slate-700 dark:text-slate-300">{{ r.tindakan }}</span>
             </div>
           </div>
         </div>
@@ -161,198 +258,284 @@
     </div>
   </div>
 
-  <!-- Table Container Card -->
+  <!-- ============================================================
+       MATRIKS JP 12 BULAN — v5.4.0: kolom nama ramping, no scroll di tablet+
+       ============================================================ -->
+  <div class="card p-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
+      <div>
+        <h3 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+          <i class="fa-solid fa-table-cells text-teal-500"></i>
+          <span>Matriks Akumulasi JP Bulanan ASN (Januari - Desember {{ analisaTahun }})</span>
+        </h3>
+        <p class="text-xs text-slate-500">Tabel persebaran jam pelajaran per bulan dan status kelulusan target (PNS 20 JP / PPPK 24 JP).</p>
+      </div>
+      <button @click="exportMatriksExcel()" class="btn btn-secondary text-xs px-3 py-1.5 flex items-center gap-1.5 shadow-sm shrink-0">
+        <i class="fa-solid fa-file-excel text-emerald-600"></i>
+        <span>Ekspor Matriks Excel (.xlsx)</span>
+      </button>
+    </div>
+
+    <div class="overflow-x-auto">
+      <!-- v5.4.0: min-w-[900px] agar fit tanpa scroll di tablet/desktop, scroll hanya di HP -->
+      <table class="table-custom w-full text-left text-xs min-w-[900px]">
+        <thead>
+          <tr class="bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300">
+            <th class="py-2.5 px-2 font-bold w-10 text-center">No</th>
+            <th class="py-2.5 px-2 font-bold min-w-[140px]">Nama / NIP</th>
+            <th class="py-2.5 px-2 font-bold w-16 text-center">Status</th>
+            <th class="py-2.5 px-1 text-center font-bold w-9">Jan</th>
+            <th class="py-2.5 px-1 text-center font-bold w-9">Feb</th>
+            <th class="py-2.5 px-1 text-center font-bold w-9">Mar</th>
+            <th class="py-2.5 px-1 text-center font-bold w-9">Apr</th>
+            <th class="py-2.5 px-1 text-center font-bold w-9">Mei</th>
+            <th class="py-2.5 px-1 text-center font-bold w-9">Jun</th>
+            <th class="py-2.5 px-1 text-center font-bold w-9">Jul</th>
+            <th class="py-2.5 px-1 text-center font-bold w-9">Agt</th>
+            <th class="py-2.5 px-1 text-center font-bold w-9">Sep</th>
+            <th class="py-2.5 px-1 text-center font-bold w-9">Okt</th>
+            <th class="py-2.5 px-1 text-center font-bold w-9">Nov</th>
+            <th class="py-2.5 px-1 text-center font-bold w-9">Des</th>
+            <th class="py-2.5 px-2 text-center font-black bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 w-16">Total</th>
+            <th class="py-2.5 px-2 text-center font-bold w-24">Capaian</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+          <tr v-for="(m, idx) in (dashboardData.matriks_bulanan || []).slice(0, 15)" :key="m.pegawai_id" class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
+            <td class="py-2 px-2 text-center font-bold text-slate-400">{{ idx + 1 }}</td>
+            <td class="py-2 px-2">
+              <div class="font-bold text-slate-900 dark:text-white text-[11px] leading-tight truncate">{{ m.nama_pegawai }}</div>
+              <div class="text-[9px] text-slate-400 truncate">{{ m.nip }}</div>
+            </td>
+            <td class="py-2 px-2 text-center">
+              <span class="badge text-[9px]" :class="m.status_pegawai === 'PPPK' ? 'badge-purple' : 'badge-info'">{{ m.status_pegawai }}</span>
+            </td>
+            <td v-for="(jp, bIdx) in m.bulan" :key="bIdx" class="py-2 px-1 text-center font-medium text-[11px]"
+                :class="jp > 0 ? 'text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50/50 dark:bg-emerald-950/20' : 'text-slate-300 dark:text-slate-700'">
+              {{ jp > 0 ? jp : '-' }}
+            </td>
+            <td class="py-2 px-2 text-center font-black text-sm bg-emerald-50/60 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300">
+              {{ m.total_jp }}
+            </td>
+            <td class="py-2 px-2 text-center">
+              <span v-if="m.total_jp >= m.target_jp" class="badge badge-success text-[9px]">Tuntas</span>
+              <span v-else class="badge badge-warning text-[9px]">Proses</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       TABEL MATRIKS KESENJANGAN — v5.4.0: Filter 4 kolom, +Status
+       ============================================================ -->
   <div class="card p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
-    <!-- Search and Filtering Toolbar -->
-    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
-      <div class="flex items-center gap-2">
+
+    <!-- Baris 1: Judul + Counter + Reset -->
+    <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
+      <div class="flex flex-wrap items-center gap-2">
         <h3 class="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-2">
           <i class="fa-solid fa-table-list text-emerald-500"></i>
           <span>Rincian Matriks Kesenjangan Kompetensi Personel</span>
         </h3>
         <span class="badge badge-warning text-xs font-bold">{{ filteredAnalisaGap.length }} Item</span>
       </div>
-
-      <div class="flex flex-wrap items-center gap-2.5">
-        <!-- Search Box -->
-        <div class="relative min-w-[220px] flex-1 sm:flex-initial">
-          <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-          <input v-model="analisaSearch" type="text"
-                 placeholder="Cari Pegawai, NIP, Jabatan..."
-                 class="input text-xs pl-8 pr-3 py-1.5 w-full rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
-        </div>
-
-        <!-- Filter Unit Kerja -->
-        <select v-model="analisaFilterUnit"
-                class="input text-xs py-1.5 px-3 rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
-          <option value="">Semua Unit Kerja / Bidang</option>
-          <option value="UNT-001">Sekretariat &amp; Pimpinan</option>
-          <option value="UNT-002">Bidang Penegakan Perda</option>
-          <option value="UNT-003">Bidang Damkar &amp; Penyelamatan</option>
-          <option value="UNT-004">Bidang Satlinmas</option>
-        </select>
-
-        <!-- Filter Kebutuhan -->
-        <select v-model="analisaFilterKebutuhan"
-                class="input text-xs py-1.5 px-3 rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
-          <option value="">Semua Kategori</option>
-          <option value="WAJIB">Hanya WAJIB (Prioritas 1)</option>
-          <option value="DISARANKAN">Hanya DISARANKAN</option>
-        </select>
-
-        <!-- Reset Filter -->
-        <button v-if="analisaSearch || analisaFilterUnit || analisaFilterKebutuhan"
-                @click="analisaSearch = ''; analisaFilterUnit = ''; analisaFilterKebutuhan = '';"
-                class="btn btn-secondary text-xs px-2.5 py-1.5 text-slate-500 hover:text-slate-800 dark:hover:text-white rounded-xl"
-                title="Reset Filter">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
-      </div>
+      <button v-if="analisaSearch || analisaFilterUnit || analisaFilterKebutuhan || analisaFilterStatus"
+              @click="analisaSearch = ''; analisaFilterUnit = ''; analisaFilterKebutuhan = ''; analisaFilterStatus = ''; onFilterAnalisaChange();"
+              class="btn btn-secondary text-xs px-2.5 py-1.5 text-slate-500 hover:text-slate-800 dark:hover:text-white rounded-xl"
+              title="Reset semua filter">
+        <i class="fa-solid fa-xmark mr-1"></i>
+        <span>Reset</span>
+      </button>
     </div>
 
-    <!-- Loading State Skeleton -->
+    <!-- Baris 2: Filter — Grid 4 kolom @25% -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <!-- Kolom 1: Search -->
+      <div class="relative">
+        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+        <input v-model="analisaSearch" @input="onFilterAnalisaChange" type="text"
+               placeholder="Cari Pegawai, NIP, Jabatan..."
+               class="input text-xs pl-8 pr-3 py-2.5 w-full rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
+      </div>
+
+      <!-- Kolom 2: Unit Kerja -->
+      <select v-model="analisaFilterUnit" @change="onFilterAnalisaChange"
+              class="input text-xs py-2.5 px-3 rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
+        <option value="">Semua Unit Kerja / Bidang</option>
+        <option v-for="u in optionsUnitFilter" :key="u.id || u.unit_id" :value="u.id || u.unit_id">
+          {{ u.nama_unit || u.nama }}
+        </option>
+      </select>
+
+      <!-- Kolom 3: Kategori Kebutuhan -->
+      <select v-model="analisaFilterKebutuhan" @change="onFilterAnalisaChange"
+              class="input text-xs py-2.5 px-3 rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
+        <option value="">Semua Kategori</option>
+        <option value="WAJIB">Hanya WAJIB (Prioritas 1)</option>
+        <option value="DISARANKAN">Hanya DISARANKAN</option>
+      </select>
+
+      <!-- Kolom 4: Status Pegawai (BARU v5.4.0) -->
+      <select v-model="analisaFilterStatus" @change="onFilterAnalisaChange"
+              class="input text-xs py-2.5 px-3 rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
+        <option value="">Semua Status Pegawai</option>
+        <option value="PNS">PNS</option>
+        <option value="PPPK">PPPK</option>
+      </select>
+    </div>
+
+    <!-- Loading -->
     <div v-if="analisaLoading" class="py-12 flex flex-col items-center justify-center gap-3 text-slate-400">
       <i class="fa-solid fa-circle-notch fa-spin text-3xl text-emerald-500"></i>
       <p class="text-xs font-semibold">Sedang menghitung matriks kesenjangan kompetensi standar jabatan...</p>
     </div>
 
-    <!-- Table Content -->
-    <div v-else-if="filteredAnalisaGap.length > 0" class="overflow-x-auto">
-      <table class="table-custom w-full text-left text-xs">
-        <thead>
-          <tr class="bg-slate-50 dark:bg-slate-800/70 text-slate-600 dark:text-slate-300 uppercase font-bold tracking-wider text-[11px]">
-            <th class="py-3 px-3 w-10 text-center">No</th>
-            <th class="py-3 px-4 min-w-[220px]">Profil Personel ASN</th>
-            <th class="py-3 px-4 min-w-[180px]">Posisi Jabatan &amp; Unit</th>
-            <th class="py-3 px-4 min-w-[220px]">Standar Diklat SKJ</th>
-            <th class="py-3 px-3 text-center min-w-[110px]">Target vs Riil</th>
-            <th class="py-3 px-3 text-center min-w-[120px]">Kategori &amp; Status</th>
-            <th class="py-3 px-4 min-w-[200px]">Rekomendasi Solutif</th>
-            <th class="py-3 px-3 text-center min-w-[120px]">Aksi Cepat</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-          <tr v-for="(g, idx) in filteredAnalisaGap" :key="'gap-'+idx"
-              class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
-            <!-- No -->
-            <td class="py-3.5 px-3 text-center font-bold text-slate-400">
-              {{ idx + 1 }}
-            </td>
+    <!-- Tabel dengan Pagination -->
+    <div v-else-if="filteredAnalisaGap.length > 0">
+      <!-- v5.4.0: pastikan parent TIDAK overflow-hidden agar scroll horizontal aktif -->
+      <div class="overflow-x-auto -mx-5 px-5">
+        <table class="table-custom w-full text-left text-xs min-w-[1100px]">
+          <thead>
+            <tr class="bg-slate-50 dark:bg-slate-800/70 text-slate-600 dark:text-slate-300 uppercase font-bold tracking-wider text-[11px]">
+              <th class="py-3 px-3 w-10 text-center">No</th>
+              <th class="py-3 px-4 min-w-[220px]">Profil Personel ASN</th>
+              <th class="py-3 px-4 min-w-[180px]">Posisi Jabatan &amp; Unit</th>
+              <th class="py-3 px-4 min-w-[220px]">Standar Diklat SKJ</th>
+              <th class="py-3 px-3 text-center min-w-[110px]">Target JP</th>
+              <th class="py-3 px-3 text-center min-w-[120px]">Kategori &amp; Status</th>
+              <th class="py-3 px-4 min-w-[200px]">Rekomendasi Solutif</th>
+              <th class="py-3 px-3 text-center min-w-[120px]">Aksi Cepat</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+            <tr v-for="(g, idx) in paginatedAnalisaGap" :key="'gap-'+idx"
+                class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
+              <td class="py-3.5 px-3 text-center font-bold text-slate-400">
+                {{ (analisaPagination.page - 1) * analisaPagination.limit + idx + 1 }}
+              </td>
 
-            <!-- Profil Personel -->
-            <td class="py-3.5 px-4">
-              <div class="flex items-center gap-2.5">
-                <div class="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 font-black text-xs flex items-center justify-center shrink-0 border border-emerald-200 dark:border-emerald-800">
-                  {{ (g.nama_pegawai || 'P').charAt(0) }}
+              <td class="py-3.5 px-4">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 font-black text-xs flex items-center justify-center shrink-0 border border-emerald-200 dark:border-emerald-800">
+                    {{ (g.nama_pegawai || 'P').charAt(0) }}
+                  </div>
+                  <div>
+                    <div class="font-bold text-slate-900 dark:text-white leading-tight">
+                      {{ formatNamaPegawai(g.nama_pegawai) }}
+                    </div>
+                    <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                      NIP. {{ g.nip || '-' }}
+                    </div>
+                  </div>
                 </div>
+              </td>
+
+              <td class="py-3.5 px-4">
+                <div class="font-semibold text-slate-800 dark:text-slate-200 leading-snug">
+                  {{ g.nama_jabatan || '-' }}
+                </div>
+                <div class="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium mt-0.5">
+                  {{ g.nama_unit || '-' }}
+                </div>
+              </td>
+
+              <td class="py-3.5 px-4">
+                <div class="font-bold text-slate-900 dark:text-white leading-snug">
+                  {{ g.nama_diklat || '-' }}
+                </div>
+                <div class="inline-flex items-center gap-1 mt-1 text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                  <i class="fa-solid fa-layer-group text-[9px]"></i>
+                  <span>{{ g.rumpun || 'Teknis Operasional' }}</span>
+                </div>
+              </td>
+
+              <td class="py-3.5 px-3 text-center">
+                <div class="font-black text-slate-900 dark:text-white">{{ g.minimal_jp || 20 }} JP</div>
+              </td>
+
+              <td class="py-3.5 px-3 text-center">
                 <div>
-                  <div class="font-bold text-slate-900 dark:text-white leading-tight">
-                    {{ formatNamaPegawai(g.nama_pegawai) }}
-                  </div>
-                  <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                    NIP. {{ g.nip || '-' }}
-                  </div>
+                  <span :class="g.tingkat_kebutuhan === 'WAJIB' ? 'badge badge-danger' : 'badge badge-warning'"
+                        class="text-[10px] font-bold px-2 py-0.5">
+                    {{ g.tingkat_kebutuhan }}
+                  </span>
                 </div>
-              </div>
-            </td>
+                <div class="text-[10px] text-slate-500 dark:text-slate-400 font-medium mt-1">
+                  {{ g.status_gap }}
+                </div>
+              </td>
 
-            <!-- Jabatan and Unit -->
-            <td class="py-3.5 px-4">
-              <div class="font-semibold text-slate-800 dark:text-slate-200 leading-snug">
-                {{ g.nama_jabatan || '-' }}
-              </div>
-              <div class="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium mt-0.5">
-                {{ g.nama_unit || '-' }}
-              </div>
-            </td>
+              <td class="py-3.5 px-4">
+                <div class="text-[11px] text-slate-700 dark:text-slate-300 leading-relaxed bg-slate-50 dark:bg-slate-800/50 p-2 rounded-xl border border-slate-100 dark:border-slate-800/80">
+                  <i class="fa-solid fa-arrow-trend-up text-emerald-500 mr-1"></i>
+                  <span>{{ g.rekomendasi_tindak_lanjut }}</span>
+                </div>
+              </td>
 
-            <!-- Standar Diklat SKJ -->
-            <td class="py-3.5 px-4">
-              <div class="font-bold text-slate-900 dark:text-white leading-snug">
-                {{ g.nama_diklat || '-' }}
-              </div>
-              <div class="inline-flex items-center gap-1 mt-1 text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-                <i class="fa-solid fa-layer-group text-[9px]"></i>
-                <span>{{ g.rumpun || 'Teknis Operasional' }}</span>
-              </div>
-            </td>
+              <td class="py-3.5 px-3 text-center">
+                <button @click="usulkanDariGap(g)"
+                        class="btn btn-primary text-[11px] font-bold px-2.5 py-1.5 rounded-xl shadow-xs flex items-center justify-center gap-1 w-full bg-emerald-600 hover:bg-emerald-700 text-white"
+                        title="Usulkan Pelatihan ini ke Rencana Diklat Tahunan">
+                  <i class="fa-solid fa-plus-circle text-xs"></i>
+                  <span>Rencanakan</span>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
-            <!-- Target vs Riil JP -->
-            <td class="py-3.5 px-3 text-center">
-              <div class="font-black text-slate-900 dark:text-white">
-                {{ g.minimal_jp || 20 }} JP
-              </div>
-              <div class="text-[10px] text-rose-500 font-bold mt-0.5">
-                Riil: 0 JP
-              </div>
-              <div class="w-16 mx-auto bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full mt-1 overflow-hidden">
-                <div class="bg-rose-500 h-full w-0"></div>
-              </div>
-            </td>
-
-            <!-- Kategori and Status -->
-            <td class="py-3.5 px-3 text-center">
-              <div>
-                <span :class="g.tingkat_kebutuhan === 'WAJIB' ? 'badge badge-danger' : 'badge badge-warning'"
-                      class="text-[10px] font-bold px-2 py-0.5">
-                  {{ g.tingkat_kebutuhan }}
-                </span>
-              </div>
-              <div class="text-[10px] text-slate-500 dark:text-slate-400 font-medium mt-1">
-                {{ g.status_gap }}
-              </div>
-            </td>
-
-            <!-- Rekomendasi Solutif -->
-            <td class="py-3.5 px-4">
-              <div class="text-[11px] text-slate-700 dark:text-slate-300 leading-relaxed bg-slate-50 dark:bg-slate-800/50 p-2 rounded-xl border border-slate-100 dark:border-slate-800/80">
-                <i class="fa-solid fa-arrow-trend-up text-emerald-500 mr-1"></i>
-                <span>{{ g.rekomendasi_tindak_lanjut }}</span>
-              </div>
-            </td>
-
-            <!-- Aksi Cepat -->
-            <td class="py-3.5 px-3 text-center">
-              <button @click="usulkanDariGap(g)"
-                      class="btn btn-primary text-[11px] font-bold px-2.5 py-1.5 rounded-xl shadow-xs flex items-center justify-center gap-1 w-full bg-emerald-600 hover:bg-emerald-700 text-white"
-                      title="Usulkan Pelatihan ini ke Rencana Diklat Tahunan">
-                <i class="fa-solid fa-plus-circle text-xs"></i>
-                <span>Rencanakan</span>
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <!-- Pagination -->
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 mt-4 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-500">
+        <span>
+          Menampilkan
+          <strong class="text-slate-800 dark:text-white">{{ (analisaPagination.page - 1) * analisaPagination.limit + 1 }}</strong>
+          &ndash;
+          <strong class="text-slate-800 dark:text-white">{{ Math.min(analisaPagination.page * analisaPagination.limit, filteredAnalisaGap.length) }}</strong>
+          dari
+          <strong class="text-slate-800 dark:text-white">{{ filteredAnalisaGap.length }}</strong> item
+        </span>
+        <div class="flex items-center gap-1.5">
+          <button @click="analisaPagination.page--" :disabled="analisaPagination.page <= 1"
+                  class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 transition">
+            <i class="fa-solid fa-chevron-left"></i> Prev
+          </button>
+          <span class="px-3 py-1.5 font-bold text-slate-700 dark:text-slate-200">{{ analisaPagination.page }} / {{ analisaTotalPages }}</span>
+          <button @click="analisaPagination.page++" :disabled="analisaPagination.page >= analisaTotalPages"
+                  class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 transition">
+            Next <i class="fa-solid fa-chevron-right"></i>
+          </button>
+        </div>
+      </div>
     </div>
 
-    <!-- Empty State: No Gap (100% Compliant or No Filter Match) -->
+    <!-- Empty State -->
     <div v-else class="py-12 text-center space-y-3">
       <div v-if="(analisaData.gap_details || []).length === 0" class="max-w-md mx-auto space-y-2">
         <div class="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-2xl mx-auto shadow-sm">
           <i class="fa-solid fa-circle-check"></i>
         </div>
-        <h4 class="text-base font-bold text-slate-900 dark:text-white">
-          Kepatuhan Standar Kompetensi 100%!
-        </h4>
+        <h4 class="text-base font-bold text-slate-900 dark:text-white">Kepatuhan Standar Kompetensi 100%!</h4>
         <p class="text-xs text-slate-500 dark:text-slate-400">
-          Seluruh personel aktif Satpol PP &amp; Damkar telah memenuhi seluruh standar kualifikasi wajib dan disarankan untuk posisi jabatannya masing-masing.
+          Seluruh personel aktif telah memenuhi seluruh standar kualifikasi wajib dan disarankan untuk posisi jabatannya masing-masing.
         </p>
       </div>
       <div v-else class="max-w-md mx-auto space-y-2">
         <div class="w-14 h-14 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center text-xl mx-auto">
           <i class="fa-solid fa-filter-circle-xmark"></i>
         </div>
-        <h4 class="text-sm font-bold text-slate-800 dark:text-white">
-          Tidak ada data kesenjangan yang cocok
-        </h4>
+        <h4 class="text-sm font-bold text-slate-800 dark:text-white">Tidak ada data kesenjangan yang cocok</h4>
         <p class="text-xs text-slate-500 dark:text-slate-400">
-          Kriteria pencarian atau filter yang Anda pilih tidak menemukan baris data gap. Coba atur ulang filter pencarian.
+          Kriteria pencarian atau filter tidak menemukan baris data gap.
         </p>
-        <button @click="analisaSearch = ''; analisaFilterUnit = ''; analisaFilterKebutuhan = '';"
+        <button @click="analisaSearch = ''; analisaFilterUnit = ''; analisaFilterKebutuhan = ''; analisaFilterStatus = ''; onFilterAnalisaChange();"
                 class="btn btn-secondary text-xs px-3 py-1.5 rounded-xl mt-2">
           Reset Filter Pencarian
         </button>
       </div>
     </div>
   </div>
+
 </section>
