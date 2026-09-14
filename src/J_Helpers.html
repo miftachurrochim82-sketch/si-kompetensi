@@ -1,29 +1,10 @@
 <script>
   window.SIKompetensiHelpers = {
     methods: {
-      showToast(message, type = "info") {
-        const id = Date.now() + Math.random().toString(36).substr(2, 4);
-        this.toasts.push({ id, message, type });
-        setTimeout(() => {
-          this.toasts = this.toasts.filter(t => t.id !== id);
-        }, 4000);
-      },
-
-      goToPlatform() {
-        const platformUrl = window.__PLATFORM_URL__ || "https://script.google.com/macros/s/AKfycbwh_OUVqmxLcuF81FHmPZtT33Wrm8Ce9Da1SQ3hfkSr7gM5P8ofyAlHSgW40mq3eo-PoQ/exec";
-        const returnUrl = encodeURIComponent(window.location.href);
-        const sep = platformUrl.includes("?") ? "&" : "?";
-        const targetUrl = `${platformUrl}${sep}app=SIKOMPETENSI&return_url=${returnUrl}`;
-        try {
-          if (window.top && window.top !== window) {
-            window.top.location.href = targetUrl;
-          } else {
-            window.location.href = targetUrl;
-          }
-        } catch (e) {
-          window.open(targetUrl, "_top");
-        }
-      },
+      // ⚠️ CATATAN: showToast, goToPlatform, namaPegawai, namaUnit, namaJabatan
+      // didefinisikan ULANG di AppCore (app-core.js) — versi itu yang menang
+      // saat runtime karena base component > global mixin.
+      // Untuk perubahan perilaku, edit app-core.js CDN.
 
       formatNamaPegawai(str) {
         if (!str || str === "-") return "-";
@@ -37,35 +18,13 @@
         return s.toLowerCase().replace(/(^|\s)\S/g, c => c.toUpperCase());
       },
 
-      namaPegawai(id) {
-        if (!id) return "-";
-        const list = (this.simpegLookup && this.simpegLookup.pegawai && this.simpegLookup.pegawai.length)
-          ? this.simpegLookup.pegawai
-          : (this.masterPegawaiList || []);
-        const target = String(id).trim().toLowerCase();
-        const p = list.find(x => 
-          String(x.id || "").trim().toLowerCase() === target ||
-          String(x.pegawai_id || "").trim().toLowerCase() === target ||
-          String(x.nip || "").trim().toLowerCase() === target ||
-          String(x.nama_lengkap || "").trim().toLowerCase() === target
-        );
-        if (p) return this.formatNamaPegawai(p.nama_lengkap || p.nama || p.display_name || id);
-
-        const fb = (this.masterPegawaiList || []).find(x =>
-          String(x.id || "").trim().toLowerCase() === target ||
-          String(x.pegawai_id || "").trim().toLowerCase() === target ||
-          String(x.nip || "").trim().toLowerCase() === target
-        );
-        return fb ? this.formatNamaPegawai(fb.nama_lengkap || fb.nama || id) : id;
-      },
-
       nipPegawai(id) {
         if (!id) return "-";
         const list = (this.simpegLookup && this.simpegLookup.pegawai && this.simpegLookup.pegawai.length)
           ? this.simpegLookup.pegawai
           : (this.masterPegawaiList || []);
         const target = String(id).trim().toLowerCase();
-        const p = list.find(x => 
+        const p = list.find(x =>
           String(x.id || "").trim().toLowerCase() === target ||
           String(x.pegawai_id || "").trim().toLowerCase() === target ||
           String(x.nip || "").trim().toLowerCase() === target
@@ -80,35 +39,42 @@
         return fb ? (fb.nip || id) : id;
       },
 
-      namaJabatan(id) {
-        if (!id) return "-";
-        const list = (this.simpegLookup.jabatan && this.simpegLookup.jabatan.length)
-          ? this.simpegLookup.jabatan
-          : (this.masterJabatanList || []);
-        const j = list.find(x => String(x.id || x.jabatan_id || x.kode_jabatan) === String(id));
-        return j ? (j.nama_jabatan || j.kode_jabatan || j.nama || j.id) : id;
-      },
-
-      namaUnit(id) {
-        if (!id) return "-";
-        const list = (this.simpegLookup.unit && this.simpegLookup.unit.length)
-          ? this.simpegLookup.unit
-          : (this.masterUnitList || []);
-        const u = list.find(x => String(x.id || x.unit_id || x.kode_unit) === String(id));
-        return u ? (u.nama_unit || u.nama || u.id) : id;
-      },
-
       namaDiklat(id) {
         if (!id) return "-";
-        const d = (this.katalogList || []).find(x => String(x.id) === String(id));
+        const d = (this.katalogList || []).find(x => String(x.id) === String(id) || String(x.kode_diklat) === String(id));
         return d ? d.nama_diklat : id;
       },
 
+      getKatalogRumpun(id) {
+        if (!id) return "-";
+        const d = (this.katalogList || []).find(x => String(x.id) === String(id) || String(x.kode_diklat) === String(id));
+        return d ? (d.rumpun || "-") : "-";
+      },
+
+      /**
+       * FIX v5.0.1: support dd/MM/yyyy eksplisit.
+       * FIX v5.2.1: pakai String(val) untuk hindari Proxy error.
+       */
       formatDate(val) {
         if (!val) return "-";
         try {
-          const d = new Date(val);
-          if (isNaN(d.getTime())) return String(val);
+          let d;
+          if (val instanceof Date) {
+            d = val;
+          } else {
+            const s = String(val).trim();
+            if (/\d{4}-\d{2}-\d{2}/.test(s)) {
+              d = new Date(s);
+            } else {
+              const m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+              if (m) {
+                d = new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
+              } else {
+                d = new Date(s);
+              }
+            }
+          }
+          if (!d || isNaN(d.getTime())) return String(val);
           return d.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
         } catch(e) { return String(val); }
       },
@@ -116,11 +82,196 @@
       isLicenseExpiringSoon(tglHabis) {
         if (!tglHabis) return false;
         try {
-          const expMs = new Date(tglHabis).getTime();
+          const expMs = new Date(String(tglHabis)).getTime();
           const nowMs = Date.now();
           const ms90Days = 90 * 24 * 60 * 60 * 1000;
           return !isNaN(expMs) && expMs > nowMs && (expMs - nowMs) <= ms90Days;
         } catch(e) { return false; }
+      },
+
+      // ============================================================
+      // Helper untuk filter + pagination
+      // ============================================================
+
+      /**
+       * Normalisasi string untuk perbandingan filter (lowercase + trim).
+       */
+      normStr(v) {
+        return String(v == null ? "" : v).trim().toLowerCase();
+      },
+
+      onFilterKompetensiChange() {
+        if (this.kompetensiPagination) {
+          this.kompetensiPagination.page = 1;
+        }
+      },
+
+      onFilterJadwalChange() {
+        if (this.jadwalPagination) {
+          this.jadwalPagination.page = 1;
+        }
+      },
+
+      onFilterLisensiChange() {
+        if (this.lisensiPagination) {
+          this.lisensiPagination.page = 1;
+        }
+      },
+
+      /**
+       * Reset halaman Master Data saat filter berubah.
+       */
+      onFilterKatalogChange() {
+        if (this.katalogPagination) {
+          this.katalogPagination.page = 1;
+        }
+      },
+      onFilterStandarChange() {
+        if (this.standarPagination) {
+          this.standarPagination.page = 1;
+        }
+      },
+      onFilterReferensiChange() {
+        if (this.referensiPagination) {
+          this.referensiPagination.page = 1;
+        }
+      },
+
+      onFilterAnalisaChange() {
+        if (this.analisaPagination) {
+          this.analisaPagination.page = 1;
+        }
+      },
+
+      /**
+       * v5.3.0: Helper baru — reset halaman Rencana Diklat saat filter
+       * berubah. Sebelumnya di V_UsulanDiklat.html dipanggil langsung
+       * `@input="rencanaPagination.page = 1"` (inline). Kini seragam
+       * dengan filter lain.
+       */
+      onFilterRencanaChange() {
+        if (this.rencanaPagination) {
+          this.rencanaPagination.page = 1;
+        }
+      },
+
+      /**
+       * Ambil nama pegawai (fallback robust).
+       * Cek field `nama_lengkap` (dari backend SIMPEG) & `nama`,
+       * karena AppCore.namaPegawai cuma cek `nama`.
+       * Prioritas: simpegLookup.pegawai → masterPegawaiList.
+       */
+      getPegawaiNama(id) {
+        if (!id) return '';
+        const list = (this.simpegLookup && this.simpegLookup.pegawai && this.simpegLookup.pegawai.length)
+          ? this.simpegLookup.pegawai
+          : (this.masterPegawaiList || []);
+        const t = String(id).trim();
+        const p = list.find(x =>
+          String(x.id || '').trim() === t ||
+          String(x.pegawai_id || '').trim() === t ||
+          String(x.nip || '').trim() === t
+        );
+        if (!p) return '';
+        return p.nama_lengkap || p.nama || p.display_name || '';
+      },
+
+      // ============================================================
+      // Helper internal (dipindah dari computed ke methods, v5.2.1)
+      // Alasan: dipanggil sebagai fungsi dengan argumen — Vue hanya
+      // izinkan itu di `methods`, bukan `computed`.
+      // ============================================================
+
+      /**
+       * Kumpulkan semua unit_id di bawah sebuah unit (termasuk dirinya).
+       * Dipakai filter Unit Kerja Portofolio (include sub-unit / eselon IV).
+       */
+      _unitIdsInSubtree(unitId) {
+        const allUnits = (this.simpegLookup && this.simpegLookup.unit && this.simpegLookup.unit.length)
+          ? this.simpegLookup.unit
+          : (this.masterUnitList || []);
+        const root = String(unitId || "");
+        if (!root) return [];
+        const result = [root];
+        const queue = [root];
+        let safety = 0;
+        while (queue.length && safety < 200) {
+          safety++;
+          const cur = queue.shift();
+          allUnits.forEach(u => {
+            const pid = String(u.parent_unit_id || "");
+            const uid = String(u.unit_id || u.id || "");
+            if (pid === cur && uid && result.indexOf(uid) === -1) {
+              result.push(uid);
+              queue.push(uid);
+            }
+          });
+        }
+        return result;
+      },
+
+      /**
+       * Cari unit_id dari pegawai_id.
+       */
+      _pegawaiUnitId(pegawaiId) {
+        if (!pegawaiId) return "";
+        const list = (this.simpegLookup && this.simpegLookup.pegawai && this.simpegLookup.pegawai.length)
+          ? this.simpegLookup.pegawai
+          : (this.masterPegawaiList || []);
+        const target = String(pegawaiId);
+        const p = list.find(x => String(x.id || x.pegawai_id) === target);
+        return p ? String(p.unit_id || "") : "";
+      },
+
+      /**
+       * v5.2.1 FIX: cek apakah tanggal match tahun/bulan.
+       * - Konversi paksa ke String() dulu untuk hindari
+       *   "Cannot convert object to primitive value" saat
+       *   dateStr berupa Vue reactive Proxy.
+       * - Terima ISO, yyyy-MM-dd, dd/MM/yyyy.
+       *
+       * @param {*} dateStr
+       * @param {number|string} tahun
+       * @param {number} bulan (-1 atau null = abaikan bulan)
+       * @returns {boolean}
+       */
+      _dateMatchMonthYear(dateStr, tahun, bulan) {
+        if (!dateStr) return false;
+
+        let d;
+        try {
+          if (dateStr instanceof Date) {
+            d = dateStr;
+          } else {
+            const s = String(dateStr).trim();
+            if (!s) return false;
+
+            if (/\d{4}-\d{2}-\d{2}/.test(s)) {
+              d = new Date(s);
+            } else {
+              const m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+              if (m) {
+                d = new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
+              } else {
+                d = new Date(s);
+              }
+            }
+          }
+        } catch (e) {
+          return false;
+        }
+
+        if (!d || isNaN(d.getTime())) return false;
+
+        if (tahun !== undefined && tahun !== null && tahun !== '') {
+          if (d.getFullYear() !== Number(tahun)) return false;
+        }
+
+        if (bulan !== undefined && bulan !== null && Number(bulan) >= 0) {
+          if (d.getMonth() !== Number(bulan)) return false;
+        }
+
+        return true;
       }
     }
   };
