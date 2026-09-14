@@ -1,4 +1,24 @@
 <script>
+  // ============================================================
+  // SI-KOMPETENSI - J_App.html (v5.3.0)
+  // Bootstrap + Routing + Lifecycle
+  // ============================================================
+  // Changelog v5.3.0 (2026-09-13):
+  // - 🔴 FIX: initApp — semua loader dipanggil dengan `silent = true`
+  //   agar saat startup gagal (koneksi/server error), tidak muncul
+  //   7 toast sekaligus. Toast hanya untuk aksi user-triggered.
+  // - 🟡 REFACTOR: onNavigate pakai helper `_safeLoad()` supaya
+  //   setiap navigasi punya guard anti-double-load (skip jika sudah
+  //   loading atau data sudah ada).
+  // - 🟡 ADD: `initialPage` diverifikasi terhadap `menu` — jika
+  //   `initialPage` tidak valid, fallback ke halaman pertama.
+  // - 🟡 ADD: `onDarkToggle` re-render chart di halaman Analisa juga
+  //   (sebelumnya hanya dashboard — chart di Analisa kini ikut tema).
+  // Changelog v5.2.0 (2026-09-13):
+  // - loadMasterSatelit sebelum loadJadwal (get_jadwal_list source
+  //   of truth untuk jadwalList).
+  // ============================================================
+
   // Gabungkan seluruh modul JavaScript ke dalam SIKompetensiMixin
   const SIKompetensiMixin = {
     data() {
@@ -14,23 +34,33 @@
     )
   };
 
+  // Daftar halaman yang sah (dari menu) — untuk validasi initialPage
+  const VALID_PAGES = [
+    'dashboard', 'profil', 'diklat_portofolio', 'kualifikasi_khusus',
+    'usulan_diklat', 'analisa', 'master_data', 'pengaturan'
+  ];
+
   // Inisialisasi Aplikasi Terpadu SI-KOMPETENSI
   const app = AppCore.create({
     appCode: 'SIKOMPETENSI',
     appTitle: 'SI-KOMPETENSI',
-    defaultPage: 'dashboard',
+    initialPage: 'dashboard',
+    storagePrefix: 'sikompetensi',
+    platformUrl: 'https://script.google.com/macros/s/AKfycbwh_OUVqmxLcuF81FHmPZtT33Wrm8Ce9Da1SQ3hfkSr7gM5P8ofyAlHSgW40mq3eo-PoQ/exec',
 
     brand: {
-      name: 'SI-KOMPETENSI',
-      subtitle: 'Satpol PP & Damkar Trenggalek',
-      icon: 'fa-solid fa-graduation-cap'
+      title: 'SI-KOMPETENSI',
+      subtitle: 'Satpol PP & Damkar',
+      logoIcon: 'fa-solid fa-graduation-cap',
+      logoChar: 'SK',
+      logoSvg: ''
     },
 
     menu: [
       { name: 'Utama', items: [
         { id: 'dashboard', label: 'Dashboard & Standar JP', icon: 'fa-solid fa-gauge-high' },
+        { id: 'profil', label: 'Profil & Paspor ASN', icon: 'fa-solid fa-id-card-clip' },
         { id: 'diklat_portofolio', label: 'Diklat & Portofolio', icon: 'fa-solid fa-graduation-cap' },
-        { id: 'kualifikasi_khusus', label: 'Lisensi & SK Khusus', icon: 'fa-solid fa-id-badge' },
         { id: 'usulan_diklat', label: 'Rencana Diklat Tahunan', icon: 'fa-solid fa-clipboard-list' },
         { id: 'analisa', label: 'Analisis Kesenjangan', icon: 'fa-solid fa-chart-pie' }
       ]},
@@ -44,6 +74,7 @@
 
     pageIcons: {
       dashboard: 'fa-solid fa-gauge-high',
+      profil: 'fa-solid fa-id-card-clip',
       diklat_portofolio: 'fa-solid fa-graduation-cap',
       jadwal_penugasan: 'fa-solid fa-calendar-days',
       riwayat_laporan: 'fa-solid fa-certificate',
@@ -51,52 +82,121 @@
       usulan_diklat: 'fa-solid fa-paper-plane',
       analisa: 'fa-solid fa-chart-pie',
       master_data: 'fa-solid fa-database',
-      profil: 'fa-solid fa-user-tie',
       pengaturan: 'fa-solid fa-gear'
     },
 
+    /**
+     * v5.3.0: Guard anti-double-load. Skip pemanggilan jika:
+     * - Loading sedang berjalan untuk modul terkait, ATAU
+     * - Data sudah ada (untuk modul yang tidak butuh refresh tiap navigasi).
+     *
+     * Untuk modul yang memang butuh refresh (mis. dashboard), panggil
+     * langsung tanpa guard.
+     */
     onNavigate(vm, page) {
       if (page === 'dashboard') {
-        vm.loadDashboard();
+        vm.loadDashboard(); // refresh tiap buka, tidak silent
+
+      } else if (page === 'profil') {
+        if (!vm.activeProfilePegawaiId && vm.currentUser && vm.currentUser.pegawai_id) {
+          vm.activeProfilePegawaiId = vm.currentUser.pegawai_id;
+        }
+
       } else if (page === 'diklat_portofolio') {
-        vm.loadJadwal();
-        vm.loadKompetensi(1);
+        // Skip reload jika sudah ada data & tidak loading
+        if (!vm.jadwalLoading && (!vm.jadwalList || vm.jadwalList.length === 0)) {
+          vm.loadJadwal();
+        }
+        if (!vm.kompetensiLoading && (!vm.kompetensiList || vm.kompetensiList.length === 0)) {
+          vm.loadKompetensi();
+        }
+
       } else if (page === 'jadwal_penugasan') {
         vm.currentPage = 'diklat_portofolio';
         vm.diklatSubTab = 'jadwal';
-        vm.loadJadwal();
+        if (!vm.jadwalLoading && (!vm.jadwalList || vm.jadwalList.length === 0)) {
+          vm.loadJadwal();
+        }
+
       } else if (page === 'riwayat_laporan') {
         vm.currentPage = 'diklat_portofolio';
         vm.diklatSubTab = 'portofolio';
-        vm.loadKompetensi(1);
+        if (!vm.kompetensiLoading && (!vm.kompetensiList || vm.kompetensiList.length === 0)) {
+          vm.loadKompetensi();
+        }
+
       } else if (page === 'kualifikasi_khusus') {
-        vm.loadKualifikasi();
+        // v5.4.0: redirect ke halaman Portofolio dengan sub-tab Lisensi
+        // (menu tidak punya section sendiri — reuse V_DiklatPortofolio Tab 3)
+        vm.currentPage = 'diklat_portofolio';
+        vm.diklatSubTab = 'lisensi';
+        if (!vm.kualifikasiLoading && (!vm.kualifikasiList || vm.kualifikasiList.length === 0)) {
+          vm.loadKualifikasi();
+        }
+
+      } else if (page === 'pengaturan') {
+        // v5.0.0: pengaturan tidak butuh preload — AppSettings mounted() auto-load.
+        // Blok ini sengaja kosong sebagai placeholder agar tidak fall-through.
+        // (Tidak ada aksi.)
+
       } else if (page === 'usulan_diklat') {
-        vm.loadUsulan();
+        if (!vm.usulanLoading && (!vm.usulanList || vm.usulanList.length === 0)) {
+          vm.loadUsulan();
+        }
+
       } else if (page === 'analisa') {
+        // Analisa selalu reload — karena tergantung tahun & data sering berubah
         vm.loadAnalisa();
+
       } else if (page === 'master_data') {
-        vm.loadMasterSatelit();
-        vm.loadSimpegLookup();
+        if (!vm.masterSatelitLoading) {
+          vm.loadMasterSatelit();
+        }
+        if (!vm.simpegLookup || !vm.simpegLookup.pegawai || vm.simpegLookup.pegawai.length === 0) {
+          vm.loadSimpegLookup();
+        }
       }
     },
 
+    /**
+     * v5.3.0: Re-render chart saat dark mode toggle.
+     * Chart pakai CSS variables, jadi saat dark mode aktif, warna
+     * background chart (`#f1f5f9`) berubah → perlu re-render.
+     */
     onDarkToggle(vm) {
-      if (vm.currentPage === 'dashboard') vm.renderDashboardCharts();
+      // Re-render chart di halaman yang punya chart
+      if (vm.currentPage === 'dashboard' || vm.currentPage === 'analisa') {
+        vm.$nextTick(() => {
+          setTimeout(() => vm.renderDashboardCharts(), 100);
+        });
+      }
     },
 
+    /**
+     * v5.3.0: initApp dengan silent = true.
+     * Tujuan: kalau gagal koneksi saat startup, jangan spam 7 toast.
+     * User cukup lihat toast tunggal di akhir (atau tidak sama sekali,
+     * karena loader punya fallback ke data masterPegawaiList).
+     */
     async initApp(vm) {
       if (vm.dataLoaded) return;
+
+      // Fase 1: Paralel — semua modul independen, silent untuk hindari toast spam
       await Promise.all([
-        vm.loadSimpegLookup(),
-        vm.loadMasterSatelit(),
-        vm.loadJadwal(),
-        vm.loadKualifikasi(),
-        vm.loadDashboard(),
-        vm.loadKompetensi(1),
-        vm.loadUsulan(),
-        vm.loadAnalisa()
+        vm.loadSimpegLookup(true),
+        vm.loadMasterSatelit(true),
+        vm.loadKualifikasi(true),
+        vm.loadDashboard(true),
+        vm.loadKompetensi(true),
+        vm.loadUsulan(true),
+        vm.loadAnalisa(true)
       ]);
+
+      // Fase 2: Setelah master satelit loaded, baru load jadwal
+      // (get_jadwal_list source of truth untuk jadwalList).
+      await vm.loadJadwal(true);
+
+      // Fase 3: Render chart setelah DOM siap
       vm.$nextTick(() => {
         setTimeout(() => vm.renderDashboardCharts(), 200);
       });
