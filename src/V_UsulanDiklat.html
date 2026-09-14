@@ -1,8 +1,22 @@
-<!-- SI-KOMPETENSI - V_UsulanDiklat.html (Rencana Diklat Tahunan &amp; Tracking Realisasi) -->
-<!-- Perencanaan target kompetensi tahunan berbasis kebutuhan jabatan &amp; pemantauan realisasi pelatihan ASN -->
+<!-- ============================================================
+     SI-KOMPETENSI - V_UsulanDiklat.html (v5.3.0)
+     Rencana Diklat Tahunan & Tracking Realisasi
+     ============================================================
+     Changelog v5.3.0 (2026-09-13):
+     - 📐 TABLE: Tambah min-w-[1100px] di tabel Rencana agar scroll
+       horizontal mulus di HP (8 kolom, konten multi-baris).
+     - 🎨 FILTER: Search field dilebarkan dari 1/4 → 2/5 kolom
+       (grid lg:grid-cols-4 → lg:grid-cols-5, search lg:col-span-2)
+       agar lebih nyaman mengetik query panjang.
+     Changelog v5.2.0 (2026-09-13):
+     - FIX: Nama pegawai tampil (bukan PEG-xxxx). Pakai helper
+       getPegawaiNama() yang cek field `nama_lengkap` (backend SIMPEG).
+     - FIX: Kolom "Alasan / Justifikasi" dipisah dari kolom Program
+       Pelatihan — supaya lebih informatif & mudah dibaca.
+     ============================================================ -->
 
 <section v-if="currentPage === 'usulan_diklat' || currentPage === 'rencana_diklat'" class="space-y-6">
-  
+
   <!-- Header Halaman -->
   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
     <div>
@@ -17,29 +31,34 @@
     <div class="flex items-center gap-2">
       <button @click="exportRencanaExcel()" class="btn btn-secondary text-xs px-3.5 py-2.5 flex items-center gap-1.5 shadow-sm rounded-xl">
         <i class="fa-solid fa-file-excel text-emerald-600"></i>
-        <span>Ekspor Rekap (Excel)</span>
+        <span>Ekspor Rekap</span>
       </button>
-      <button v-if="isAdmin" @click="openUsulanModal()" class="btn btn-primary text-xs px-4 py-2.5 flex items-center gap-2 shadow-sm rounded-xl font-bold">
+      <button @click="exportRencanaVsRealisasiExcel()" class="btn btn-secondary text-xs px-3.5 py-2.5 flex items-center gap-1.5 shadow-sm rounded-xl">
+        <i class="fa-solid fa-chart-column text-blue-600"></i>
+        <span>Rencana vs Realisasi</span>
+      </button>
+
+      <button v-if="isAdmin || isVerifikator" @click="openUsulanModal()" class="btn btn-primary text-xs px-4 py-2.5 flex items-center gap-2 shadow-sm rounded-xl font-bold">
         <i class="fa-solid fa-plus"></i>
         <span>Susun Rencana Baru</span>
       </button>
     </div>
   </div>
 
-  <!-- 4 KPI Summary Cards Realisasi Rencana -->
+  <!-- 4 KPI Summary Cards -->
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-    <!-- Card 1: Total Program -->
     <div class="card p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
       <div class="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center text-xl shrink-0">
         <i class="fa-solid fa-bullseye"></i>
       </div>
       <div>
-        <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Rencana Diklat</span>
-        <div class="text-2xl font-black text-slate-900 dark:text-white">{{ usulanList.length }} <span class="text-xs font-normal text-slate-400">Program</span></div>
+        <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Rencana</span>
+        <div class="text-2xl font-black text-slate-900 dark:text-white">
+          {{ filteredRencanaList.length }} <span class="text-xs font-normal text-slate-400">Program</span>
+        </div>
       </div>
     </div>
 
-    <!-- Card 2: Tingkat Realisasi -->
     <div class="card p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
       <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl shrink-0">
         <i class="fa-solid fa-circle-check"></i>
@@ -47,12 +66,12 @@
       <div class="flex-1">
         <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Tingkat Realisasi</span>
         <div class="text-2xl font-black text-emerald-600 dark:text-emerald-400">
-          {{ usulanList.filter(u => u.status_rencana === 'Terealisasi' || u.is_terealisasi).length }} <span class="text-xs font-normal text-slate-400">/ {{ usulanList.length }} Tuntas</span>
+          {{ filteredRencanaList.filter(u => u.status_rencana === 'Terealisasi' || u.is_terealisasi).length }}
+          <span class="text-xs font-normal text-slate-400">/ {{ filteredRencanaList.length }} Tuntas</span>
         </div>
       </div>
     </div>
 
-    <!-- Card 3: Target Akumulasi JP -->
     <div class="card p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
       <div class="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xl shrink-0">
         <i class="fa-solid fa-hourglass-half"></i>
@@ -60,12 +79,12 @@
       <div>
         <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Target JP</span>
         <div class="text-2xl font-black text-blue-600 dark:text-blue-400">
-          {{ usulanList.reduce((acc, u) => acc + (Number(u.target_jp || u.jumlah_jp || 20)), 0) }} <span class="text-xs font-normal text-slate-400">JP</span>
+          {{ filteredRencanaList.reduce((acc, u) => acc + (Number(u.target_jp || u.jumlah_jp || 20)), 0) }}
+          <span class="text-xs font-normal text-slate-400">JP</span>
         </div>
       </div>
     </div>
 
-    <!-- Card 4: Estimasi Anggaran -->
     <div class="card p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
       <div class="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xl shrink-0">
         <i class="fa-solid fa-money-bill-wave"></i>
@@ -73,21 +92,26 @@
       <div>
         <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Estimasi Anggaran</span>
         <div class="text-lg font-black text-amber-600 dark:text-amber-400">
-          Rp {{ (usulanList.reduce((acc, u) => acc + (Number(u.estimasi_biaya) || 0), 0) / 1000000).toFixed(1) }} Jt
+          Rp {{ (filteredRencanaList.reduce((acc, u) => acc + (Number(u.estimasi_biaya) || 0), 0) / 1000000).toFixed(1) }} Jt
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Filter &amp; Kontrol Pencarian -->
-  <div class="card p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row gap-3">
-    <div class="flex-1 relative">
+  <!-- Filter & Kontrol Pencarian — v5.3.0: search lebih lebar (2/5 kolom) -->
+  <div class="card p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+    <div class="relative md:col-span-2 lg:col-span-2">
       <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-      <input type="text" v-model="filterRencanaSearch" placeholder="Cari program diklat terencana, jabatan sasaran, atau pegawai..." class="input pl-9 text-xs w-full py-2.5 rounded-xl">
+      <input type="text" v-model="filterRencanaSearch" @input="rencanaPagination.page = 1"
+             placeholder="Cari program, jabatan sasaran, pegawai..."
+             class="input pl-9 text-xs w-full py-2.5 rounded-xl">
     </div>
-    
-    <!-- Filter Triwulan -->
-    <select v-model="filterRencanaTw" class="input text-xs md:w-44 py-2.5 rounded-xl">
+
+    <select v-model.number="filterRencanaTahun" @change="rencanaPagination.page = 1" class="input text-xs py-2.5 rounded-xl">
+      <option v-for="y in optionsTahun" :key="'rt-' + y" :value="y">Tahun: {{ y }}</option>
+    </select>
+
+    <select v-model="filterRencanaTw" @change="rencanaPagination.page = 1" class="input text-xs py-2.5 rounded-xl">
       <option value="">Semua Triwulan</option>
       <option value="TW I">TW I (Jan - Mar)</option>
       <option value="TW II">TW II (Apr - Jun)</option>
@@ -95,80 +119,101 @@
       <option value="TW IV">TW IV (Okt - Des)</option>
     </select>
 
-    <!-- Filter Status Keselarasan -->
-    <select v-model="filterRencanaStatus" class="input text-xs md:w-44 py-2.5 rounded-xl">
+    <select v-model="filterRencanaStatus" @change="rencanaPagination.page = 1" class="input text-xs py-2.5 rounded-xl">
       <option value="">Semua Status</option>
       <option value="Terealisasi">Terealisasi (Tuntas)</option>
-      <option value="Terjadwal">Terjadwal</option>
+      <option value="Disetujui">Disetujui</option>
+      <option value="Diajukan">Diajukan</option>
       <option value="Direncanakan">Direncanakan</option>
+      <option value="Ditolak">Ditolak</option>
     </select>
   </div>
 
-  <!-- Tabel Rencana Pengembangan Kompetensi Tahunan -->
-  <div class="card p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+  <!-- Tabel Rencana -->
+  <div class="card p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
     <div class="overflow-x-auto">
-      <table class="table-custom w-full text-left text-xs">
+      <!-- v5.3.0: min-w-[1100px] -->
+      <table class="table-custom w-full text-left text-xs min-w-[1100px]">
         <thead>
           <tr class="bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300">
             <th class="py-3 px-3 font-bold w-12">No</th>
             <th class="py-3 px-4 font-bold min-w-[200px]">Sasaran Jabatan &amp; Personel</th>
             <th class="py-3 px-4 font-bold min-w-[220px]">Program Pelatihan Terencana</th>
+            <th class="py-3 px-4 font-bold min-w-[240px]">Alasan / Justifikasi</th>
             <th class="py-3 px-3 font-bold">Rumpun &amp; Target JP</th>
-            <th class="py-3 px-3 font-bold">Periode TW &amp; Anggaran</th>
+            <th class="py-3 px-3 font-bold">Periode &amp; Anggaran</th>
             <th class="py-3 px-3 font-bold text-center">Status Realisasi</th>
-            <th class="py-3 px-4 font-bold text-center min-w-[140px]">Aksi</th>
+            <th class="py-3 px-4 font-bold text-center min-w-[200px]">Aksi</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-          <tr v-for="(u, idx) in filteredRencanaList" :key="u.id" class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
-            <td class="py-3 px-3 font-bold text-slate-400">{{ idx + 1 }}</td>
-            
-            <!-- Kolom Sasaran -->
+          <tr v-for="(u, idx) in paginatedRencanaList" :key="u.id" class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
+            <td class="py-3 px-3 font-bold text-slate-400">{{ (rencanaPagination.page - 1) * rencanaPagination.limit + idx + 1 }}</td>
+
+            <!-- Kolom Sasaran: FIX pakai getPegawaiNama -->
             <td class="py-3 px-4">
               <div class="font-bold text-slate-900 dark:text-white text-sm">
-                {{ u.pegawai_id ? (namaPegawai(u.pegawai_id) || formatNamaPegawai(u.nama_pegawai)) : (namaJabatan(u.jabatan_id) || 'Semua Personel Bidang') }}
+                <template v-if="u.pegawai_id">
+                  {{ getPegawaiNama(u.pegawai_id) || namaPegawai(u.pegawai_id) || u.nama_pegawai || u.pegawai_id }}
+                </template>
+                <template v-else>
+                  {{ namaJabatan(u.jabatan_id) || 'Semua Personel Bidang' }}
+                </template>
               </div>
               <div class="text-[11px] text-slate-500 mt-0.5">
-                <i class="fa-solid fa-sitemap text-[10px] text-slate-400"></i> {{ namaUnit(u.unit_id) || 'Satpol PP &amp; Damkar' }}
+                <i class="fa-solid fa-sitemap text-[10px] text-slate-400"></i> {{ namaUnit(u.unit_id) || 'Satpol PP & Damkar' }}
               </div>
             </td>
 
-            <!-- Kolom Program Diklat -->
+            <!-- Kolom Program -->
             <td class="py-3 px-4">
               <div class="font-bold text-slate-800 dark:text-slate-200">{{ u.nama_program_diklat || u.nama_diklat_usulan }}</div>
               <div class="text-[11px] text-slate-500 mt-0.5">
                 <i class="fa-solid fa-building-columns text-[10px]"></i> {{ u.penyelenggara || u.target_penyelenggara || 'BPSDM Jawa Timur' }}
               </div>
-              <div v-if="u.alasan_justifikasi || u.alasan_usulan" class="text-[10px] text-slate-400 italic mt-0.5 line-clamp-1">
-                "{{ u.alasan_justifikasi || u.alasan_usulan }}"
+            </td>
+
+            <!-- Kolom Alasan -->
+            <td class="py-3 px-4">
+              <div class="text-[11px] text-slate-600 dark:text-slate-300 italic leading-relaxed">
+                <i class="fa-solid fa-quote-left text-[9px] text-slate-400 mr-1"></i>
+                {{ u.alasan_justifikasi || u.alasan_usulan || '-' }}
               </div>
             </td>
 
-            <!-- Kolom Rumpun &amp; Target JP -->
+            <!-- Kolom Rumpun & Target JP -->
             <td class="py-3 px-3">
               <span class="badge badge-info text-xs font-black">{{ u.target_jp || u.jumlah_jp || 20 }} JP</span>
               <div class="text-[10px] text-slate-400 mt-1">{{ u.rumpun || 'Teknis Operasional' }}</div>
               <div class="text-[10px] text-slate-500">{{ u.metode || 'Klasikal' }}</div>
             </td>
 
-            <!-- Kolom Periode TW &amp; Anggaran -->
+            <!-- Kolom Periode & Anggaran -->
             <td class="py-3 px-3">
               <div class="font-bold text-slate-800 dark:text-slate-200">{{ u.periode_triwulan || ('TA ' + (u.tahun_anggaran || u.tahun_anggaran_target || 2026)) }}</div>
+              <div class="text-[10px] text-slate-400">TA {{ u.tahun_anggaran || u.tahun_anggaran_target || 2026 }}</div>
               <div class="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
-                {{ u.estimasi_biaya ? 'Rp ' + Number(u.estimasi_biaya).toLocaleString('id-ID') : 'Non-Budgeting / Beasiswa' }}
+                {{ u.estimasi_biaya ? 'Rp ' + Number(u.estimasi_biaya).toLocaleString('id-ID') : 'Non-Budgeting' }}
               </div>
-              <div class="text-[10px] text-slate-400">{{ u.sumber_dana || 'APBD Kabupaten' }}</div>
             </td>
 
-            <!-- Kolom Status Keselarasan / Realisasi -->
+            <!-- Kolom Status -->
             <td class="py-3 px-3 text-center">
               <span v-if="u.status_rencana === 'Terealisasi' || u.is_terealisasi" class="badge badge-success text-[11px] font-bold inline-flex items-center gap-1">
                 <i class="fa-solid fa-circle-check"></i>
                 <span>Terealisasi</span>
               </span>
-              <span v-else-if="u.status_rencana === 'Terjadwal'" class="badge badge-warning text-[11px] font-bold inline-flex items-center gap-1">
-                <i class="fa-solid fa-calendar-day"></i>
-                <span>Terjadwal</span>
+              <span v-else-if="u.status_rencana === 'Disetujui' || u.status_rencana === 'Disetujui_Kasat'" class="badge badge-info text-[11px] font-bold inline-flex items-center gap-1">
+                <i class="fa-solid fa-check-double"></i>
+                <span>Disetujui</span>
+              </span>
+              <span v-else-if="u.status_rencana === 'Diajukan'" class="badge badge-warning text-[11px] font-bold inline-flex items-center gap-1">
+                <i class="fa-solid fa-paper-plane"></i>
+                <span>Diajukan</span>
+              </span>
+              <span v-else-if="u.status_rencana === 'Ditolak'" class="badge badge-danger text-[11px] font-bold inline-flex items-center gap-1">
+                <i class="fa-solid fa-circle-xmark"></i>
+                <span>Ditolak</span>
               </span>
               <span v-else class="badge bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-700 text-[11px] font-medium inline-flex items-center gap-1">
                 <i class="fa-solid fa-hourglass-start"></i>
@@ -179,25 +224,57 @@
             <!-- Kolom Aksi -->
             <td class="py-3 px-4 text-center">
               <div class="flex items-center justify-center gap-1.5">
-                <button v-if="isAdmin" @click="openEditUsulan(u)" class="btn btn-secondary text-xs px-2.5 py-1.5 rounded-lg flex items-center gap-1" title="Edit Rencana">
-                  <i class="fa-solid fa-pen"></i>
-                  <span>Edit</span>
+                <button v-if="isVerifikator && u.status_usulan === 'diajukan'"
+                        @click="openReviewUsulanModal(u)"
+                        class="btn bg-purple-50 hover:bg-purple-100 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300 text-xs px-2.5 py-1.5 rounded-lg flex items-center gap-1 font-bold"
+                        title="Review Usulan">
+                  <i class="fa-solid fa-gavel"></i>
+                  <span>Review</span>
                 </button>
-                <button v-if="isAdmin" @click="deleteUsulan(u.id)" class="btn btn-danger text-xs px-2 py-1.5 rounded-lg" title="Hapus Rencana">
+                <button v-if="isAdmin" @click="openEditUsulan(u)" class="btn btn-secondary text-xs px-2.5 py-1.5 rounded-lg flex items-center gap-1" title="Edit">
+                  <i class="fa-solid fa-pen"></i>
+                </button>
+                <button v-if="isAdmin" @click="deleteUsulan(u.id)" class="btn btn-danger text-xs px-2 py-1.5 rounded-lg" title="Hapus">
                   <i class="fa-solid fa-trash-can"></i>
                 </button>
               </div>
             </td>
           </tr>
 
-          <tr v-if="filteredRencanaList.length === 0">
-            <td colspan="7" class="py-8 text-center text-slate-400 text-xs">
+          <tr v-if="paginatedRencanaList.length === 0">
+            <td colspan="8" class="py-8 text-center text-slate-400 text-xs">
               <i class="fa-solid fa-clipboard-question text-3xl mb-2 text-slate-300 dark:text-slate-700 block"></i>
-              Belum ada data rencana diklat tahunan pada kriteria filter ini.
+              <p class="font-medium">{{ usulanList.length === 0 ? 'Belum ada data rencana diklat tahunan.' : 'Tidak ada rencana untuk filter ini.' }}</p>
             </td>
           </tr>
         </tbody>
       </table>
     </div>
+
+    <!-- Pagination -->
+    <div v-if="filteredRencanaList.length > 0" class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 mt-4 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-500">
+      <span>
+        Menampilkan
+        <strong class="text-slate-800 dark:text-white">{{ (rencanaPagination.page - 1) * rencanaPagination.limit + 1 }}</strong>
+        &ndash;
+        <strong class="text-slate-800 dark:text-white">{{ Math.min(rencanaPagination.page * rencanaPagination.limit, filteredRencanaList.length) }}</strong>
+        dari
+        <strong class="text-slate-800 dark:text-white">{{ filteredRencanaList.length }}</strong> program
+      </span>
+      <div class="flex items-center gap-1.5">
+        <button @click="rencanaPagination.page--" :disabled="rencanaPagination.page <= 1"
+                class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 transition">
+          <i class="fa-solid fa-chevron-left"></i> Prev
+        </button>
+        <span class="px-3 py-1.5 font-bold text-slate-700 dark:text-slate-200">
+          {{ rencanaPagination.page }} / {{ rencanaTotalPages }}
+        </span>
+        <button @click="rencanaPagination.page++" :disabled="rencanaPagination.page >= rencanaTotalPages"
+                class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 transition">
+          Next <i class="fa-solid fa-chevron-right"></i>
+        </button>
+      </div>
+    </div>
   </div>
+
 </section>
