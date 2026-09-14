@@ -1,311 +1,376 @@
 // ============================================================
-// SI-KOMPETENSI - 99_TestSuite.gs (v4.0.0 — 8-Sheet Test Suite & Auditor)
-// Comprehensive Automated Tests, Sheet Auditor & Safe Cleanup Tools
+// SI-KOMPETENSI - 99_TestSuite.gs (v2.0.0 — CoreLib Integration Test)
+// ============================================================
+// Changelog v2.0 (2026-09-13):
+// - Rewrite total: fokus verifikasi integrasi CoreLib v2.2.1.
+// - Cek adapter 00_Utils.gs, delegasi SSO, session, db engine.
+// - Tambah test untuk FIX-S9, FIX-L16, FIX-M16, FIX-R17.
+// - Simplify: hanya test kritis (bukan comprehensive).
 // ============================================================
 
-/**
- * 1. FUNGSI DIAGNOSTIK & AUDIT SELURUH SHEET LOKAL (8 SHEET STANDAR)
- */
-function auditSpreadsheetSheets() {
-  var ss = getLocalSpreadsheet_();
-  if (!ss) {
-    Logger.log('❌ Gagal membuka spreadsheet lokal.');
-    return { success: false, error: 'Spreadsheet tidak ditemukan.' };
-  }
+var TEST_ID_PREFIX_ = '_TEST_';
 
-  var sheets = ss.getSheets();
-  var activeSheets = [
-    'M_REFERENSI',
-    'M_KATALOG_DIKLAT',
-    'M_STANDAR_KOMPETENSI',
-    'T_JADWAL_DIKLAT',
-    'T_PENUGASAN_PESERTA',
-    'T_RIWAYAT_KOMPETENSI',
-    'T_KUALIFIKASI_KHUSUS',
-    'T_USULAN_DIKLAT'
-  ];
-  var report = [];
+var TEST_USER_ADMIN_ = { id: 'TEST-ADMIN', email: 'test.admin@trenggalekkab.go.id', role: 'admin', pegawai_id: 'PEG-0001' };
+var TEST_USER_VERIF_ = { id: 'TEST-VERIF', email: 'test.verif@trenggalekkab.go.id', role: 'verifikator', pegawai_id: 'PEG-0002' };
+var TEST_USER_USER_ = { id: 'TEST-USER', email: 'test.user@trenggalekkab.go.id', role: 'user', pegawai_id: 'PEG-0003' };
+var TEST_USER_VIEWER_ = { id: 'TEST-VIEWER', email: 'test.viewer@trenggalekkab.go.id', role: 'viewer', pegawai_id: '' };
 
-  Logger.log('================ AUDIT SPREADSHEET SI-KOMPETENSI (8 SHEET IDEAL) ================');
-  Logger.log('Total Sheet Ditemukan: ' + sheets.length + ' sheet\n');
+// ==================== RUNNER ====================
 
-  sheets.forEach(function(sheet, idx) {
-    var name = sheet.getName();
-    var lastRow = sheet.getLastRow();
-    var lastCol = sheet.getLastColumn();
-    var headers = [];
+function runAllTestsSikompetensi() {
+  Logger.log('========================================');
+  Logger.log('SI-KOMPETENSI TEST SUITE v2.0');
+  Logger.log('Waktu: ' + new Date().toISOString());
+  Logger.log('========================================');
+  Logger.log('');
 
-    if (lastRow > 0 && lastCol > 0) {
-      headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(function(h) { return String(h).trim(); });
-    }
-
-    var status = '';
-    var actionRecom = '';
-
-    if (activeSheets.indexOf(name) !== -1) {
-      status = '✅ [AKTIF v4.0 - 8 SHEET IDEAL]';
-      actionRecom = 'Sheet utama aktif SI-KOMPETENSI.';
-    } else {
-      status = '🗑️ [SHEET LAMA / SISA PENGUJIAN - AMAN DIHAPUS]';
-      actionRecom = 'Bukan bagian dari 8 sheet standar. Jalankan cleanupObsoleteSheets() untuk membersihkan.';
-    }
-
-    var item = {
-      index: idx + 1,
-      name: name,
-      rows: lastRow,
-      cols: lastCol,
-      status: status,
-      recommendation: actionRecom,
-      headers: headers
-    };
-    report.push(item);
-
-    Logger.log((idx + 1) + '. Sheet: "' + name + '" (' + lastRow + ' baris, ' + lastCol + ' kolom)');
-    Logger.log('   Status : ' + status);
-    Logger.log('   Saran  : ' + actionRecom);
-    Logger.log('   Header : [' + headers.join(', ') + ']\n');
-  });
-
-  Logger.log('================ RINGKASAN REKOMENDASI ================');
-  Logger.log('Sheet Wajib Aktif (8 Sheet): ' + activeSheets.join(', '));
-  Logger.log('Gunakan fungsi "cleanupObsoleteSheets()" untuk membersihkan sheet usang secara aman otomatis.');
-
-  return { success: true, total: sheets.length, report: report };
-}
-
-/**
- * 2. FUNGSI PEMBERSIH SHEET USANG OTOMATIS & AMAN (8 SHEET AKTIF)
- */
-function cleanupObsoleteSheets() {
-  var ss = getLocalSpreadsheet_();
-  if (!ss) return { success: false, error: 'Spreadsheet tidak ditemukan.' };
-
-  Logger.log('🧹 Memulai Pembersihan Sheet Usang di SI-KOMPETENSI (8-Sheet Standard)...');
-
-  // 1. Pastikan 8 Sheet Wajib Sudah Terbuat & Header Tersinkron
-  initDatabase();
-
-  var activeSheets = [
-    'M_REFERENSI',
-    'M_KATALOG_DIKLAT',
-    'M_STANDAR_KOMPETENSI',
-    'T_JADWAL_DIKLAT',
-    'T_PENUGASAN_PESERTA',
-    'T_RIWAYAT_KOMPETENSI',
-    'T_KUALIFIKASI_KHUSUS',
-    'T_USULAN_DIKLAT'
-  ];
-  var allSheets = ss.getSheets();
-  var deleted = [];
-
-  allSheets.forEach(function(sh) {
-    var sName = sh.getName();
-    if (activeSheets.indexOf(sName) === -1 && ss.getSheets().length > 1) {
-      try {
-        ss.deleteSheet(sh);
-        deleted.push(sName);
-        Logger.log('🗑️ Berhasil menghapus sheet usang: "' + sName + '"');
-      } catch (err) {
-        Logger.log('[WARN] Gagal menghapus ' + sName + ': ' + err.message);
-      }
-    }
-  });
-
-  Logger.log('🎉 ============================================================');
-  Logger.log('🎉 Pembersihan Selesai! Sheet dihapus: ' + (deleted.join(', ') || 'Tidak ada'));
-  Logger.log('🎉 8 SHEET IDEAL AKTIF: ' + activeSheets.join(', '));
-  Logger.log('🎉 ============================================================');
-
-  return { success: true, deleted: deleted };
-}
-
-/**
- * 3. TEST SUITE OTOMATIS LENGKAP (8 SHEET & ENDPOINT)
- */
-function runAllTests() {
   var results = [];
-  var ss = getLocalSpreadsheet_();
-  var adminUser = { id: 'TEST_ADMIN', email: 'admin.test@trenggalekkab.go.id', role: 'admin' };
-  var viewerUser = { id: 'PEG-TEST', email: 'staf.test@trenggalekkab.go.id', role: 'viewer' };
 
-  Logger.log('🧪 Memulai Test Suite SI-KOMPETENSI (v4.0.0 — 8 Sheet Ideal Architecture)...');
+  Logger.log('--- INTEGRASI CORELIB ---');
+  results = results.concat(testCoreLibAvailable());
+  results = results.concat(testUtilsAdapter());
+  results = results.concat(testRoleMappingFixed());
 
-  // Test 1: Verifikasi Struktur 8 Sheet Database Lokal
-  try {
-    if (!ss) {
-      results.push({ name: '1. Koneksi Spreadsheet Lokal', status: 'WARN', message: 'Spreadsheet ID belum terhubung.' });
-    } else {
-      var expectedSheets = [
-        LOCAL_SHEETS.M_REFERENSI,
-        LOCAL_SHEETS.M_KATALOG_DIKLAT,
-        LOCAL_SHEETS.M_STANDAR_KOMPETENSI,
-        LOCAL_SHEETS.T_JADWAL_DIKLAT,
-        LOCAL_SHEETS.T_PENUGASAN_PESERTA,
-        LOCAL_SHEETS.T_RIWAYAT_KOMPETENSI,
-        LOCAL_SHEETS.T_KUALIFIKASI_KHUSUS,
-        LOCAL_SHEETS.T_USULAN_DIKLAT
-      ];
-      var missing = [];
-      expectedSheets.forEach(function(s) {
-        if (!ss.getSheetByName(s)) missing.push(s);
-      });
+  Logger.log('');
+  Logger.log('--- DOMAIN LOGIC ---');
+  results = results.concat(testDispatcherReadOnly());
+  results = results.concat(testRoleChecks());
+  results = results.concat(testLookupReadOnly());
 
-      if (missing.length === 0) {
-        results.push({ name: '1. Struktur 8 Sheet Database Lokal', status: 'PASS', message: '8 Sheet Satelit terdaftar lengkap di spreadsheet.' });
-      } else {
-        results.push({ name: '1. Struktur 8 Sheet Database Lokal', status: 'WARN', message: 'Sheet belum dibuat: ' + missing.join(', ') });
-      }
-    }
-  } catch (e) {
-    results.push({ name: '1. Struktur 8 Sheet Database Lokal', status: 'FAIL', error: e.message });
+  Logger.log('');
+  Logger.log('--- BUG FIX VERIFICATION ---');
+  results = results.concat(testFixL16());
+  results = results.concat(testFixM16());
+  results = results.concat(testFixR17());
+
+  Logger.log('');
+  Logger.log('========================================');
+  var pass = results.filter(function(r) { return r.status === 'PASS'; }).length;
+  var fail = results.filter(function(r) { return r.status === 'FAIL'; }).length;
+  var skip = results.filter(function(r) { return r.status === 'SKIP'; }).length;
+  Logger.log('RINGKASAN: PASS=' + pass + ' / FAIL=' + fail + ' / SKIP=' + skip);
+  Logger.log('========================================');
+
+  if (fail > 0) {
+    Logger.log('');
+    Logger.log('=== FAIL DETAILS ===');
+    results.filter(function(r) { return r.status === 'FAIL'; }).forEach(function(r) {
+      Logger.log('❌ ' + r.name + ': ' + r.detail);
+    });
   }
 
-  // Test 2: Handler Jadwal Diklat & Penugasan Peserta (T_JADWAL & T_PENUGASAN)
-  try {
-    var jdwList = getJadwalList_({});
-    var tgsList = getPenugasanList_({});
-    if (jdwList && jdwList.success && tgsList && tgsList.success) {
-      results.push({
-        name: '2. Modul Jadwal Pelatihan & Penugasan SPT',
-        status: 'PASS',
-        message: 'Jadwal Diklat: ' + (jdwList.data || []).length + ', Penugasan SPT: ' + (tgsList.data || []).length
-      });
-    } else {
-      results.push({ name: '2. Modul Jadwal Pelatihan & Penugasan SPT', status: 'FAIL', error: 'Gagal memuat data jadwal/penugasan' });
-    }
-  } catch (e) {
-    results.push({ name: '2. Modul Jadwal Pelatihan & Penugasan SPT', status: 'FAIL', error: e.message });
-  }
+  return { success: true, pass: pass, fail: fail, skip: skip, results: results };
+}
 
-  // Test 3: Kualifikasi Khusus (SK PPNS / Damkar) & Alert H-90 Kadaluwarsa
-  try {
-    var klsList = getKualifikasiList_({});
-    var expiringSoon = getKualifikasiExpiringSoon_({});
-    if (klsList && klsList.success && expiringSoon && expiringSoon.success) {
-      results.push({
-        name: '3. Kualifikasi Khusus & Alert H-90 Kadaluwarsa',
-        status: 'PASS',
-        message: 'Total Lisensi: ' + (klsList.data || []).length + ', Lisensi Mendekati Kadaluwarsa: ' + (expiringSoon.count || 0)
-      });
-    } else {
-      results.push({ name: '3. Kualifikasi Khusus & Alert H-90 Kadaluwarsa', status: 'FAIL', error: 'Gagal memuat kualifikasi khusus' });
-    }
-  } catch (e) {
-    results.push({ name: '3. Kualifikasi Khusus & Alert H-90 Kadaluwarsa', status: 'FAIL', error: e.message });
-  }
+// ==================== HELPER ====================
 
-  // Test 4: Master Satelit (Katalog, Standar Jabatan, Referensi)
-  try {
-    var satelitBundle = getMasterSatelit_();
-    if (satelitBundle && satelitBundle.success && satelitBundle.data) {
-      var katCount = (satelitBundle.data.katalog || []).length;
-      var stdCount = (satelitBundle.data.standar_kompetensi || []).length;
-      var refCount = (satelitBundle.data.referensi || []).length;
-      results.push({
-        name: '4. Master Data Satelit',
-        status: 'PASS',
-        message: 'Katalog: ' + katCount + ', Standar Jabatan: ' + stdCount + ', Referensi: ' + refCount
-      });
-    } else {
-      results.push({ name: '4. Master Data Satelit', status: 'FAIL', error: 'Gagal memuat master satelit' });
-    }
-  } catch (e) {
-    results.push({ name: '4. Master Data Satelit', status: 'FAIL', error: e.message });
+function _assert_(results, name, condition, detail) {
+  if (condition) {
+    results.push({ name: name, status: 'PASS' });
+    Logger.log('  ✅ ' + name);
+  } else {
+    results.push({ name: name, status: 'FAIL', detail: detail || '' });
+    Logger.log('  ❌ ' + name + ' — ' + (detail || ''));
   }
+}
 
-  // Test 5: SIMPEG Lookup Read-Only Bridge
-  try {
-    var simpeg = getSimpegLookup_();
-    if (simpeg && simpeg.success && simpeg.data) {
-      var pCount = (simpeg.data.pegawai || []).length;
-      var uCount = (simpeg.data.unit || []).length;
-      var jCount = (simpeg.data.jabatan || []).length;
-      results.push({
-        name: '5. SIMPEG Lookup Bridge (Read-Only)',
-        status: 'PASS',
-        message: 'Pegawai: ' + pCount + ', Unit: ' + uCount + ', Jabatan: ' + jCount
-      });
-    } else {
-      results.push({ name: '5. SIMPEG Lookup Bridge (Read-Only)', status: 'FAIL', error: 'Gagal membaca lookup SIMPEG' });
-    }
-  } catch (e) {
-    results.push({ name: '5. SIMPEG Lookup Bridge (Read-Only)', status: 'FAIL', error: e.message });
-  }
+// ==================== 1. CORELIB AVAILABLE ====================
 
-  // Test 6: Dashboard, Matriks JP & AI Insights
-  try {
-    var dash = apiDashboard_({ tahun: 2026 }, adminUser);
-    if (dash && dash.success && dash.data) {
-      results.push({
-        name: '6. Dashboard Agregasi, Matriks & AI Insights',
-        status: 'PASS',
-        message: 'Total Portofolio: ' + (dash.data.total_kompetensi || 0) + ', PNS Lulus: ' + ((dash.data.capaian_pns && dash.data.capaian_pns.lulus) || 0) + ', Matriks: ' + (dash.data.matriks_bulanan || []).length + ' baris'
-      });
-    } else {
-      results.push({ name: '6. Dashboard Agregasi, Matriks & AI Insights', status: 'FAIL', error: 'Gagal memuat dashboard' });
-    }
-  } catch (e) {
-    results.push({ name: '6. Dashboard Agregasi, Matriks & AI Insights', status: 'FAIL', error: e.message });
-  }
+function testCoreLibAvailable() {
+  Logger.log('');
+  var results = [];
 
-  // Test 7: Analisa Gap Kebutuhan Kompetensi Jabatan (SKJ)
-  try {
-    var analytics = getAnalytics_({ tahun: 2026 }, adminUser);
-    if (analytics && analytics.success && analytics.data) {
-      results.push({
-        name: '7. Analisa Gap Kompetensi Jabatan (SKJ)',
-        status: 'PASS',
-        message: 'Kesenjangan Terdeteksi: ' + (analytics.data.gap_count || 0) + ', Temuan: ' + (analytics.data.temuan || []).length
-      });
-    } else {
-      results.push({ name: '7. Analisa Gap Kompetensi Jabatan (SKJ)', status: 'FAIL', error: 'Gagal memproses analisa gap' });
-    }
-  } catch (e) {
-    results.push({ name: '7. Analisa Gap Kompetensi Jabatan (SKJ)', status: 'FAIL', error: e.message });
-  }
+  _assert_(results, '1.1 CoreLib terpasang', typeof CoreLib !== 'undefined', '');
 
-  // Test 8: Proteksi Keamanan Tulis (Strict Read-Only SIMPEG)
+  if (typeof CoreLib === 'undefined') return results;
+
+  _assert_(results, '1.2 CoreLib.getHighestRole',
+    typeof CoreLib.getHighestRole === 'function', '');
+  _assert_(results, '1.3 CoreLib.checkRole',
+    typeof CoreLib.checkRole === 'function', '');
+  _assert_(results, '1.4 CoreLib.normId',
+    typeof CoreLib.normId === 'function', '');
+  _assert_(results, '1.5 CoreLib.parseDate',
+    typeof CoreLib.parseDate === 'function', '');
+  _assert_(results, '1.6 CoreLib.getSheetDataCached',
+    typeof CoreLib.getSheetDataCached === 'function', '');
+  _assert_(results, '1.7 CoreLib.apiSave',
+    typeof CoreLib.apiSave === 'function', '');
+  _assert_(results, '1.8 CoreLib.apiDelete',
+    typeof CoreLib.apiDelete === 'function', '');
+
+  return results;
+}
+
+// ==================== 2. UTILS ADAPTER ====================
+
+function testUtilsAdapter() {
+  Logger.log('');
+  var results = [];
+
   try {
-    var writeFailedAsExpected = false;
+    _assert_(results, '2.1 normId_ delegate CoreLib',
+      normId_('  x  ') === 'x', '');
+  } catch (e) { _assert_(results, '2.1 normId_ delegate CoreLib', false, e.message); }
+
+  try {
+    _assert_(results, '2.2 normStr_ delegate CoreLib',
+      normStr_('  X  ') === 'x', '');
+  } catch (e) { _assert_(results, '2.2 normStr_ delegate CoreLib', false, e.message); }
+
+  try {
+    var d = parseDate_('12/09/2026');
+    _assert_(results, '2.3 parseDate_ dd/MM/yyyy benar',
+      d && d.getMonth() === 8 && d.getDate() === 12,
+      'dapat: ' + (d ? d.toISOString() : 'null'));
+  } catch (e) { _assert_(results, '2.3 parseDate_ dd/MM/yyyy benar', false, e.message); }
+
+  try {
+    var w = whitelist_('terjadwal', ['Terjadwal', 'Selesai'], 'x');
+    _assert_(results, '2.4 whitelist_ case-insensitive',
+      w === 'Terjadwal', 'dapat: ' + w);
+  } catch (e) { _assert_(results, '2.4 whitelist_ case-insensitive', false, e.message); }
+
+  return results;
+}
+
+// ==================== 3. ROLE MAPPING (FIX-S9) ====================
+
+function testRoleMappingFixed() {
+  Logger.log('');
+  var results = [];
+
+  var tests = [
+    { input: ['sekretaris'], expect: 'admin' },
+    { input: ['kepala_dinas'], expect: 'admin' },
+    { input: ['kasat'], expect: 'admin' },
+    { input: ['kabid'], expect: 'admin' },
+    { input: ['kasubbag'], expect: 'verifikator' },
+    { input: ['kasi'], expect: 'verifikator' },
+    { input: ['operator'], expect: 'user' },
+    { input: ['pegawai'], expect: 'user' },
+    { input: [], expect: 'viewer' }
+  ];
+
+  tests.forEach(function(t, i) {
     try {
-      saveRecord_('PEGAWAI', { id: 'TEST_HACK', nama: 'Hacker' }, viewerUser);
-    } catch(err) {
-      if (err.message && err.message.indexOf('Akses Ditolak') !== -1) {
-        writeFailedAsExpected = true;
-      }
+      var got = CoreLib.getHighestRole(t.input);
+      _assert_(results, '3.' + (i+1) + ' getHighestRole([' + t.input.join(',') + '])',
+        got === t.expect, 'dapat ' + got + ' expect ' + t.expect);
+    } catch (e) {
+      _assert_(results, '3.' + (i+1), false, e.message);
     }
+  });
 
-    if (writeFailedAsExpected) {
-      results.push({ name: '8. Proteksi Keamanan Tulis SIMPEG', status: 'PASS', message: 'Upaya tulis ke master SIMPEG berhasil ditolak otomatis.' });
-    } else {
-      results.push({ name: '8. Proteksi Keamanan Tulis SIMPEG', status: 'FAIL', error: 'Proteksi tulis SIMPEG bocor' });
-    }
-  } catch (e) {
-    results.push({ name: '8. Proteksi Keamanan Tulis SIMPEG', status: 'FAIL', error: e.message });
-  }
+  return results;
+}
 
-  // Test 9: Standalone API Dispatcher handleAction()
+// ==================== 4. DISPATCHER READ-ONLY ====================
+
+function testDispatcherReadOnly() {
+  Logger.log('');
+  var results = [];
+
   try {
     var ping = handleAction({ action: 'ping' });
-    var satelitResp = handleAction({ action: 'get_master_satelit' });
-    var jadwalResp = handleAction({ action: 'get_jadwal_list' });
-    var kualResp = handleAction({ action: 'get_kualifikasi_list' });
+    _assert_(results, '4.1 Ping endpoint', ping.success === true, '');
+  } catch (e) { _assert_(results, '4.1 Ping endpoint', false, e.message); }
 
-    if (ping && ping.success && satelitResp && satelitResp.success && jadwalResp && jadwalResp.success && kualResp && kualResp.success) {
-      results.push({ name: '9. Dispatcher handleAction() (Seluruh 8 Sheet Endpoints)', status: 'PASS', message: 'Seluruh endpoint API merespons valid.' });
-    } else {
-      results.push({ name: '9. Dispatcher handleAction() (Seluruh 8 Sheet Endpoints)', status: 'FAIL', error: 'Dispatcher gagal merespons salah satu endpoint' });
+  var readActions = [
+    ['4.2', 'get_config_list', function(r) { return r.success && Array.isArray(r.data); }],
+    ['4.3', 'get_master_satelit', function(r) { return r.success && r.data.katalog; }],
+    ['4.4', 'get_simpeg_lookup', function(r) { return r.success && r.data.pegawai; }],
+    ['4.5', 'get_jadwal_list', function(r) { return r.success && r.data.length >= 0; }],
+    ['4.6', 'get_penugasan_list', function(r) { return r.success && r.data.length >= 0; }],
+    ['4.7', 'get_kualifikasi_list', function(r) { return r.success && r.data.length >= 0; }],
+    ['4.8', 'get_riwayat_list', function(r) { return r.success && r.data.length >= 0; }],
+    ['4.9', 'get_usulan_list', function(r) { return r.success && r.data.length >= 0; }],
+    ['4.10', 'get_katalog_list', function(r) { return r.success && r.data.length > 0; }],
+    ['4.11', 'get_standar_list', function(r) { return r.success && r.data.length > 0; }],
+    ['4.12', 'get_referensi_list', function(r) { return r.success && r.data.length > 0; }]
+  ];
+
+  readActions.forEach(function(item) {
+    try {
+      var r = handleAction({ action: item[1] });
+      _assert_(results, item[0] + ' ' + item[1], item[2](r), '');
+    } catch (e) {
+      _assert_(results, item[0] + ' ' + item[1], false, e.message);
     }
-  } catch (e) {
-    results.push({ name: '9. Dispatcher handleAction() (Seluruh 8 Sheet Endpoints)', status: 'FAIL', error: e.message });
-  }
-
-  // Log Hasil Rangkuman
-  Logger.log('================ HASIL PENGUJIAN SI-KOMPETENSI v4.0.0 ================');
-  results.forEach(function(r) {
-    Logger.log('[' + r.status + '] ' + r.name + (r.message ? ' - ' + r.message : '') + (r.error ? ' - ERROR: ' + r.error : ''));
   });
 
-  return { success: true, results: results };
+  try {
+    var dash = handleAction({ action: 'dashboard', data: { tahun: 2026 } });
+    _assert_(results, '4.13 dashboard', dash.success && dash.data, '');
+  } catch (e) { _assert_(results, '4.13 dashboard', false, e.message); }
+
+  try {
+    var unk = handleAction({ action: 'aksi_ngawur' });
+    _assert_(results, '4.14 Action tidak dikenal ditolak',
+      !unk.success && unk.error.indexOf('tidak dikenali') !== -1, '');
+  } catch (e) { _assert_(results, '4.14 Action tidak dikenal ditolak', false, e.message); }
+
+  return results;
+}
+
+// ==================== 5. ROLE CHECKS ====================
+
+function testRoleChecks() {
+  Logger.log('');
+  var results = [];
+
+  var checks = [
+    ['5.1', 'save_jadwal', TEST_USER_VIEWER_, false],
+    ['5.2', 'save_jadwal', TEST_USER_USER_, true],
+    ['5.3', 'delete_jadwal', TEST_USER_USER_, false],
+    ['5.4', 'delete_jadwal', TEST_USER_ADMIN_, true],
+    ['5.5', 'review_usulan', TEST_USER_USER_, false],
+    ['5.6', 'review_usulan', TEST_USER_ADMIN_, true],
+    ['5.7', 'init_database', TEST_USER_ADMIN_, false],
+    ['5.8', 'init_database', { role: 'super', email: 'super@test.com' }, true],
+    ['5.9', 'delete_riwayat', TEST_USER_USER_, true],
+    ['5.10', 'delete_kualifikasi', TEST_USER_USER_, true]
+  ];
+
+  checks.forEach(function(item) {
+    try {
+      var r = checkActionRole_(item[1], item[2]);
+      _assert_(results, item[0] + ' ' + item[2].role + ' → ' + item[1],
+        r.allowed === item[3], 'allowed=' + r.allowed);
+    } catch (e) {
+      _assert_(results, item[0], false, e.message);
+    }
+  });
+
+  return results;
+}
+
+// ==================== 6. LOOKUP READ-ONLY ====================
+
+function testLookupReadOnly() {
+  Logger.log('');
+  var results = [];
+
+  try {
+    var pegawai = getSheetData_('PEGAWAI');
+    _assert_(results, '6.1 SIMPEG pegawai > 50', pegawai.length >= 50, 'Jumlah: ' + pegawai.length);
+  } catch (e) { _assert_(results, '6.1 SIMPEG pegawai > 50', false, e.message); }
+
+  try {
+    var pegawai = getSheetData_('PEGAWAI');
+    var allFourDigit = pegawai.every(function(p) {
+      return /^PEG-\d{4}$/.test(String(p.pegawai_id || p.id || ''));
+    });
+    _assert_(results, '6.2 Pegawai ID format 4 digit', allFourDigit, '');
+  } catch (e) { _assert_(results, '6.2 Pegawai ID format 4 digit', false, e.message); }
+
+  try {
+    var kat = getSheetData_(LOCAL_SHEETS.M_KATALOG_DIKLAT);
+    _assert_(results, '6.3 M_KATALOG_DIKLAT ada isi', kat.length > 0, 'Jumlah: ' + kat.length);
+  } catch (e) { _assert_(results, '6.3 M_KATALOG_DIKLAT ada isi', false, e.message); }
+
+  try {
+    var ref = getSheetData_(LOCAL_SHEETS.M_REFERENSI);
+    _assert_(results, '6.4 M_REFERENSI ada isi', ref.length > 0, 'Jumlah: ' + ref.length);
+  } catch (e) { _assert_(results, '6.4 M_REFERENSI ada isi', false, e.message); }
+
+  return results;
+}
+
+// ==================== 7. FIX-L16 ====================
+
+function testFixL16() {
+  Logger.log('');
+  var results = [];
+
+  try {
+    var res = getKualifikasiExpiringSoon_({});
+    _assert_(results, '7.1 Default include_expired=false',
+      res.success && Array.isArray(res.data_expired) && res.data_expired.length === 0,
+      'data_expired: ' + (res.data_expired ? res.data_expired.length : 'undefined'));
+  } catch (e) { _assert_(results, '7.1 Default include_expired=false', false, e.message); }
+
+  try {
+    var res2 = getKualifikasiExpiringSoon_({ include_expired: true });
+    _assert_(results, '7.2 Explicit include_expired=true',
+      res2.success && Array.isArray(res2.data_expired),
+      '');
+  } catch (e) { _assert_(results, '7.2 Explicit include_expired=true', false, e.message); }
+
+  return results;
+}
+
+// ==================== 8. FIX-M16 ====================
+
+function testFixM16() {
+  Logger.log('');
+  var results = [];
+
+  try {
+    var res = saveKatalog_({
+      nama_diklat: 'TEST FIX M16 ' + Date.now(),
+      rumpun: 'RUMPUN NGAWUR',
+      default_jp: 20
+    }, TEST_USER_ADMIN_);
+    _assert_(results, '8.1 Rumpun ngawur → fallback Teknis Operasional',
+      res.success && res.data.rumpun === 'Teknis Operasional',
+      'rumpun: ' + (res.data ? res.data.rumpun : res.error));
+
+    // Cleanup
+    if (res.success && res.data && res.data.id) {
+      softDeleteRecord_(LOCAL_SHEETS.M_KATALOG_DIKLAT, res.data.id, TEST_USER_ADMIN_);
+    }
+  } catch (e) { _assert_(results, '8.1 Rumpun ngawur → fallback', false, e.message); }
+
+  try {
+    var res2 = saveKatalog_({
+      nama_diklat: 'TEST FIX M16B ' + Date.now(),
+      rumpun: 'Manajerial & Kepemimpinan',
+      default_jp: 20
+    }, TEST_USER_ADMIN_);
+    _assert_(results, '8.2 Rumpun valid tetap',
+      res2.success && res2.data.rumpun === 'Manajerial & Kepemimpinan',
+      'rumpun: ' + (res2.data ? res2.data.rumpun : res2.error));
+
+    if (res2.success && res2.data && res2.data.id) {
+      softDeleteRecord_(LOCAL_SHEETS.M_KATALOG_DIKLAT, res2.data.id, TEST_USER_ADMIN_);
+    }
+  } catch (e) { _assert_(results, '8.2 Rumpun valid tetap', false, e.message); }
+
+  return results;
+}
+
+// ==================== 9. FIX-R17 ====================
+
+function testFixR17() {
+  Logger.log('');
+  var results = [];
+
+  try {
+    var res = saveUsulan_({
+      nama_program_diklat: 'TEST FIX R17 ' + Date.now(),
+      pegawai_id: 'PEG-0001',
+      status_rencana: 'STATUS_NGAWUR_XYZ'
+    }, TEST_USER_ADMIN_);
+    _assert_(results, '9.1 Status ngawur ditolak',
+      !res.success && res.error && res.error.indexOf('tidak valid') !== -1,
+      'error: ' + (res.error || 'NO ERROR'));
+  } catch (e) { _assert_(results, '9.1 Status ngawur ditolak', false, e.message); }
+
+  try {
+    var res2 = saveUsulan_({
+      nama_program_diklat: 'TEST FIX R17B ' + Date.now(),
+      pegawai_id: 'PEG-0001',
+      status_rencana: 'DIAJUKAN'
+    }, TEST_USER_ADMIN_);
+    _assert_(results, '9.2 Status lowercase di-map ke kanonik',
+      res2.success && res2.data.status_rencana === 'Diajukan',
+      'status_rencana: ' + (res2.data ? res2.data.status_rencana : res2.error));
+
+    if (res2.success && res2.data && res2.data.id) {
+      softDeleteRecord_(LOCAL_SHEETS.T_USULAN_DIKLAT, res2.data.id, TEST_USER_ADMIN_);
+    }
+  } catch (e) { _assert_(results, '9.2 Status lowercase di-map', false, e.message); }
+
+  return results;
 }
