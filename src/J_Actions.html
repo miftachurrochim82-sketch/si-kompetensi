@@ -1,6 +1,85 @@
 <script>
+  // ============================================================
+  // SI-KOMPETENSI - J_Actions.html (v5.3.0)
+  // Handler aksi user: modal open, save, delete, profil switcher
+  // ============================================================
+  // Changelog v5.3.0 (2026-09-13):
+  // - 🔴 FIX: switchProfilePegawai — reset `activeProfileTab` ke
+  //   'transkrip' saat ganti pegawai. Sebelumnya user stuck di
+  //   sub-tab lama (mis. "Rencana") padahal lihat pegawai berbeda.
+  // - 🟡 FIX: loadKompetensi(1) → loadKompetensi(). Param `1` yang
+  //   dikirim tidak match signature (silent = boolean). Runtime
+  //   tetap jalan (1 !== true) tapi membingungkan. Dijadikan
+  //   konsisten di 3 tempat: saveKompetensi, deleteKompetensi,
+  //   saveVerifikasi.
+  // - 🟠 IMPROVE: deleteJadwalDiklat / deleteKualifikasi /
+  //   deleteKompetensi kini tampil toast error jika backend
+  //   mengembalikan success=false (sebelumnya silent fail).
+  // - 📝 Header changelog ditambahkan (sebelumnya tidak ada).
+  // ============================================================
+
   window.SIKompetensiActions = {
     methods: {
+      // ================= PROFIL & PASPOR PERSONAL =================
+      switchProfilePegawai(pid) {
+        if (!pid) return;
+        this.activeProfilePegawaiId = pid;
+        // v5.3.0: reset sub-tab ke 'transkrip' agar tidak stuck di
+        // tab pegawai sebelumnya (mis. user lihat "Rencana" lalu
+        // ganti pegawai — harusnya balik ke "Transkrip").
+        this.activeProfileTab = 'transkrip';
+        const p = this.activePegawaiDetail;
+        this.showToast("Beralih ke profil: " + this.formatNamaPegawai(p.nama_lengkap || p.nama), "info");
+      },
+
+      laporSertifikatPribadi() {
+        this.openKompetensiForm();
+        if (this.activeProfilePegawaiId) {
+          this.kompetensiForm.pegawai_id = this.activeProfilePegawaiId;
+        }
+      },
+
+      usulkanRencanaPribadi(stdItem) {
+        this.usulanForm = {
+          id: '',
+          tahun_anggaran: new Date().getFullYear(),
+          periode_triwulan: 'TW I (Jan - Mar)',
+          unit_id: '',
+          jabatan_id: '',
+          pegawai_id: this.activeProfilePegawaiId || '',
+          diklat_id: '',
+          nama_program_diklat: '',
+          nama_diklat_usulan: '',
+          rumpun: 'Teknis Pemadam & Rescue',
+          metode: 'Klasikal',
+          penyelenggara: 'BPSDM Provinsi Jawa Timur',
+          target_penyelenggara: 'BPSDM Provinsi Jawa Timur',
+          target_jp: 20,
+          estimasi_biaya: 0,
+          sumber_dana: 'APBD Kabupaten Trenggalek',
+          urgensi: 'Sangat Mendesak (Prioritas 1)',
+          alasan_justifikasi: '',
+          alasan_usulan: '',
+          status_rencana: 'Direncanakan',
+          status_usulan: 'diajukan'
+        };
+
+        if (stdItem) {
+          this.usulanForm.diklat_id = stdItem.diklat_id || '';
+          this.usulanForm.nama_program_diklat = stdItem.nama_diklat || '';
+          this.usulanForm.nama_diklat_usulan = stdItem.nama_diklat || '';
+          this.usulanForm.rumpun = stdItem.rumpun || 'Teknis Pemadam & Rescue';
+          this.usulanForm.target_jp = Number(stdItem.minimal_jp) || 20;
+          this.usulanForm.urgensi = stdItem.tingkat_kebutuhan === 'WAJIB'
+            ? 'Sangat Mendesak (Prioritas 1)'
+            : 'Mendesak (Prioritas 2)';
+          this.usulanForm.alasan_justifikasi = 'Pemenuhan Standar Kompetensi Jabatan (SKJ) untuk posisi ' + (this.activePegawaiJabatan || 'terkait');
+          this.usulanForm.alasan_usulan = this.usulanForm.alasan_justifikasi;
+        }
+
+        this.showUsulanForm = true;
+      },
+
       // ================= CLIENT-SIDE PDF COMPRESSION =================
       async onPdfFileSelected(event) {
         const file = event.target.files && event.target.files[0];
@@ -43,7 +122,7 @@
         const arrayBuffer = await file.arrayBuffer();
         const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
         const compressedBytes = await pdfDoc.save({ useObjectStreams: true });
-        
+
         let binary = '';
         const bytes = new Uint8Array(compressedBytes);
         const len = bytes.byteLength;
@@ -59,7 +138,6 @@
         this.jadwalPenyelenggaraCustom = '';
         this.jadwalForm = {
           id: '',
-          kode_jadwal: 'JDW-' + Math.floor(100 + Math.random() * 900),
           diklat_id: '',
           nama_kegiatan: '',
           rumpun: 'Teknis Pemadam & Rescue',
@@ -134,14 +212,24 @@
             this.showToast('Agenda diklat dihapus.', 'success');
             await this.loadJadwal();
             await this.loadDashboard();
+          } else {
+            // v5.3.0: tampil error jika backend menolak
+            this.showToast((res && res.error) || 'Gagal menghapus agenda diklat.', 'error');
           }
-        } catch(e) { this.showToast('Gagal menghapus', 'error'); }
+        } catch(e) {
+          this.showToast('Gagal menghapus: kesalahan koneksi.', 'error');
+        }
+      },
+
+      // Alias untuk kompatibilitas dengan view
+      async deleteJadwal(id) {
+        return this.deleteJadwalDiklat(id);
       },
 
       openClaimJadwalForm(jadwal) {
         this.openKompetensiForm();
         this.kompetensiForm.jadwal_id = jadwal.id;
-        this.kompetensiForm.diklat_id = jadwal.id;
+        this.kompetensiForm.diklat_id = jadwal.diklat_id || '';
         this.kompetensiForm.nama_kegiatan = jadwal.nama_kegiatan || jadwal.nama_diklat || '';
         this.kompetensiForm.rumpun = jadwal.rumpun || 'Teknis Pemadam & Rescue';
         this.kompetensiForm.penyelenggara = jadwal.penyelenggara || 'BPSDM';
@@ -158,6 +246,9 @@
         const j = (this.jadwalList || []).find(x => String(x.id) === String(selId));
         if (j) {
           this.kompetensiForm.jadwal_id = j.id;
+          if (j.diklat_id && !this.kompetensiForm.diklat_id) {
+            this.kompetensiForm.diklat_id = j.diklat_id;
+          }
           this.kompetensiForm.nama_kegiatan = j.nama_kegiatan || j.nama_diklat || '';
           this.kompetensiForm.rumpun = j.rumpun || 'Teknis Pemadam & Rescue';
           this.kompetensiForm.penyelenggara = j.penyelenggara || '';
@@ -173,7 +264,7 @@
         this.kualifikasiForm = {
           id: '',
           pegawai_id: (this.simpegLookup.pegawai && this.simpegLookup.pegawai[0] && this.simpegLookup.pegawai[0].id) || '',
-          jenis_kualifikasi: 'SK Pengangkatan Penyidik PPNS (Kemenkumham/Polri)',
+          jenis_kualifikasi: 'SK_PPNS',
           nomor_sk_lisensi: '',
           no_registrasi_nasional: '',
           lembaga_penerbit: 'Kementerian Hukum & HAM RI',
@@ -218,8 +309,13 @@
             this.showToast('Kualifikasi dihapus.', 'success');
             await this.loadKualifikasi();
             await this.loadDashboard();
+          } else {
+            // v5.3.0: tampil error jika backend menolak
+            this.showToast((res && res.error) || 'Gagal menghapus kualifikasi.', 'error');
           }
-        } catch(e) { this.showToast('Gagal menghapus', 'error'); }
+        } catch(e) {
+          this.showToast('Gagal menghapus: kesalahan koneksi.', 'error');
+        }
       },
 
       // ================= PORTOFOLIO SERTIFIKAT =================
@@ -242,7 +338,7 @@
         this.kompetensiForm = {
           id: '',
           pegawai_id: defaultPegawaiId,
-          diklat_id: firstJadwal ? firstJadwal.id : '',
+          diklat_id: firstJadwal ? (firstJadwal.diklat_id || '') : '',
           jadwal_id: firstJadwal ? firstJadwal.id : '',
           nama_kegiatan: firstJadwal ? (firstJadwal.nama_kegiatan || firstJadwal.nama_diklat || '') : '',
           rumpun: firstJadwal ? (firstJadwal.rumpun || 'Teknis Pemadam & Rescue') : 'Teknis Pemadam & Rescue',
@@ -255,7 +351,7 @@
           jumlah_jp: firstJadwal ? (Number(firstJadwal.jumlah_jp) || 20) : 20,
           metode: firstJadwal ? (firstJadwal.metode || 'Klasikal') : 'Klasikal',
           file_url: '',
-          status_verifikasi: 'disetujui',
+          status_verifikasi: '',
           catatan_verifikator: ''
         };
         this.showKompetensiForm = true;
@@ -271,22 +367,27 @@
         this.kompetensiSaving = true;
         try {
           if (!this.kompetensiForm.diklat_id && this.kompetensiForm.jadwal_id) {
-            this.kompetensiForm.diklat_id = this.kompetensiForm.jadwal_id;
+            const j = (this.jadwalList || []).find(x => String(x.id) === String(this.kompetensiForm.jadwal_id));
+            if (j && j.diklat_id) this.kompetensiForm.diklat_id = j.diklat_id;
           }
           if (this.kompetensiForm.diklat_id && !this.kompetensiForm.nama_kegiatan) {
             this.onJadwalPelatihanChanged();
           }
 
-          // Default status is disetujui (auto-approved on submission)
-          if (!this.kompetensiForm.status_verifikasi) {
-            this.kompetensiForm.status_verifikasi = 'disetujui';
-          }
-
           const res = await this.callServer('save_riwayat', { record: this.kompetensiForm });
           if (res && res.success) {
-            this.showToast('Sertifikat berhasil dilaporkan & JP langsung masuk perhitungan!', 'success');
+            const isVerif = ['verifikator', 'admin', 'super'].indexOf(
+              String((this.currentUser && this.currentUser.role) || '').toLowerCase()
+            ) !== -1;
+            this.showToast(
+              isVerif
+                ? 'Sertifikat berhasil disimpan & langsung dihitung.'
+                : 'Sertifikat berhasil dilaporkan & menunggu verifikasi atasan.',
+              'success'
+            );
             this.showKompetensiForm = false;
-            await this.loadKompetensi(1);
+            // v5.3.0: loadKompetensi() tanpa param `1` (signature tidak match)
+            await this.loadKompetensi();
             await this.loadDashboard();
           } else {
             this.showToast((res && res.error) || 'Gagal menyimpan', 'error');
@@ -304,10 +405,16 @@
           const res = await this.callServer('delete_riwayat', { id: id });
           if (res && res.success) {
             this.showToast('Sertifikat dihapus.', 'success');
-            await this.loadKompetensi(1);
+            // v5.3.0: loadKompetensi() tanpa param `1`
+            await this.loadKompetensi();
             await this.loadDashboard();
+          } else {
+            // v5.3.0: tampil error jika backend menolak
+            this.showToast((res && res.error) || 'Gagal menghapus sertifikat.', 'error');
           }
-        } catch(e) { this.showToast('Gagal menghapus', 'error'); }
+        } catch(e) {
+          this.showToast('Gagal menghapus: kesalahan koneksi.', 'error');
+        }
       },
 
       // ================= VERIFIKASI / REVIEW KASUBBAG =================
@@ -332,11 +439,14 @@
           if (res && res.success) {
             this.showToast('Status verifikasi sertifikat berhasil diperbarui.', 'success');
             this.showVerifModal = false;
-            await this.loadKompetensi(1);
+            // v5.3.0: loadKompetensi() tanpa param `1`
+            await this.loadKompetensi();
             await this.loadDashboard();
+          } else {
+            this.showToast((res && res.error) || 'Gagal memproses verifikasi.', 'error');
           }
         } catch(e) {
-          this.showToast('Gagal verifikasi', 'error');
+          this.showToast('Gagal verifikasi: kesalahan koneksi.', 'error');
         } finally {
           this.verifSaving = false;
         }
@@ -346,14 +456,25 @@
       openUsulanModal() {
         this.usulanForm = {
           id: '',
+          tahun_anggaran: new Date().getFullYear(),
+          periode_triwulan: 'TW I (Jan - Mar)',
+          unit_id: '',
+          jabatan_id: '',
           pegawai_id: (this.simpegLookup.pegawai && this.simpegLookup.pegawai[0] && this.simpegLookup.pegawai[0].id) || '',
           diklat_id: '',
+          nama_program_diklat: '',
           nama_diklat_usulan: '',
           rumpun: 'Teknis Pemadam & Rescue',
-          target_penyelenggara: 'BPSDM Jawa Timur',
-          alasan_usulan: '',
-          urgensi: 'Sangat Mendesak (Prioritas 1)',
+          metode: 'Klasikal',
+          penyelenggara: 'BPSDM Provinsi Jawa Timur',
+          target_penyelenggara: 'BPSDM Provinsi Jawa Timur',
+          target_jp: 20,
           estimasi_biaya: 0,
+          sumber_dana: 'APBD Kabupaten Trenggalek',
+          urgensi: 'Sangat Mendesak (Prioritas 1)',
+          alasan_justifikasi: '',
+          alasan_usulan: '',
+          status_rencana: 'Direncanakan',
           status_usulan: 'diajukan'
         };
         this.showUsulanForm = true;
@@ -363,14 +484,27 @@
         if (!g) return;
         this.usulanForm = {
           id: '',
+          tahun_anggaran: new Date().getFullYear(),
+          periode_triwulan: 'TW I (Jan - Mar)',
+          unit_id: g.unit_id || '',
+          jabatan_id: g.jabatan_id || '',
           pegawai_id: g.pegawai_id || '',
           diklat_id: g.diklat_id || '',
+          nama_program_diklat: g.nama_diklat || '',
           nama_diklat_usulan: g.nama_diklat || '',
           rumpun: g.rumpun || 'Teknis Pemadam & Rescue',
-          target_penyelenggara: 'BPSDM Jawa Timur',
-          alasan_usulan: 'Pemenuhan Standar Kompetensi Jabatan (SKJ) untuk posisi ' + (g.nama_jabatan || 'terkait') + '.',
-          urgensi: g.tingkat_kebutuhan === 'WAJIB' ? 'Sangat Mendesak (Prioritas 1)' : 'Mendesak (Prioritas 2)',
+          metode: 'Klasikal',
+          penyelenggara: 'BPSDM Provinsi Jawa Timur',
+          target_penyelenggara: 'BPSDM Provinsi Jawa Timur',
+          target_jp: 20,
           estimasi_biaya: 0,
+          sumber_dana: 'APBD Kabupaten Trenggalek',
+          urgensi: g.tingkat_kebutuhan === 'WAJIB'
+            ? 'Sangat Mendesak (Prioritas 1)'
+            : 'Mendesak (Prioritas 2)',
+          alasan_justifikasi: 'Pemenuhan Standar Kompetensi Jabatan (SKJ) untuk posisi ' + (g.nama_jabatan || 'terkait') + '.',
+          alasan_usulan: 'Pemenuhan Standar Kompetensi Jabatan (SKJ) untuk posisi ' + (g.nama_jabatan || 'terkait') + '.',
+          status_rencana: 'Direncanakan',
           status_usulan: 'diajukan'
         };
         this.showUsulanForm = true;
@@ -391,6 +525,8 @@
             this.showUsulanForm = false;
             await this.loadUsulan();
             await this.loadDashboard();
+          } else {
+            this.showToast((res && res.error) || 'Gagal mengirim usulan', 'error');
           }
         } catch(e) {
           this.showToast('Gagal mengirim usulan', 'error');
@@ -402,7 +538,7 @@
       openReviewUsulanModal(u) {
         this.selectedUsulan = u;
         this.reviewUsulanForm = {
-          status: u.status_usulan || 'DISETUJUI',
+          status: u.status_usulan || 'disetujui_kasat',
           catatan: u.catatan_pimpinan || ''
         };
         this.showReviewUsulanModal = true;
@@ -421,6 +557,8 @@
             this.showToast('Keputusan pimpinan berhasil disimpan.', 'success');
             this.showReviewUsulanModal = false;
             await this.loadUsulan();
+          } else {
+            this.showToast((res && res.error) || 'Gagal memproses review', 'error');
           }
         } catch(e) {
           this.showToast('Gagal memproses review', 'error');
@@ -429,11 +567,27 @@
         }
       },
 
+      async deleteUsulan(id) {
+        if (!id) return;
+        if (!confirm('Yakin ingin menghapus rencana diklat ini?')) return;
+        try {
+          const res = await this.callServer('delete_usulan', { id: id });
+          if (res && res.success) {
+            this.showToast('Rencana diklat berhasil dihapus.', 'success');
+            await this.loadUsulan();
+            await this.loadDashboard();
+          } else {
+            this.showToast((res && res.error) || 'Gagal menghapus rencana', 'error');
+          }
+        } catch(e) {
+          this.showToast('Terjadi kesalahan server', 'error');
+        }
+      },
+
       // ================= MASTER SATELIT =================
       openKatalogModal() {
         this.katalogForm = {
           id: '',
-          kode_diklat: 'DKL-' + Math.floor(100 + Math.random() * 900),
           nama_diklat: '',
           rumpun: 'Teknis Pemadam & Rescue',
           kategori_keahlian: 'Teknis Operasional',
@@ -457,6 +611,8 @@
             this.showToast('Katalog diklat disimpan.', 'success');
             this.showKatalogModal = false;
             await this.loadMasterSatelit();
+          } else {
+            this.showToast((res && res.error) || 'Gagal menyimpan katalog', 'error');
           }
         } catch(e) {
           this.showToast('Gagal menyimpan katalog', 'error');
@@ -472,36 +628,107 @@
           if (res && res.success) {
             this.showToast('Katalog dihapus.', 'success');
             await this.loadMasterSatelit();
+          } else {
+            this.showToast((res && res.error) || 'Gagal menghapus katalog', 'error');
           }
-        } catch(e) { this.showToast('Gagal menghapus', 'error'); }
+        } catch(e) {
+          this.showToast('Gagal menghapus: kesalahan koneksi.', 'error');
+        }
+      },
+
+      async deleteKatalog(id) {
+        return this.deleteKatalogDiklat(id);
       },
 
       openStandarModal() {
+        const firstJab = (this.optionsJabatan && this.optionsJabatan[0]) || {};
+        const firstDik = (this.katalogList && this.katalogList[0]) || {};
         this.standarForm = {
           id: '',
-          jabatan_id: (this.simpegLookup.jabatan && this.simpegLookup.jabatan[0] && this.simpegLookup.jabatan[0].id) || '',
-          diklat_id: (this.katalogList && this.katalogList[0] && this.katalogList[0].id) || '',
+          jabatan_id: firstJab.id || firstJab.jabatan_id || '',
+          nama_jabatan: firstJab.nama_jabatan || firstJab.nama || '',
+          diklat_id: firstDik.id || '',
+          nama_diklat: firstDik.nama_diklat || '',
+          rumpun: firstDik.rumpun || 'Manajerial & Kepemimpinan',
+          level_kompetensi: 'Level 2 - Pengawas / Terampil',
           tingkat_kebutuhan: 'WAJIB',
-          minimal_jp: 20,
+          minimal_jp: Number(firstDik.default_jp) || 20,
           keterangan: ''
         };
         this.showStandarModal = true;
       },
 
+      openEditStandar(s) {
+        this.standarForm = Object.assign({
+          id: '',
+          jabatan_id: '',
+          nama_jabatan: '',
+          diklat_id: '',
+          nama_diklat: '',
+          rumpun: 'Manajerial & Kepemimpinan',
+          level_kompetensi: 'Level 2 - Pengawas / Terampil',
+          tingkat_kebutuhan: 'WAJIB',
+          minimal_jp: 20,
+          keterangan: ''
+        }, s);
+
+        if (!this.standarForm.nama_jabatan && this.standarForm.jabatan_id) {
+          this.standarForm.nama_jabatan = this.namaJabatan(this.standarForm.jabatan_id);
+        }
+        if (!this.standarForm.nama_diklat && this.standarForm.diklat_id) {
+          this.standarForm.nama_diklat = this.namaDiklat(this.standarForm.diklat_id);
+        }
+        if (!this.standarForm.rumpun && this.standarForm.diklat_id) {
+          this.standarForm.rumpun = this.getKatalogRumpun(this.standarForm.diklat_id);
+        }
+        this.showStandarModal = true;
+      },
+
+      onStandarJabatanChange() {
+        const j = (this.optionsJabatan || []).find(x => String(x.id || x.jabatan_id) === String(this.standarForm.jabatan_id));
+        if (j) {
+          this.standarForm.nama_jabatan = j.nama_jabatan || j.nama || '';
+        }
+      },
+
+      onStandarDiklatChange() {
+        const d = (this.katalogList || []).find(x => String(x.id) === String(this.standarForm.diklat_id));
+        if (d) {
+          this.standarForm.nama_diklat = d.nama_diklat || '';
+          if (d.rumpun) this.standarForm.rumpun = d.rumpun;
+          if (d.default_jp) this.standarForm.minimal_jp = Number(d.default_jp);
+        }
+      },
+
       async saveStandarKompetensi() {
         this.standarSaving = true;
         try {
+          if (!this.standarForm.nama_jabatan && this.standarForm.jabatan_id) {
+            this.standarForm.nama_jabatan = this.namaJabatan(this.standarForm.jabatan_id);
+          }
+          if (!this.standarForm.nama_diklat && this.standarForm.diklat_id) {
+            this.standarForm.nama_diklat = this.namaDiklat(this.standarForm.diklat_id);
+          }
+          if (!this.standarForm.rumpun && this.standarForm.diklat_id) {
+            this.standarForm.rumpun = this.getKatalogRumpun(this.standarForm.diklat_id);
+          }
           const res = await this.callServer('save_standar_kompetensi', { record: this.standarForm });
           if (res && res.success) {
             this.showToast('Standar kompetensi jabatan disimpan.', 'success');
             this.showStandarModal = false;
             await this.loadMasterSatelit();
+          } else {
+            this.showToast((res && res.error) || 'Gagal menyimpan standar', 'error');
           }
         } catch(e) {
           this.showToast('Gagal menyimpan standar', 'error');
         } finally {
           this.standarSaving = false;
         }
+      },
+
+      async deleteStandar(id) {
+        return this.deleteStandarKompetensi(id);
       },
 
       async deleteStandarKompetensi(id) {
@@ -511,8 +738,12 @@
           if (res && res.success) {
             this.showToast('Standar dihapus.', 'success');
             await this.loadMasterSatelit();
+          } else {
+            this.showToast((res && res.error) || 'Gagal menghapus standar', 'error');
           }
-        } catch(e) { this.showToast('Gagal menghapus', 'error'); }
+        } catch(e) {
+          this.showToast('Gagal menghapus: kesalahan koneksi.', 'error');
+        }
       },
 
       openReferensiModal() {
@@ -541,6 +772,8 @@
             this.showToast('Opsi referensi disimpan.', 'success');
             this.showReferensiModal = false;
             await this.loadMasterSatelit();
+          } else {
+            this.showToast((res && res.error) || 'Gagal menyimpan referensi', 'error');
           }
         } catch(e) {
           this.showToast('Gagal menyimpan referensi', 'error');
@@ -556,8 +789,12 @@
           if (res && res.success) {
             this.showToast('Referensi dihapus.', 'success');
             await this.loadMasterSatelit();
+          } else {
+            this.showToast((res && res.error) || 'Gagal menghapus referensi', 'error');
           }
-        } catch(e) { this.showToast('Gagal menghapus', 'error'); }
+        } catch(e) {
+          this.showToast('Gagal menghapus: kesalahan koneksi.', 'error');
+        }
       }
     }
   };
