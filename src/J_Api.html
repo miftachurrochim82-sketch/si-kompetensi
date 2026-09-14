@@ -1,97 +1,237 @@
 <script>
+  // ============================================================
+  // SI-KOMPETENSI - J_Api.html (v5.2.0)
+  // API Loader untuk seluruh modul
+  // ============================================================
+  // Changelog v5.2.0 (2026-09-13):
+  // - 🔴 FIX: loadAnalisa — reset analisaPagination.page saat load
+  //   tahun baru (sebelumnya user lihat halaman kosong jika filter
+  //   aktif + ganti tahun).
+  // - 🔴 FIX: analisaData & dashboardData — RESET dulu sebelum merge.
+  //   Sebelumnya `Object.assign` menyisakan data lama jika backend
+  //   kirim partial response (mis. gap_details: [] tanpa field lain).
+  // - 🟠 FIX: Semua loader kini punya error handling dengan parameter
+  //   `silent`. Default false → tampil toast. Init phase panggil
+  //   dengan `silent = true` agar tidak spam 7 toast sekaligus
+  //   saat startup gagal.
+  // - 🟠 FIX: loadKompetensi — deteksi jika data mencapai limit 500
+  //   (kemungkinan terpotong), tampilkan warning di console.
+  // - 🟡 ADD: loadMasterSatelit — pakai state masterSatelitLoading.
+  // Changelog v5.1.0 (2026-09-13):
+  // - loadKompetensi: filter + pagination client-side.
+  // ============================================================
+
   window.SIKompetensiApi = {
     methods: {
-      async loadDashboard() {
+      async loadDashboard(silent) {
+        const isSilent = silent === true;
+        // v5.2.1: Guard agar loadDashboard tidak overlap
+        if (this._dashboardLoading) return;
+        this._dashboardLoading = true;
+
         try {
           const res = await this.callServer('dashboard');
           if (res && res.success && res.data) {
-            this.dashboardData = Object.assign(this.dashboardData, res.data);
+            this.dashboardData = Object.assign({
+              total_kompetensi: 0,
+              total_jp_tahun: 0,
+              persen_capaian_20jp: 0,
+              pegawai_lulus_20jp: 0,
+              total_pegawai: 0,
+              total_kualifikasi_aktif: 0,
+              total_kualifikasi_expiring_soon: 0,
+              total_jadwal_aktif: 0,
+              total_usulan_diklat: 0,
+              bulan_aktif: "",
+              capaian_pns: { total: 0, lulus: 0, persen: 0, total_jp: 0, target_standar: "20 JP" },
+              capaian_pppk: { total: 0, lulus: 0, persen: 0, total_jp: 0, target_standar: "24 JP" },
+              status_count: { disetujui: 0, menunggu: 0, ditolak: 0 },
+              jenis_count: {},
+              terbaru: [],
+              jadwal_pelatihan: [],
+              matriks_bulanan: [],
+              ai_insights: {
+                tren_partisipasi: { naik: true, persen: 0, bulan_ini_jp: 0, bulan_lalu_jp: 0 },
+                unit_terbaik: { nama: "-", rata_jp: 0 },
+                prediksi_tidak_capai: { total_berisiko: 0, sisa_bulan: 3, daftar: [] }
+              }
+            }, res.data);
+
+            // v5.2.1: Delay lebih panjang (300ms) agar DOM settle dulu
             this.$nextTick(() => {
-              setTimeout(() => this.renderDashboardCharts(), 150);
+              setTimeout(() => this.renderDashboardCharts(), 300);
             });
+          } else if (!isSilent) {
+            this.showToast('Gagal memuat data dashboard.', 'error');
           }
-        } catch(e) { console.error('Gagal load dashboard:', e); }
+        } catch(e) {
+          console.error('Gagal load dashboard:', e);
+          if (!isSilent) this.showToast('Error koneksi saat memuat dashboard.', 'error');
+        } finally {
+          // Rilis lock setelah 1 detik
+          setTimeout(() => { this._dashboardLoading = false; }, 1000);
+        }
       },
 
-      async loadMasterSatelit() {
+      async loadMasterSatelit(silent) {
+        const isSilent = silent === true;
+        this.masterSatelitLoading = true; // v5.2.0
         try {
           const res = await this.callServer('get_master_satelit');
           if (res && res.success && res.data) {
             this.katalogList = res.data.katalog || [];
             this.standarList = res.data.standar_kompetensi || [];
             this.referensiList = res.data.referensi || [];
-            this.jadwalList = res.data.jadwal || [];
+            // CATATAN: jadwalList TIDAK di-set di sini — biar loadJadwal yang
+            // jadi source of truth (get_jadwal_list sudah filter + sort backend).
+          } else if (!isSilent) {
+            this.showToast('Gagal memuat master satelit.', 'error');
           }
-        } catch(e) { console.error('Gagal load master satelit:', e); }
+        } catch(e) {
+          console.error('Gagal load master satelit:', e);
+          if (!isSilent) this.showToast('Error koneksi saat memuat master data.', 'error');
+        } finally {
+          this.masterSatelitLoading = false;
+        }
       },
 
-      async loadSimpegLookup() {
+      async loadSimpegLookup(silent) {
+        const isSilent = silent === true;
         try {
           const res = await this.callServer('get_simpeg_lookup');
           if (res && res.success && res.data) {
             this.simpegLookup = res.data;
+          } else if (!isSilent) {
+            this.showToast('Gagal memuat data SIMPEG.', 'error');
           }
-        } catch(e) { console.error('Gagal load simpeg lookup:', e); }
+        } catch(e) {
+          console.error('Gagal load simpeg lookup:', e);
+          if (!isSilent) this.showToast('Error koneksi saat memuat data SIMPEG.', 'error');
+        }
       },
 
-      async loadJadwal() {
+      async loadJadwal(silent) {
+        const isSilent = silent === true;
         this.jadwalLoading = true;
         try {
           const res = await this.callServer('get_jadwal_list');
           if (res && res.success) {
             this.jadwalList = res.data || [];
+          } else if (!isSilent) {
+            this.showToast('Gagal memuat jadwal diklat.', 'error');
           }
-        } catch(e) { console.error('Gagal load jadwal:', e); }
-        finally { this.jadwalLoading = false; }
+        } catch(e) {
+          console.error('Gagal load jadwal:', e);
+          if (!isSilent) this.showToast('Error koneksi saat memuat jadwal.', 'error');
+        } finally {
+          this.jadwalLoading = false;
+        }
       },
 
-      async loadKualifikasi() {
+      async loadKualifikasi(silent) {
+        const isSilent = silent === true;
         this.kualifikasiLoading = true;
         try {
           const res = await this.callServer('get_kualifikasi_list');
           if (res && res.success) {
             this.kualifikasiList = res.data || [];
+          } else if (!isSilent) {
+            this.showToast('Gagal memuat lisensi khusus.', 'error');
           }
-        } catch(e) { console.error('Gagal load kualifikasi:', e); }
-        finally { this.kualifikasiLoading = false; }
+        } catch(e) {
+          console.error('Gagal load kualifikasi:', e);
+          if (!isSilent) this.showToast('Error koneksi saat memuat lisensi.', 'error');
+        } finally {
+          this.kualifikasiLoading = false;
+        }
       },
 
-      async loadKompetensi(page = 1) {
+      /**
+       * v5.1.0: loadKompetensi fetch SEMUA data (limit besar).
+       * Filter + pagination dilakukan client-side oleh computed
+       * filteredKompetensiList + paginatedKompetensiList di J_State.
+       */
+      async loadKompetensi(silent) {
+        const isSilent = silent === true;
         this.kompetensiLoading = true;
         try {
-          const res = await this.callServer('get_riwayat_list', {
-            page: page,
-            limit: 50,
-            search: this.kompetensiSearch,
-            filters: { rumpun: this.filterRumpun, status: this.filterStatusVerif }
-          });
+          const res = await this.callServer('get_riwayat_list', { limit: 500 });
           if (res && res.success) {
             this.kompetensiList = res.data || [];
+
+            // v5.2.0: deteksi limit tercapai — kemungkinan data terpotong
+            if (this.kompetensiList.length >= 500) {
+              console.warn('⚠️ Portofolio mencapai limit 500 — data mungkin terpotong. Persempit filter atau pertimbangkan server-side pagination.');
+              if (!isSilent) {
+                this.showToast('Menampilkan 500 data terbaru. Persempit filter untuk hasil lebih spesifik.', 'info');
+              }
+            }
+          } else if (!isSilent) {
+            this.showToast('Gagal memuat portofolio sertifikat.', 'error');
           }
-        } catch(e) { console.error('Gagal load riwayat:', e); }
-        finally { this.kompetensiLoading = false; }
+        } catch(e) {
+          console.error('Gagal load riwayat:', e);
+          if (!isSilent) this.showToast('Error koneksi saat memuat portofolio.', 'error');
+        } finally {
+          this.kompetensiLoading = false;
+        }
       },
 
-      async loadUsulan() {
+      async loadUsulan(silent) {
+        const isSilent = silent === true;
         this.usulanLoading = true;
         try {
           const res = await this.callServer('get_usulan_list');
           if (res && res.success) {
             this.usulanList = res.data || [];
+          } else if (!isSilent) {
+            this.showToast('Gagal memuat rencana diklat.', 'error');
           }
-        } catch(e) { console.error('Gagal load usulan:', e); }
-        finally { this.usulanLoading = false; }
+        } catch(e) {
+          console.error('Gagal load usulan:', e);
+          if (!isSilent) this.showToast('Error koneksi saat memuat rencana diklat.', 'error');
+        } finally {
+          this.usulanLoading = false;
+        }
       },
 
-      async loadAnalisa() {
+      /**
+       * v5.2.0: reset analisaPagination.page setiap kali load tahun baru.
+       * Filter (search/unit/kebutuhan) TIDAK direset — biar user yang putuskan.
+       */
+      async loadAnalisa(silent) {
+        const isSilent = silent === true;
         this.analisaLoading = true;
+
+        // Reset pagination saat ganti tahun
+        if (this.analisaPagination) {
+          this.analisaPagination.page = 1;
+        }
+
         try {
           const res = await this.callServer('analytics', { tahun: this.analisaTahun });
           if (res && res.success) {
-            this.analisaData = Object.assign(this.analisaData, res.data || {});
+            // v5.2.0: RESET dulu, baru merge
+            this.analisaData = Object.assign({
+              total_evaluasi: 0,
+              gap_count: 0,
+              total_wajib_gap: 0,
+              total_disarankan_gap: 0,
+              persen_kepatuhan: 100,
+              total_pegawai_terdampak: 0,
+              gap_details: [],
+              temuan: [],
+              rekomendasi: []
+            }, res.data || {});
+          } else if (!isSilent) {
+            this.showToast('Gagal memuat analisa kesenjangan.', 'error');
           }
-        } catch(e) { console.error('Gagal load analisa:', e); }
-        finally { this.analisaLoading = false; }
+        } catch(e) {
+          console.error('Gagal load analisa:', e);
+          if (!isSilent) this.showToast('Error koneksi saat memuat analisa.', 'error');
+        } finally {
+          this.analisaLoading = false;
+        }
       }
     }
   };
