@@ -235,20 +235,14 @@
 
       <div v-if="activePegawaiRiwayat.length > 0" class="overflow-x-auto">
         <!-- v5.3.0: min-w-[1000px] -->
-        <table class="table-custom w-full text-left text-xs min-w-[1000px]">
-          <thead>
-            <tr class="bg-slate-50 dark:bg-slate-800/70 text-slate-600 dark:text-slate-300 uppercase font-bold text-[11px]">
-              <th class="py-3 px-3 w-10 text-center">No</th>
-              <th class="py-3 px-4 min-w-[240px]">Nama Pelatihan / Sertifikat</th>
-              <th class="py-3 px-4 min-w-[180px]">Lembaga Penyelenggara</th>
-              <th class="py-3 px-4 min-w-[160px]">Nomor &amp; Tanggal Sertifikat</th>
-              <th class="py-3 px-3 text-center min-w-[90px]">Jam (JP)</th>
-              <th class="py-3 px-3 text-center min-w-[100px]">Status</th>
-              <th class="py-3 px-3 text-center min-w-[100px]">Berkas PDF</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-            <tr v-for="(r, idx) in activePegawaiRiwayat" :key="'rwy-'+idx" class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
+        <app-crud-table
+          :items="activePegawaiRiwayat"
+          :columns="[{ key: 'no', label: 'No', thClass: 'w-10' }, { key: 'namapelatihansertifikat', label: 'Nama Pelatihan / Sertifikat', thClass: 'min-w-[240px]' }, { key: 'lembagapenyelenggara', label: 'Lembaga Penyelenggara', thClass: 'min-w-[180px]' }, { key: 'nomoramptanggalsertifikat', label: 'Nomor &amp; Tanggal Sertifikat', thClass: 'min-w-[160px]' }, { key: 'jamjp', label: 'Jam (JP)', thClass: 'min-w-[90px]' }, { key: 'status', label: 'Status', thClass: 'min-w-[100px]' }, { key: 'berkaspdf', label: 'Berkas PDF', thClass: 'min-w-[100px]' }]"
+          :total-data="activePegawaiRiwayat.length"
+          empty-text="Belum ada riwayat kompetensi."
+          empty-icon="fa-solid fa-award">
+          <template #row="{ row: r, index: idx }">
+
               <td class="py-3.5 px-3 text-center font-bold text-slate-400">{{ idx + 1 }}</td>
               <td class="py-3.5 px-4">
                 <div class="font-bold text-slate-900 dark:text-white">{{ r.nama_kegiatan }}</div>
@@ -280,9 +274,8 @@
                 </a>
                 <span v-else class="text-slate-400 text-[11px]">-</span>
               </td>
-            </tr>
-          </tbody>
-        </table>
+          </template>
+        </app-crud-table>
       </div>
 
       <!-- Empty State Transkrip -->
@@ -319,20 +312,14 @@
 
       <div v-if="activePegawaiSkjList.length > 0" class="overflow-x-auto">
         <!-- v5.3.0: min-w-[1100px] -->
-        <table class="table-custom w-full text-left text-xs min-w-[1100px]">
-          <thead>
-            <tr class="bg-slate-50 dark:bg-slate-800/70 text-slate-600 dark:text-slate-300 uppercase font-bold text-[11px]">
-              <th class="py-3 px-3 w-10 text-center">No</th>
-              <th class="py-3 px-4 min-w-[260px]">Standar Pelatihan / Diklat</th>
-              <th class="py-3 px-4 min-w-[180px]">Rumpun Keahlian</th>
-              <th class="py-3 px-3 text-center min-w-[90px]">Min. JP</th>
-              <th class="py-3 px-3 text-center min-w-[110px]">Tingkat Kebutuhan</th>
-              <th class="py-3 px-3 text-center min-w-[140px]">Status Pribadi</th>
-              <th class="py-3 px-3 text-center min-w-[120px]">Tindak Lanjut</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-            <tr v-for="(s, idx) in activePegawaiSkjList" :key="'skj-'+idx" class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
+        <app-crud-table
+          :items="activePegawaiSkjList"
+          :columns="[{ key: 'no', label: 'No', thClass: 'w-10' }, { key: 'standarpelatihandiklat', label: 'Standar Pelatihan / Diklat', thClass: 'min-w-[260px]' }, { key: 'rumpunkeahlian', label: 'Rumpun Keahlian', thClass: 'min-w-[180px]' }, { key: 'minjp', label: 'Min. JP', thClass: 'min-w-[90px]' }, { key: 'tingkatkebutuhan', label: 'Tingkat Kebutuhan', thClass: 'min-w-[110px]' }, { key: 'statuspribadi', label: 'Status Pribadi', thClass: 'min-w-[140px]' }, { key: 'tindaklanjut', label: 'Tindak Lanjut', thClass: 'min-w-[120px]' }]"
+          :total-data="activePegawaiSkjList.length"
+          empty-text="Belum ada matriks standar kompetensi."
+          empty-icon="fa-solid fa-sliders">
+          <template #row="{ row: s, index: idx }">
+
               <td class="py-3.5 px-3 text-center font-bold text-slate-400">{{ idx + 1 }}</td>
               <td class="py-3.5 px-4 font-bold text-slate-900 dark:text-white">
                 {{ s.nama_diklat }}
@@ -371,9 +358,8 @@
                 </span>
                 <span v-else class="text-slate-400 text-[11px]">Valid</span>
               </td>
-            </tr>
-          </tbody>
-        </table>
+          </template>
+        </app-crud-table>
       </div>
 
       <div v-else class="py-8 text-center text-slate-400 text-xs">
@@ -398,19 +384,14 @@
 
       <div v-if="activePegawaiRencanaList.length > 0" class="overflow-x-auto">
         <!-- v5.3.0: min-w-[900px] -->
-        <table class="table-custom w-full text-left text-xs min-w-[900px]">
-          <thead>
-            <tr class="bg-slate-50 dark:bg-slate-800/70 text-slate-600 dark:text-slate-300 uppercase font-bold text-[11px]">
-              <th class="py-3 px-3 w-10 text-center">No</th>
-              <th class="py-3 px-4 min-w-[240px]">Program Pelatihan Direncanakan</th>
-              <th class="py-3 px-3 text-center min-w-[110px]">Tahun / TW</th>
-              <th class="py-3 px-4 min-w-[160px]">Target Penyelenggara</th>
-              <th class="py-3 px-3 text-center min-w-[90px]">Target JP</th>
-              <th class="py-3 px-3 text-center min-w-[110px]">Status Rencana</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-            <tr v-for="(u, idx) in activePegawaiRencanaList" :key="'usul-'+idx" class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
+        <app-crud-table
+          :items="activePegawaiRencanaList"
+          :columns="[{ key: 'no', label: 'No', thClass: 'w-10' }, { key: 'programpelatihandirencanakan', label: 'Program Pelatihan Direncanakan', thClass: 'min-w-[240px]' }, { key: 'tahuntw', label: 'Tahun / TW', thClass: 'min-w-[110px]' }, { key: 'targetpenyelenggara', label: 'Target Penyelenggara', thClass: 'min-w-[160px]' }, { key: 'targetjp', label: 'Target JP', thClass: 'min-w-[90px]' }, { key: 'statusrencana', label: 'Status Rencana', thClass: 'min-w-[110px]' }]"
+          :total-data="activePegawaiRencanaList.length"
+          empty-text="Belum ada rencana diklat."
+          empty-icon="fa-solid fa-clipboard-list">
+          <template #row="{ row: u, index: idx }">
+
               <td class="py-3.5 px-3 text-center font-bold text-slate-400">{{ idx + 1 }}</td>
               <td class="py-3.5 px-4 font-bold text-slate-900 dark:text-white">
                 {{ u.nama_program_diklat || u.nama_diklat_usulan }}
@@ -430,9 +411,8 @@
                   {{ u.status_rencana || 'Direncanakan' }}
                 </span>
               </td>
-            </tr>
-          </tbody>
-        </table>
+          </template>
+        </app-crud-table>
       </div>
 
       <div v-else class="py-8 text-center text-slate-400 text-xs">
