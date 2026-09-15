@@ -133,21 +133,17 @@
   <div class="card p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
     <div class="overflow-x-auto">
       <!-- v5.3.0: min-w-[1100px] -->
-      <table class="table-custom w-full text-left text-xs min-w-[1100px]">
-        <thead>
-          <tr class="bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300">
-            <th class="py-3 px-3 font-bold w-12">No</th>
-            <th class="py-3 px-4 font-bold min-w-[200px]">Sasaran Jabatan &amp; Personel</th>
-            <th class="py-3 px-4 font-bold min-w-[220px]">Program Pelatihan Terencana</th>
-            <th class="py-3 px-4 font-bold min-w-[240px]">Alasan / Justifikasi</th>
-            <th class="py-3 px-3 font-bold">Rumpun &amp; Target JP</th>
-            <th class="py-3 px-3 font-bold">Periode &amp; Anggaran</th>
-            <th class="py-3 px-3 font-bold text-center">Status Realisasi</th>
-            <th class="py-3 px-4 font-bold text-center min-w-[200px]">Aksi</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-          <tr v-for="(u, idx) in paginatedRencanaList" :key="u.id" class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
+      <app-crud-table
+          :items="paginatedRencanaList"
+          :columns="[{ key: 'no', label: 'No' }, { key: 'sasaranjabatanamppersonel', label: 'Sasaran Jabatan &amp; Personel', thClass: 'min-w-[200px]' }, { key: 'programpelatihanterencana', label: 'Program Pelatihan Terencana', thClass: 'min-w-[220px]' }, { key: 'alasanjustifikasi', label: 'Alasan / Justifikasi', thClass: 'min-w-[240px]' }, { key: 'rumpunamptargetjp', label: 'Rumpun &amp; Target JP' }, { key: 'periodeampanggaran', label: 'Periode &amp; Anggaran' }, { key: 'statusrealisasi', label: 'Status Realisasi' }, { key: 'aksi', label: 'Aksi', thClass: 'min-w-[200px]' }]"
+          :page="rencanaPagination.page"
+          :total-pages="rencanaTotalPages"
+          :total-data="filteredRencanaList.length"
+          @change-page="p => rencanaPagination.page = p"
+          :empty-text="usulanList.length === 0 ? 'Belum ada data rencana diklat tahunan.' : 'Tidak ada rencana untuk filter ini.'"
+          empty-icon="fa-solid fa-clipboard-question">
+          <template #row="{ row: u, index: idx }">
+
             <td class="py-3 px-3 font-bold text-slate-400">{{ (rencanaPagination.page - 1) * rencanaPagination.limit + idx + 1 }}</td>
 
             <!-- Kolom Sasaran: FIX pakai getPegawaiNama -->
@@ -239,42 +235,11 @@
                 </button>
               </div>
             </td>
-          </tr>
-
-          <tr v-if="paginatedRencanaList.length === 0">
-            <td colspan="8" class="py-8 text-center text-slate-400 text-xs">
-              <i class="fa-solid fa-clipboard-question text-3xl mb-2 text-slate-300 dark:text-slate-700 block"></i>
-              <p class="font-medium">{{ usulanList.length === 0 ? 'Belum ada data rencana diklat tahunan.' : 'Tidak ada rencana untuk filter ini.' }}</p>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+          </template>
+        </app-crud-table>
     </div>
 
     <!-- Pagination -->
-    <div v-if="filteredRencanaList.length > 0" class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 mt-4 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-500">
-      <span>
-        Menampilkan
-        <strong class="text-slate-800 dark:text-white">{{ (rencanaPagination.page - 1) * rencanaPagination.limit + 1 }}</strong>
-        &ndash;
-        <strong class="text-slate-800 dark:text-white">{{ Math.min(rencanaPagination.page * rencanaPagination.limit, filteredRencanaList.length) }}</strong>
-        dari
-        <strong class="text-slate-800 dark:text-white">{{ filteredRencanaList.length }}</strong> program
-      </span>
-      <div class="flex items-center gap-1.5">
-        <button @click="rencanaPagination.page--" :disabled="rencanaPagination.page <= 1"
-                class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 transition">
-          <i class="fa-solid fa-chevron-left"></i> Prev
-        </button>
-        <span class="px-3 py-1.5 font-bold text-slate-700 dark:text-slate-200">
-          {{ rencanaPagination.page }} / {{ rencanaTotalPages }}
-        </span>
-        <button @click="rencanaPagination.page++" :disabled="rencanaPagination.page >= rencanaTotalPages"
-                class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 transition">
-          Next <i class="fa-solid fa-chevron-right"></i>
-        </button>
       </div>
-    </div>
-  </div>
 
 </section>
