@@ -1,8 +1,13 @@
 <script>
   // ============================================================
-  // SI-KOMPETENSI - J_Export.html (v5.4.0)
+  // SI-KOMPETENSI - J_Export.html (v5.5.0)
   // Chart rendering + Export Excel/PDF/CSV
   // ============================================================
+  // Changelog v5.5.0 (2026-09-15):
+  // - ♻️ REFACTOR: helper _exportXlsx — boilerplate 7 method Excel
+  //   (loadLib guard, book_new/append/writeFile, toast, try-catch)
+  //   dilebur jadi satu jalur. Perilaku & nama file tidak berubah.
+  //   Chart rendering & 2 method PDF sengaja tidak disentuh.
   // Changelog v5.4.0 (2026-09-14):
   // - 🆕 ADD: cetakPasporKompetensiPDF — cetak paspor kompetensi
   //   per pegawai (1 halaman A4 portrait). Bagian: Kop teks
@@ -130,11 +135,25 @@
       },
 
       // ================= EXPORT EXCEL (.XLSX) =================
-      async exportKompetensiExcel() {
-        if (!(await this.loadLib('xlsx'))) {
-          // (pesan error kini otomatis dari loadLib)
-          return;
+      // ===== v5.5.0: helper bersama export Excel =====
+      // sheets: [{ name, rows }] — rows = array objek (json_to_sheet).
+      // loadLib, writeFile, toast sukses/gagal ditangani di sini semua.
+      async _exportXlsx(fileName, sheets, successMsg) {
+        if (!(await this.loadLib('xlsx'))) return false;
+        try {
+          const wb = XLSX.utils.book_new();
+          sheets.forEach(s => XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(s.rows), s.name));
+          XLSX.writeFile(wb, fileName);
+          this.showToast(successMsg, 'success');
+          return true;
+        } catch (e) {
+          console.error('Gagal export Excel:', e);
+          this.showToast('Gagal mengekspor Excel: ' + (e.message || 'Error tidak dikenal'), 'error');
+          return false;
         }
+      },
+
+      async exportKompetensiExcel() {
         const dataToExport = this.kompetensiList.map((k, i) => ({
           'No': i + 1,
           'Nama Pegawai': this.getPegawaiNama(k.pegawai_id) || k.nama_pegawai || this.namaPegawai(k.pegawai_id),
@@ -148,18 +167,10 @@
           'Tgl Selesai': this.formatDate(k.tgl_selesai),
           'Status': k.status_verifikasi || 'disetujui'
         }));
-        const ws = XLSX.utils.json_to_sheet(dataToExport);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, 'Data_Kompetensi');
-        XLSX.writeFile(wb, `SI-KOMPETENSI_Portofolio_${new Date().getFullYear()}.xlsx`);
-        this.showToast('Data Portofolio Diklat berhasil diekspor ke Excel.', 'success');
+        await this._exportXlsx(`SI-KOMPETENSI_Portofolio_${new Date().getFullYear()}.xlsx`, [{ name: 'Data_Kompetensi', rows: dataToExport }], 'Data Portofolio Diklat berhasil diekspor ke Excel.');
       },
 
       async exportMatriksExcel() {
-        if (!(await this.loadLib('xlsx'))) {
-          // (pesan error kini otomatis dari loadLib)
-          return;
-        }
         const matriks = this.dashboardData.matriks_bulanan || [];
         const rows = matriks.map((m, idx) => ({
           'No': idx + 1,
@@ -174,18 +185,10 @@
           'Target Standar': m.target_jp + ' JP',
           'Status Capaian': m.total_jp >= m.target_jp ? 'TUNTAS' : 'DALAM PROSES'
         }));
-        const ws = XLSX.utils.json_to_sheet(rows);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, 'Matriks_12_Bulan_JP');
-        XLSX.writeFile(wb, `SI-KOMPETENSI_Matriks_JP_${new Date().getFullYear()}.xlsx`);
-        this.showToast('Matriks Akumulasi JP berhasil diekspor ke Excel.', 'success');
+        await this._exportXlsx(`SI-KOMPETENSI_Matriks_JP_${new Date().getFullYear()}.xlsx`, [{ name: 'Matriks_12_Bulan_JP', rows: rows }], 'Matriks Akumulasi JP berhasil diekspor ke Excel.');
       },
 
       async exportRencanaExcel() {
-        if (!(await this.loadLib('xlsx'))) {
-          // (pesan error kini otomatis dari loadLib)
-          return;
-        }
         const dataToExport = (this.filteredRencanaList || []).map((u, i) => {
           const pegName = u.pegawai_id
             ? (this.getPegawaiNama(u.pegawai_id) || this.namaPegawai(u.pegawai_id) || u.nama_pegawai || '')
@@ -207,21 +210,13 @@
             "Alasan / Justifikasi": u.alasan_justifikasi || u.alasan_usulan || ""
           };
         });
-        const ws = XLSX.utils.json_to_sheet(dataToExport);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Rencana_Diklat_Tahunan");
-        XLSX.writeFile(wb, `SI-KOMPETENSI_Rencana_Diklat_${new Date().getFullYear()}.xlsx`);
-        this.showToast("Rekap Rencana Diklat Tahunan berhasil diekspor ke Excel.", "success");
+        await this._exportXlsx(`SI-KOMPETENSI_Rencana_Diklat_${new Date().getFullYear()}.xlsx`, [{ name: "Rencana_Diklat_Tahunan", rows: dataToExport }], "Rekap Rencana Diklat Tahunan berhasil diekspor ke Excel.");
       },
 
       // ============================================================
       // v5.2.0: Export Lisensi dengan Monitoring H-90
       // ============================================================
       async exportLisensiH90Excel() {
-        if (!(await this.loadLib('xlsx'))) {
-          // (pesan error kini otomatis dari loadLib)
-          return;
-        }
 
         const list = this.kualifikasiList || [];
         if (!list.length) {
@@ -276,22 +271,14 @@
 
         const rowsFinal = rows.map((r, i) => Object.assign({ 'No': i + 1 }, r));
 
-        const ws = XLSX.utils.json_to_sheet(rowsFinal);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, 'Monitoring_Lisensi');
         const tgl = new Date().toISOString().slice(0, 10);
-        XLSX.writeFile(wb, `SIKOMPETENSI_Monitoring_Lisensi_${tgl}.xlsx`);
-        this.showToast('Monitoring Lisensi berhasil diekspor (termasuk H-90 Alert).', 'success');
+        await this._exportXlsx(`SIKOMPETENSI_Monitoring_Lisensi_${tgl}.xlsx`, [{ name: 'Monitoring_Lisensi', rows: rowsFinal }], 'Monitoring Lisensi berhasil diekspor (termasuk H-90 Alert).');
       },
 
       // ============================================================
       // v5.2.0: Export Rekap Portofolio per Unit (multi-sheet)
       // ============================================================
       async exportPortofolioPerUnitExcel() {
-        if (!(await this.loadLib('xlsx'))) {
-          // (pesan error kini otomatis dari loadLib)
-          return;
-        }
 
         const pegawaiList = (this.simpegLookup && this.simpegLookup.pegawai && this.simpegLookup.pegawai.length)
           ? this.simpegLookup.pegawai
@@ -390,24 +377,17 @@
 
         rowsDetail.sort((a, b) => String(a['Nama Pegawai']).localeCompare(String(b['Nama Pegawai'])));
 
-        const ws1 = XLSX.utils.json_to_sheet(rowsRingkasan);
-        const ws2 = XLSX.utils.json_to_sheet(rowsDetail);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws1, 'Ringkasan_per_Unit');
-        XLSX.utils.book_append_sheet(wb, ws2, 'Detail_per_Pegawai');
         const tgl = new Date().toISOString().slice(0, 10);
-        XLSX.writeFile(wb, `SIKOMPETENSI_Rekap_Portofolio_per_Unit_${tgl}.xlsx`);
-        this.showToast('Rekap Portofolio per Unit berhasil diekspor (2 sheet).', 'success');
+        await this._exportXlsx(`SIKOMPETENSI_Rekap_Portofolio_per_Unit_${tgl}.xlsx`, [
+          { name: 'Ringkasan_per_Unit', rows: rowsRingkasan },
+          { name: 'Detail_per_Pegawai', rows: rowsDetail }
+        ], 'Rekap Portofolio per Unit berhasil diekspor (2 sheet).');
       },
 
       // ============================================================
       // v5.3.0: Export Rencana vs Realisasi (3 sheet)
       // ============================================================
       async exportRencanaVsRealisasiExcel() {
-        if (!(await this.loadLib('xlsx'))) {
-          // (pesan error kini otomatis dari loadLib)
-          return;
-        }
 
         const list = this.usulanList || [];
         if (!list.length) {
@@ -547,17 +527,7 @@
             'Tindak Lanjut': 'Segera jadwalkan / ajukan ke DPA'
           }));
 
-        const ws1 = XLSX.utils.json_to_sheet(rows1);
-        const ws2 = XLSX.utils.json_to_sheet(rows2);
-        const ws3 = XLSX.utils.json_to_sheet(rows3.length ? rows3 : [{ 'Info': 'Semua rencana sudah terealisasi atau ditolak.' }]);
-
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws1, 'Rekap_Program');
-        XLSX.utils.book_append_sheet(wb, ws2, 'Ringkasan_Per_TW');
-        XLSX.utils.book_append_sheet(wb, ws3, 'Belum_Terealisasi');
-
-        XLSX.writeFile(wb, `SIKOMPETENSI_Rencana_vs_Realisasi_${tahun}.xlsx`);
-        this.showToast(`Rencana vs Realisasi ${tahun} berhasil diekspor (3 sheet).`, 'success');
+        await this._exportXlsx(`SIKOMPETENSI_Rencana_vs_Realisasi_${tahun}.xlsx`, [{ name: 'Rekap_Program', rows: rows1 }, { name: 'Ringkasan_Per_TW', rows: rows2 }, { name: 'Belum_Terealisasi', rows: rows3.length ? rows3 : [{ 'Info': 'Semua rencana sudah terealisasi atau ditolak.' }] }], `Rencana vs Realisasi ${tahun} berhasil diekspor (3 sheet).`);
       },
 
       // ============================================================
@@ -933,10 +903,6 @@
 
       // ================= EXPORT ANALISA EXCEL (.XLSX) =================
       async exportAnalisaExcel() {
-        if (!(await this.loadLib('xlsx'))) {
-          // (pesan error kini otomatis dari loadLib)
-          return;
-        }
 
         const data = this.filteredAnalisaGap || this.analisaData.gap_details || [];
         if (!data.length) {
@@ -960,11 +926,7 @@
             'Rekomendasi Tindak Lanjut': g.rekomendasi_tindak_lanjut || ''
           }));
 
-          const ws = XLSX.utils.json_to_sheet(rows);
-          const wb = XLSX.utils.book_new();
-          XLSX.utils.book_append_sheet(wb, ws, 'Analisis_Kesenjangan_SKJ');
-          XLSX.writeFile(wb, `SI-KOMPETENSI_Analisis_SKJ_${this.analisaTahun}.xlsx`);
-          this.showToast('Data Analisis Kesenjangan berhasil diekspor ke Excel.', 'success');
+          await this._exportXlsx(`SI-KOMPETENSI_Analisis_SKJ_${this.analisaTahun}.xlsx`, [{ name: 'Analisis_Kesenjangan_SKJ', rows: rows }], 'Data Analisis Kesenjangan berhasil diekspor ke Excel.');
         } catch (e) {
           console.error('Gagal export Excel analisa:', e);
           this.showToast('Gagal mengekspor Excel: ' + (e.message || 'Error tidak dikenal'), 'error');
@@ -973,4 +935,4 @@
     }
   };
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3b5f59ecafe3d68',t:'MTc4OTQ1Nzc3Ng=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3b840624c987b14',t:'MTc4OTQ4MTgxMA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
