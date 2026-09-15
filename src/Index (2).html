@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SI-KOMPETENSI &bull; Satpol PP &amp; Damkar Trenggalek</title>
+
+  <meta name="theme-color" content="#059669">
+
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <!-- Vendor CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { darkMode: 'class' };</script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.2/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/vue@3.4.21/dist/vue.global.prod.js"></script>
+
+  <!--
+    Shared CDN Stylesheet & Scripts
+    v5.3.0: query string dinaikkan agar browser fetch versi terbaru.
+  -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/miftachurrochim82-sketch/frontend-cdn@v2.6.4/frontend/app-common.min.css">
+
+  <!-- THEME OVERRIDE — SI-KOMPETENSI (Emerald/Hijau) -->
+  <style>
+    :root {
+      --primary:         #059669;
+      --primary-dark:    #047857;
+      --primary-light:   #ecfdf5;
+      --primary-lighter: #d1fae5;
+      --primary-text:    #064e3b;
+      --primary-accent:  #34d399;
+      --primary-rgb:     5, 150, 105;
+    }
+  </style>
+
+  <!-- SPLASH SCREEN ANIMATIONS -->
+  <style>
+    @keyframes splashFadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .splash-fade-up { animation: splashFadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both; }
+    .splash-delay-1 { animation-delay: 0.15s; }
+    .splash-delay-2 { animation-delay: 0.35s; }
+    .splash-delay-3 { animation-delay: 0.55s; }
+    .splash-delay-4 { animation-delay: 0.75s; }
+
+    @keyframes splashLogoFloat {
+      0%, 100% { transform: translateY(0); }
+      50%      { transform: translateY(-6px); }
+    }
+    .splash-logo-float { animation: splashLogoFloat 3s ease-in-out infinite; }
+
+    @keyframes splashRingSpin { to { transform: rotate(360deg); } }
+    .splash-ring-spin { animation: splashRingSpin 2.2s linear infinite; }
+
+    @keyframes splashRingSpinReverse { to { transform: rotate(-360deg); } }
+    .splash-ring-spin-reverse { animation: splashRingSpinReverse 3.2s linear infinite; }
+
+    @keyframes splashGlowPulse {
+      0%, 100% { opacity: 0.4; transform: scale(1); }
+      50%      { opacity: 0.75; transform: scale(1.08); }
+    }
+    .splash-glow-pulse { animation: splashGlowPulse 2.5s ease-in-out infinite; }
+
+    @keyframes splashShimmer {
+      0%   { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    .splash-progress {
+      background: linear-gradient(
+        90deg,
+        rgba(var(--primary-rgb), 0.85) 0%,
+        rgba(var(--primary-rgb), 1) 25%,
+        var(--primary-accent) 50%,
+        rgba(var(--primary-rgb), 1) 75%,
+        rgba(var(--primary-rgb), 0.85) 100%
+      );
+      background-size: 200% 100%;
+      animation: splashShimmer 1.6s linear infinite;
+    }
+
+    @keyframes splashDot {
+      0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+      40%           { transform: scale(1);   opacity: 1; }
+    }
+    .splash-dot { animation: splashDot 1.2s ease-in-out infinite; }
+    .splash-dot:nth-child(1) { animation-delay: 0s; }
+    .splash-dot:nth-child(2) { animation-delay: 0.15s; }
+    .splash-dot:nth-child(3) { animation-delay: 0.3s; }
+
+    @keyframes splashOrbit {
+      from { transform: rotate(0deg) translateX(56px) rotate(0deg); }
+      to   { transform: rotate(360deg) translateX(56px) rotate(-360deg); }
+    }
+    .splash-orbit { animation: splashOrbit 4s linear infinite; }
+
+    .splash-ring {
+      border: 2px solid transparent;
+      border-top-color: var(--primary);
+      border-right-color: var(--primary-accent);
+      border-radius: 9999px;
+    }
+    .splash-ring-thin {
+      border: 1.5px solid transparent;
+      border-bottom-color: var(--primary-lighter);
+      border-left-color: var(--primary-light);
+      border-radius: 9999px;
+    }
+
+    @keyframes splashBgPulse {
+      0%, 100% { opacity: 0.35; }
+      50%      { opacity: 0.6; }
+    }
+    .splash-bg-pulse { animation: splashBgPulse 4s ease-in-out infinite; }
+  </style>
+
+  <script>
+    try {
+      if (localStorage.getItem('sikompetensi_dark') === 'true') {
+        document.documentElement.classList.add('dark');
+      }
+    } catch(e) {}
+  </script>
+
+  <script>
+    window.__SSO_TICKET__ = <?!= JSON.stringify(String(ticket || '')) ?>;
+    window.__IS_SSO_ENTRY__ = <?= isSsoEntry === 'true' ? 'true' : 'false' ?>;
+  </script>
+</head>
+<body>
+  <div id="app" v-cloak>
+
+    <!-- Splash Screen SSO -->
+    <div v-if="showAuthSplash"
+         class="fixed inset-0 z-50 flex flex-col items-center justify-center p-6 bg-slate-950 text-white overflow-hidden">
+
+      <div class="absolute inset-0 pointer-events-none">
+        <div class="splash-bg-pulse absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[560px] h-[560px] rounded-full"
+             :style="{ background: 'radial-gradient(circle, rgba(var(--primary-rgb), 0.18) 0%, transparent 65%)' }"></div>
+        <div class="splash-bg-pulse absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[320px] h-[320px] rounded-full"
+             :style="{ background: 'radial-gradient(circle, rgba(var(--primary-rgb), 0.22) 0%, transparent 70%)', animationDelay: '0.8s' }"></div>
+      </div>
+
+      <div class="relative z-10 w-full max-w-md text-center space-y-7">
+
+        <div class="splash-fade-up relative mx-auto flex items-center justify-center" style="width: 140px; height: 140px;">
+          <div class="splash-glow-pulse absolute inset-0 rounded-full"
+               :style="{ background: 'radial-gradient(circle, rgba(var(--primary-rgb), 0.5) 0%, transparent 70%)' }"></div>
+
+          <div class="splash-ring splash-ring-spin absolute inset-0"></div>
+          <div class="splash-ring-thin splash-ring-spin-reverse absolute" style="inset: 8px;"></div>
+
+          <div class="splash-logo-float relative w-20 h-20 rounded-3xl flex items-center justify-center text-3xl text-white shadow-2xl border border-white/10"
+               :style="{ background: 'linear-gradient(135deg, var(--primary), var(--primary-dark))', boxShadow: '0 20px 40px -10px rgba(var(--primary-rgb), 0.5)' }">
+            <i class="fa-solid fa-graduation-cap"></i>
+          </div>
+
+          <div class="absolute top-1/2 left-1/2 w-2 h-2 -mt-1 -ml-1 pointer-events-none" style="transform-origin: 1px 1px;">
+            <div class="splash-orbit w-2 h-2 rounded-full"
+                 :style="{ background: 'var(--primary-accent)', boxShadow: '0 0 12px rgba(var(--primary-rgb), 0.8)' }"></div>
+          </div>
+        </div>
+
+        <div class="splash-fade-up splash-delay-1 space-y-1.5">
+          <h2 class="text-2xl font-black tracking-tight text-white">SI-KOMPETENSI</h2>
+          <p class="text-[11px] font-bold tracking-[0.15em] uppercase" :style="{ color: 'var(--primary-accent)' }">
+            Satpol PP &amp; Pemadam Kebakaran Trenggalek
+          </p>
+        </div>
+
+        <div class="splash-fade-up splash-delay-2 space-y-4 pt-2">
+          <div class="flex items-center justify-center gap-2 text-slate-300">
+            <i class="fa-solid fa-shield-halved text-xs" :style="{ color: 'var(--primary-accent)' }"></i>
+            <p class="text-xs font-semibold">{{ ssoStatusMessage || 'Memvalidasi tiket SSO...' }}</p>
+            <span class="inline-flex items-center gap-0.5 ml-1">
+              <span class="splash-dot w-1 h-1 rounded-full bg-slate-400"></span>
+              <span class="splash-dot w-1 h-1 rounded-full bg-slate-400"></span>
+              <span class="splash-dot w-1 h-1 rounded-full bg-slate-400"></span>
+            </span>
+          </div>
+
+          <div class="w-full max-w-xs mx-auto h-1.5 bg-slate-800/80 rounded-full overflow-hidden border border-slate-700/50">
+            <div class="splash-progress h-full rounded-full" style="width: 100%;"></div>
+          </div>
+
+          <p class="splash-fade-up splash-delay-3 text-[10px] text-slate-500 font-semibold tracking-wider uppercase">
+            Sistem Autentikasi Terpusat &bull; SI-Platform
+          </p>
+        </div>
+
+        <div class="splash-fade-up splash-delay-4 pt-4 border-t border-slate-800/80 max-w-xs mx-auto">
+          <p class="text-[10px] text-slate-600 font-medium tracking-wide uppercase">
+            Pemkab Trenggalek &bull; v5.3.0
+          </p>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Login Screen -->
+    <app-login v-else-if="showAuthLogin"
+               :is-processing="isProcessing"
+               :error-message="errorMessage"
+               :app-title="appTitle"
+               :app-subtitle="'Sistem Informasi Manajemen Portofolio, Jadwal & Lisensi Khusus ASN'"
+               :instansi="'Satpol PP & Pemadam Kebakaran Trenggalek'"
+               @login="goToPlatform">
+    </app-login>
+
+    <!-- Shell Utama -->
+    <div v-if="token" class="flex h-screen overflow-hidden bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans">
+
+      <app-sidebar :collapsed="sidebarCollapsed"
+                   :mobile-open="sidebarMobileOpen"
+                   :dark="isDarkMode"
+                   :current-page="currentPage"
+                   :is-admin="isAdmin"
+                   :user="currentUser"
+                   :brand="brand"
+                   :menu="menu"
+                   @navigate="navigateTo"
+                   @toggle="toggleSidebar"
+                   @close="sidebarMobileOpen = false"
+                   @logout="logout">
+      </app-sidebar>
+
+      <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <div class="px-4 sm:px-6 pt-4 shrink-0">
+          <app-header :dark="isDarkMode"
+                      :app-title="appTitle"
+                      :current-page="currentPage"
+                      :page-icons="pageIcons"
+                      :user="currentUser"
+                      @toggle-dark="toggleDarkMode"
+                      @toggle-mobile="sidebarMobileOpen = !sidebarMobileOpen"
+                      @navigate="navigateTo">
+            <template #extra-actions>
+              <button @click="showPanduan = true"
+                      class="btn btn-secondary text-xs px-2.5 py-1.5 flex items-center gap-1.5">
+                <i class="fa-solid fa-circle-question"></i>
+                <span class="hidden sm:inline font-bold">Panduan</span>
+              </button>
+            </template>
+          </app-header>
+        </div>
+
+        <main class="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-6">
+          <?!= include('V_Modals'); ?>
+          <?!= include('V_Dashboard'); ?>
+          <?!= include('V_Profil'); ?>            <!-- v5.3.0: BARU -->
+          <?!= include('V_DiklatPortofolio'); ?>
+          <?!= include('V_UsulanDiklat'); ?>
+          <?!= include('V_AnalisaGap'); ?>
+          <?!= include('V_MasterSatelit'); ?>
+          <?!= include('V_Pengaturan'); ?>         <!-- v5.0.0: BARU -->
+        </main>
+      </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div class="toast-container">
+      <div v-for="t in toasts" :key="t.id" class="toast-item" :class="'toast-'+t.type">
+        <span class="flex-1">{{ t.message }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Shared CDN: JS -->
+  <script src="https://cdn.jsdelivr.net/gh/miftachurrochim82-sketch/frontend-cdn@v2.6.4/frontend/app-components.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/miftachurrochim82-sketch/frontend-cdn@v2.6.4/frontend/app-modules.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/miftachurrochim82-sketch/frontend-cdn@v2.6.4/frontend/app-core.min.js"></script>
+
+  <!-- Local App JS -->
+  <?!= include('J_State'); ?>
+  <?!= include('J_Helpers'); ?>
+  <?!= include('J_Api'); ?>
+  <?!= include('J_Actions'); ?>
+  <?!= include('J_Export'); ?>
+  <?!= include('J_App'); ?>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3b742f53b0bca88',t:'MTc4OTQ3MTQyOQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
