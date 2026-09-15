@@ -118,20 +118,17 @@
     <!-- Tabel -->
     <div class="card p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
       <div class="overflow-x-auto">
-        <table class="table-custom w-full text-left text-xs min-w-[900px]">
-          <thead>
-            <tr class="bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300">
-              <th class="py-3 px-3 font-bold w-12">No</th>
-              <th class="py-3 px-3 font-bold w-28">Kode</th>
-              <th class="py-3 px-4 font-bold min-w-[220px]">Nama Program Diklat</th>
-              <th class="py-3 px-3 font-bold">Rumpun</th>
-              <th class="py-3 px-3 font-bold">Default JP</th>
-              <th class="py-3 px-3 font-bold">Penyelenggara</th>
-              <th class="py-3 px-4 font-bold text-center w-28">Aksi</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-            <tr v-for="(d, idx) in paginatedKatalogDiklat" :key="d.id" class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
+        <app-crud-table
+          :items="paginatedKatalogDiklat"
+          :columns="[{ key: 'no', label: 'No' }, { key: 'kode', label: 'Kode' }, { key: 'namaprogramdiklat', label: 'Nama Program Diklat', thClass: 'min-w-[220px]' }, { key: 'rumpun', label: 'Rumpun' }, { key: 'defaultjp', label: 'Default JP' }, { key: 'penyelenggara', label: 'Penyelenggara' }, { key: 'aksi', label: 'Aksi' }]"
+          :page="katalogPagination.page"
+          :total-pages="katalogTotalPages"
+          :total-data="filteredKatalogDiklat.length"
+          @change-page="p => katalogPagination.page = p"
+          :empty-text="katalogList.length === 0 ? 'Belum ada katalog diklat.' : 'Tidak ada katalog untuk filter ini.'"
+          empty-icon="fa-solid fa-folder-open">
+          <template #row="{ row: d, index: idx }">
+
               <td class="py-2.5 px-3 font-bold text-slate-400">{{ (katalogPagination.page - 1) * katalogPagination.limit + idx + 1 }}</td>
               <td class="py-2.5 px-3 font-mono font-bold text-emerald-600">{{ d.kode_diklat }}</td>
               <td class="py-2.5 px-4 font-bold text-slate-900 dark:text-white">{{ d.nama_diklat }}</td>
@@ -148,37 +145,12 @@
                   </button>
                 </div>
               </td>
-            </tr>
-            <tr v-if="paginatedKatalogDiklat.length === 0">
-              <td colspan="7" class="py-8 text-center text-slate-400">
-                <i class="fa-solid fa-folder-open text-2xl mb-2 block text-slate-300 dark:text-slate-700"></i>
-                <p class="font-medium">{{ katalogList.length === 0 ? 'Belum ada katalog diklat.' : 'Tidak ada katalog untuk filter ini.' }}</p>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+          </template>
+        </app-crud-table>
       </div>
 
       <!-- Pagination -->
-      <div v-if="filteredKatalogDiklat.length > 0" class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 mt-4 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-500">
-        <span>
-          Menampilkan <strong class="text-slate-800 dark:text-white">{{ (katalogPagination.page - 1) * katalogPagination.limit + 1 }}</strong>
-          &ndash; <strong class="text-slate-800 dark:text-white">{{ Math.min(katalogPagination.page * katalogPagination.limit, filteredKatalogDiklat.length) }}</strong>
-          dari <strong class="text-slate-800 dark:text-white">{{ filteredKatalogDiklat.length }}</strong> katalog
-        </span>
-        <div class="flex items-center gap-1.5">
-          <button @click="katalogPagination.page--" :disabled="katalogPagination.page <= 1"
-                  class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 transition">
-            <i class="fa-solid fa-chevron-left"></i> Prev
-          </button>
-          <span class="px-3 py-1.5 font-bold text-slate-700 dark:text-slate-200">{{ katalogPagination.page }} / {{ katalogTotalPages }}</span>
-          <button @click="katalogPagination.page++" :disabled="katalogPagination.page >= katalogTotalPages"
-                  class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 transition">
-            Next <i class="fa-solid fa-chevron-right"></i>
-          </button>
-        </div>
-      </div>
-    </div>
+          </div>
   </div>
 
   <!-- ============================================================
@@ -223,22 +195,17 @@
     <!-- Tabel -->
     <div class="card p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
       <div class="overflow-x-auto">
-        <table class="table-custom w-full text-left text-xs min-w-[1200px]">
-          <thead>
-            <tr class="bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300">
-              <th class="py-3 px-3 font-bold w-12 text-center">No</th>
-              <th class="py-3 px-4 font-bold min-w-[220px]">Posisi Jabatan</th>
-              <th class="py-3 px-4 font-bold min-w-[220px]">Syarat Program Diklat</th>
-              <th class="py-3 px-3 font-bold min-w-[150px]">Rumpun</th>
-              <th class="py-3 px-3 font-bold min-w-[140px]">Level Kompetensi</th>
-              <th class="py-3 px-3 font-bold text-center">Kategori</th>
-              <th class="py-3 px-3 font-bold text-center">Min. JP</th>
-              <th class="py-3 px-4 font-bold min-w-[200px]">Keterangan</th>
-              <th class="py-3 px-4 font-bold text-center w-28">Aksi</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-            <tr v-for="(s, idx) in paginatedStandarList" :key="s.id" class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
+        <app-crud-table
+          :items="paginatedStandarList"
+          :columns="[{ key: 'no', label: 'No' }, { key: 'posisijabatan', label: 'Posisi Jabatan', thClass: 'min-w-[220px]' }, { key: 'syaratprogramdiklat', label: 'Syarat Program Diklat', thClass: 'min-w-[220px]' }, { key: 'rumpun', label: 'Rumpun', thClass: 'min-w-[150px]' }, { key: 'levelkompetensi', label: 'Level Kompetensi', thClass: 'min-w-[140px]' }, { key: 'kategori', label: 'Kategori' }, { key: 'minjp', label: 'Min. JP' }, { key: 'keterangan', label: 'Keterangan', thClass: 'min-w-[200px]' }, { key: 'aksi', label: 'Aksi' }]"
+          :page="standarPagination.page"
+          :total-pages="standarTotalPages"
+          :total-data="filteredStandarList.length"
+          @change-page="p => standarPagination.page = p"
+          :empty-text="standarList.length === 0 ? 'Belum ada standar kompetensi jabatan.' : 'Tidak ada standar untuk filter ini.'"
+          empty-icon="fa-solid fa-award">
+          <template #row="{ row: s, index: idx }">
+
               <td class="py-3 px-3 font-bold text-slate-400 text-center">{{ (standarPagination.page - 1) * standarPagination.limit + idx + 1 }}</td>
               <td class="py-3 px-4">
                 <div class="font-bold text-slate-900 dark:text-white leading-snug">
@@ -284,37 +251,12 @@
                   </button>
                 </div>
               </td>
-            </tr>
-            <tr v-if="paginatedStandarList.length === 0">
-              <td colspan="9" class="py-8 text-center text-slate-400">
-                <i class="fa-solid fa-award text-2xl mb-2 block text-slate-300 dark:text-slate-700"></i>
-                <p class="font-medium">{{ standarList.length === 0 ? 'Belum ada standar kompetensi jabatan.' : 'Tidak ada standar untuk filter ini.' }}</p>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+          </template>
+        </app-crud-table>
       </div>
 
       <!-- Pagination -->
-      <div v-if="filteredStandarList.length > 0" class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 mt-4 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-500">
-        <span>
-          Menampilkan <strong class="text-slate-800 dark:text-white">{{ (standarPagination.page - 1) * standarPagination.limit + 1 }}</strong>
-          &ndash; <strong class="text-slate-800 dark:text-white">{{ Math.min(standarPagination.page * standarPagination.limit, filteredStandarList.length) }}</strong>
-          dari <strong class="text-slate-800 dark:text-white">{{ filteredStandarList.length }}</strong> standar
-        </span>
-        <div class="flex items-center gap-1.5">
-          <button @click="standarPagination.page--" :disabled="standarPagination.page <= 1"
-                  class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 transition">
-            <i class="fa-solid fa-chevron-left"></i> Prev
-          </button>
-          <span class="px-3 py-1.5 font-bold text-slate-700 dark:text-slate-200">{{ standarPagination.page }} / {{ standarTotalPages }}</span>
-          <button @click="standarPagination.page++" :disabled="standarPagination.page >= standarTotalPages"
-                  class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 transition">
-            Next <i class="fa-solid fa-chevron-right"></i>
-          </button>
-        </div>
-      </div>
-    </div>
+          </div>
   </div>
 
   <!-- ============================================================
@@ -362,19 +304,17 @@
     <!-- Tabel -->
     <div class="card p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
       <div class="overflow-x-auto">
-        <table class="table-custom w-full text-left text-xs min-w-[800px]">
-          <thead>
-            <tr class="bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300">
-              <th class="py-3 px-3 font-bold w-12">No</th>
-              <th class="py-3 px-4 font-bold">Kategori</th>
-              <th class="py-3 px-3 font-bold">Kode</th>
-              <th class="py-3 px-4 font-bold min-w-[200px]">Nama Nilai Opsi</th>
-              <th class="py-3 px-4 font-bold">Keterangan</th>
-              <th class="py-3 px-4 font-bold text-center w-28">Aksi</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-            <tr v-for="(r, idx) in paginatedReferensiList" :key="r.id" class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
+        <app-crud-table
+          :items="paginatedReferensiList"
+          :columns="[{ key: 'no', label: 'No' }, { key: 'kategori', label: 'Kategori' }, { key: 'kode', label: 'Kode' }, { key: 'namanilaiopsi', label: 'Nama Nilai Opsi', thClass: 'min-w-[200px]' }, { key: 'keterangan', label: 'Keterangan' }, { key: 'aksi', label: 'Aksi' }]"
+          :page="referensiPagination.page"
+          :total-pages="referensiTotalPages"
+          :total-data="filteredReferensiList.length"
+          @change-page="p => referensiPagination.page = p"
+          :empty-text="referensiList.length === 0 ? 'Belum ada referensi.' : 'Tidak ada referensi untuk filter ini.'"
+          empty-icon="fa-solid fa-sliders">
+          <template #row="{ row: r, index: idx }">
+
               <td class="py-2.5 px-3 font-bold text-slate-400">{{ (referensiPagination.page - 1) * referensiPagination.limit + idx + 1 }}</td>
               <td class="py-2.5 px-4 font-mono text-[11px] font-bold text-slate-600 dark:text-slate-300">{{ r.kategori }}</td>
               <td class="py-2.5 px-3 font-mono font-bold text-emerald-600">{{ r.kode }}</td>
@@ -390,37 +330,12 @@
                   </button>
                 </div>
               </td>
-            </tr>
-            <tr v-if="paginatedReferensiList.length === 0">
-              <td colspan="6" class="py-8 text-center text-slate-400">
-                <i class="fa-solid fa-sliders text-2xl mb-2 block text-slate-300 dark:text-slate-700"></i>
-                <p class="font-medium">{{ referensiList.length === 0 ? 'Belum ada referensi.' : 'Tidak ada referensi untuk filter ini.' }}</p>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+          </template>
+        </app-crud-table>
       </div>
 
       <!-- Pagination -->
-      <div v-if="filteredReferensiList.length > 0" class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 mt-4 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-500">
-        <span>
-          Menampilkan <strong class="text-slate-800 dark:text-white">{{ (referensiPagination.page - 1) * referensiPagination.limit + 1 }}</strong>
-          &ndash; <strong class="text-slate-800 dark:text-white">{{ Math.min(referensiPagination.page * referensiPagination.limit, filteredReferensiList.length) }}</strong>
-          dari <strong class="text-slate-800 dark:text-white">{{ filteredReferensiList.length }}</strong> item
-        </span>
-        <div class="flex items-center gap-1.5">
-          <button @click="referensiPagination.page--" :disabled="referensiPagination.page <= 1"
-                  class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 transition">
-            <i class="fa-solid fa-chevron-left"></i> Prev
-          </button>
-          <span class="px-3 py-1.5 font-bold text-slate-700 dark:text-slate-200">{{ referensiPagination.page }} / {{ referensiTotalPages }}</span>
-          <button @click="referensiPagination.page++" :disabled="referensiPagination.page >= referensiTotalPages"
-                  class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 transition">
-            Next <i class="fa-solid fa-chevron-right"></i>
-          </button>
-        </div>
-      </div>
-    </div>
+          </div>
   </div>
 
 </section>
