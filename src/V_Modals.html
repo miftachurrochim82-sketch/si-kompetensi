@@ -848,8 +848,8 @@
     <!-- Footer -->
     <div class="px-7 py-5 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
       <div class="flex flex-wrap items-center justify-center sm:justify-start gap-2.5 text-sm font-bold">
-        <span class="badge badge-success px-3.5 py-1.5">🎯 Target PNS = Min. 20 JP / Tahun</span>
-        <span class="badge badge-warning px-3.5 py-1.5">🎯 Target PPPK = Min. 24 JP / Tahun</span>
+        <app-badge status="success" label="🎯 Target PNS = Min. 20 JP / Tahun" size="md"></app-badge>
+        <app-badge status="warning" label="🎯 Target PPPK = Min. 24 JP / Tahun" size="md"></app-badge>
       </div>
       <button @click="showPanduan = false" class="btn btn-primary text-sm px-7 py-3 rounded-xl font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs w-full sm:w-auto">
         Tutup Panduan
