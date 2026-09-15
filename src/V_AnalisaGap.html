@@ -278,30 +278,14 @@
 
     <div class="overflow-x-auto">
       <!-- v5.4.0: min-w-[900px] agar fit tanpa scroll di tablet/desktop, scroll hanya di HP -->
-      <table class="table-custom w-full text-left text-xs min-w-[900px]">
-        <thead>
-          <tr class="bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300">
-            <th class="py-2.5 px-2 font-bold w-10 text-center">No</th>
-            <th class="py-2.5 px-2 font-bold min-w-[140px]">Nama / NIP</th>
-            <th class="py-2.5 px-2 font-bold w-16 text-center">Status</th>
-            <th class="py-2.5 px-1 text-center font-bold w-9">Jan</th>
-            <th class="py-2.5 px-1 text-center font-bold w-9">Feb</th>
-            <th class="py-2.5 px-1 text-center font-bold w-9">Mar</th>
-            <th class="py-2.5 px-1 text-center font-bold w-9">Apr</th>
-            <th class="py-2.5 px-1 text-center font-bold w-9">Mei</th>
-            <th class="py-2.5 px-1 text-center font-bold w-9">Jun</th>
-            <th class="py-2.5 px-1 text-center font-bold w-9">Jul</th>
-            <th class="py-2.5 px-1 text-center font-bold w-9">Agt</th>
-            <th class="py-2.5 px-1 text-center font-bold w-9">Sep</th>
-            <th class="py-2.5 px-1 text-center font-bold w-9">Okt</th>
-            <th class="py-2.5 px-1 text-center font-bold w-9">Nov</th>
-            <th class="py-2.5 px-1 text-center font-bold w-9">Des</th>
-            <th class="py-2.5 px-2 text-center font-black bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 w-16">Total</th>
-            <th class="py-2.5 px-2 text-center font-bold w-24">Capaian</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-          <tr v-for="(m, idx) in (dashboardData.matriks_bulanan || []).slice(0, 15)" :key="m.pegawai_id" class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
+      <app-crud-table
+          :items="(dashboardData.matriks_bulanan || []).slice(0, 15)"
+          :columns="[{ key: 'no', label: 'No', thClass: 'w-10' }, { key: 'namanip', label: 'Nama / NIP', thClass: 'min-w-[140px]' }, { key: 'status', label: 'Status' }, { key: 'jan', label: 'Jan' }, { key: 'feb', label: 'Feb' }, { key: 'mar', label: 'Mar' }, { key: 'apr', label: 'Apr' }, { key: 'mei', label: 'Mei' }, { key: 'jun', label: 'Jun' }, { key: 'jul', label: 'Jul' }, { key: 'agt', label: 'Agt' }, { key: 'sep', label: 'Sep' }, { key: 'okt', label: 'Okt' }, { key: 'nov', label: 'Nov' }, { key: 'des', label: 'Des' }, { key: 'total', label: 'Total' }, { key: 'capaian', label: 'Capaian' }]"
+          :total-data="((dashboardData.matriks_bulanan || []).slice(0, 15)).length"
+          empty-text="Tidak ada data ditemukan."
+          empty-icon="fa-solid fa-folder-open">
+          <template #row="{ row: m, index: idx }">
+
             <td class="py-2 px-2 text-center font-bold text-slate-400">{{ idx + 1 }}</td>
             <td class="py-2 px-2">
               <div class="font-bold text-slate-900 dark:text-white text-[11px] leading-tight truncate">{{ m.nama_pegawai }}</div>
@@ -321,9 +305,8 @@
               <span v-if="m.total_jp >= m.target_jp" class="badge badge-success text-[9px]">Tuntas</span>
               <span v-else class="badge badge-warning text-[9px]">Proses</span>
             </td>
-          </tr>
-        </tbody>
-      </table>
+          </template>
+        </app-crud-table>
     </div>
   </div>
 
@@ -396,22 +379,17 @@
     <div v-else-if="filteredAnalisaGap.length > 0">
       <!-- v5.4.0: pastikan parent TIDAK overflow-hidden agar scroll horizontal aktif -->
       <div class="overflow-x-auto -mx-5 px-5">
-        <table class="table-custom w-full text-left text-xs min-w-[1100px]">
-          <thead>
-            <tr class="bg-slate-50 dark:bg-slate-800/70 text-slate-600 dark:text-slate-300 uppercase font-bold tracking-wider text-[11px]">
-              <th class="py-3 px-3 w-10 text-center">No</th>
-              <th class="py-3 px-4 min-w-[220px]">Profil Personel ASN</th>
-              <th class="py-3 px-4 min-w-[180px]">Posisi Jabatan &amp; Unit</th>
-              <th class="py-3 px-4 min-w-[220px]">Standar Diklat SKJ</th>
-              <th class="py-3 px-3 text-center min-w-[110px]">Target JP</th>
-              <th class="py-3 px-3 text-center min-w-[120px]">Kategori &amp; Status</th>
-              <th class="py-3 px-4 min-w-[200px]">Rekomendasi Solutif</th>
-              <th class="py-3 px-3 text-center min-w-[120px]">Aksi Cepat</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-            <tr v-for="(g, idx) in paginatedAnalisaGap" :key="'gap-'+idx"
-                class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
+        <app-crud-table
+          :items="paginatedAnalisaGap"
+          :columns="[{ key: 'no', label: 'No', thClass: 'w-10' }, { key: 'profilpersonelasn', label: 'Profil Personel ASN', thClass: 'min-w-[220px]' }, { key: 'posisijabatanampunit', label: 'Posisi Jabatan &amp; Unit', thClass: 'min-w-[180px]' }, { key: 'standardiklatskj', label: 'Standar Diklat SKJ', thClass: 'min-w-[220px]' }, { key: 'targetjp', label: 'Target JP', thClass: 'min-w-[110px]' }, { key: 'kategoriampstatus', label: 'Kategori &amp; Status', thClass: 'min-w-[120px]' }, { key: 'rekomendasisolutif', label: 'Rekomendasi Solutif', thClass: 'min-w-[200px]' }, { key: 'aksicepat', label: 'Aksi Cepat', thClass: 'min-w-[120px]' }]"
+          :page="analisaPagination.page"
+          :total-pages="analisaTotalPages"
+          :total-data="filteredAnalisaGap.length"
+          @change-page="p => analisaPagination.page = p"
+          empty-text="Tidak ada data ditemukan."
+          empty-icon="fa-solid fa-folder-open">
+          <template #row="{ row: g, index: idx }">
+
               <td class="py-3.5 px-3 text-center font-bold text-slate-400">
                 {{ (analisaPagination.page - 1) * analisaPagination.limit + idx + 1 }}
               </td>
@@ -482,34 +460,12 @@
                   <span>Rencanakan</span>
                 </button>
               </td>
-            </tr>
-          </tbody>
-        </table>
+          </template>
+        </app-crud-table>
       </div>
 
       <!-- Pagination -->
-      <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 mt-4 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-500">
-        <span>
-          Menampilkan
-          <strong class="text-slate-800 dark:text-white">{{ (analisaPagination.page - 1) * analisaPagination.limit + 1 }}</strong>
-          &ndash;
-          <strong class="text-slate-800 dark:text-white">{{ Math.min(analisaPagination.page * analisaPagination.limit, filteredAnalisaGap.length) }}</strong>
-          dari
-          <strong class="text-slate-800 dark:text-white">{{ filteredAnalisaGap.length }}</strong> item
-        </span>
-        <div class="flex items-center gap-1.5">
-          <button @click="analisaPagination.page--" :disabled="analisaPagination.page <= 1"
-                  class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 transition">
-            <i class="fa-solid fa-chevron-left"></i> Prev
-          </button>
-          <span class="px-3 py-1.5 font-bold text-slate-700 dark:text-slate-200">{{ analisaPagination.page }} / {{ analisaTotalPages }}</span>
-          <button @click="analisaPagination.page++" :disabled="analisaPagination.page >= analisaTotalPages"
-                  class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 transition">
-            Next <i class="fa-solid fa-chevron-right"></i>
-          </button>
-        </div>
-      </div>
-    </div>
+          </div>
 
     <!-- Empty State -->
     <div v-else class="py-12 text-center space-y-3">
