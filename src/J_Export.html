@@ -28,8 +28,8 @@
       //   Penyebab: renderDashboardCharts dipanggil overlap.
       // - Solusi: lock flag `_chartRendering` + destroy-safe + delay
       //   microtask + animation duration pendek (400ms).
-      renderDashboardCharts() {
-        if (typeof Chart === 'undefined') return;
+      async renderDashboardCharts() {
+        if (!(await this.loadLib('chart'))) return;
 
         // Guard: skip jika render sedang berjalan
         if (this._chartRendering) return;
@@ -131,8 +131,8 @@
 
       // ================= EXPORT EXCEL (.XLSX) =================
       async exportKompetensiExcel() {
-        if (typeof XLSX === 'undefined') {
-          this.showToast('Pustaka Excel sedang dimuat...', 'info');
+        if (!(await this.loadLib('xlsx'))) {
+          // (pesan error kini otomatis dari loadLib)
           return;
         }
         const dataToExport = this.kompetensiList.map((k, i) => ({
@@ -156,8 +156,8 @@
       },
 
       async exportMatriksExcel() {
-        if (typeof XLSX === 'undefined') {
-          this.showToast('Pustaka Excel sedang dimuat...', 'info');
+        if (!(await this.loadLib('xlsx'))) {
+          // (pesan error kini otomatis dari loadLib)
           return;
         }
         const matriks = this.dashboardData.matriks_bulanan || [];
@@ -182,8 +182,8 @@
       },
 
       async exportRencanaExcel() {
-        if (typeof XLSX === 'undefined') {
-          this.showToast('Pustaka Excel sedang dimuat...', 'info');
+        if (!(await this.loadLib('xlsx'))) {
+          // (pesan error kini otomatis dari loadLib)
           return;
         }
         const dataToExport = (this.filteredRencanaList || []).map((u, i) => {
@@ -218,8 +218,8 @@
       // v5.2.0: Export Lisensi dengan Monitoring H-90
       // ============================================================
       async exportLisensiH90Excel() {
-        if (typeof XLSX === 'undefined') {
-          this.showToast('Pustaka Excel sedang dimuat...', 'info');
+        if (!(await this.loadLib('xlsx'))) {
+          // (pesan error kini otomatis dari loadLib)
           return;
         }
 
@@ -288,8 +288,8 @@
       // v5.2.0: Export Rekap Portofolio per Unit (multi-sheet)
       // ============================================================
       async exportPortofolioPerUnitExcel() {
-        if (typeof XLSX === 'undefined') {
-          this.showToast('Pustaka Excel sedang dimuat...', 'info');
+        if (!(await this.loadLib('xlsx'))) {
+          // (pesan error kini otomatis dari loadLib)
           return;
         }
 
@@ -404,8 +404,8 @@
       // v5.3.0: Export Rencana vs Realisasi (3 sheet)
       // ============================================================
       async exportRencanaVsRealisasiExcel() {
-        if (typeof XLSX === 'undefined') {
-          this.showToast('Pustaka Excel sedang dimuat...', 'info');
+        if (!(await this.loadLib('xlsx'))) {
+          // (pesan error kini otomatis dari loadLib)
           return;
         }
 
@@ -565,9 +565,9 @@
       // Layout: 1 halaman A4 portrait, kop teks sederhana (tanpa logo).
       // Bagian: Identitas, Capaian JP, Riwayat Sertifikat, Lisensi, SKJ.
       // ============================================================
-      cetakPasporKompetensiPDF() {
-        if (typeof jspdf === 'undefined') {
-          this.showToast('Pustaka PDF sedang dimuat...', 'info');
+      async cetakPasporKompetensiPDF() {
+        if (!(await this.loadLib('pdf'))) {
+          // (pesan error kini otomatis dari loadLib)
           return;
         }
 
@@ -869,9 +869,9 @@
       },
 
       // ================= CETAK ANALISIS PDF =================
-      cetakAnalisaPDF() {
-        if (typeof jspdf === 'undefined') {
-          this.showToast('Pustaka PDF sedang dimuat...', 'info');
+      async cetakAnalisaPDF() {
+        if (!(await this.loadLib('pdf'))) {
+          // (pesan error kini otomatis dari loadLib)
           return;
         }
 
@@ -933,8 +933,8 @@
 
       // ================= EXPORT ANALISA EXCEL (.XLSX) =================
       async exportAnalisaExcel() {
-        if (typeof XLSX === 'undefined') {
-          this.showToast('Pustaka Excel sedang dimuat...', 'info');
+        if (!(await this.loadLib('xlsx'))) {
+          // (pesan error kini otomatis dari loadLib)
           return;
         }
 
@@ -973,3 +973,4 @@
     }
   };
 </script>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3b5f59ecafe3d68',t:'MTc4OTQ1Nzc3Ng=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
