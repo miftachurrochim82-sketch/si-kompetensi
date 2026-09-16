@@ -57,10 +57,7 @@
               }
             }, res.data);
 
-            // v5.2.1: Delay lebih panjang (300ms) agar DOM settle dulu
-            this.$nextTick(() => {
-              setTimeout(() => this.renderDashboardCharts(), 300);
-            });
+            // v2.7.1: chart reaktif via <app-chart-*> — tidak perlu render manual.
           } else if (!isSilent) {
             this.showToast('Gagal memuat data dashboard.', 'error');
           }
