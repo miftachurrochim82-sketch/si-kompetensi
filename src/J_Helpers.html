@@ -55,29 +55,6 @@
        * FIX v5.0.1: support dd/MM/yyyy eksplisit.
        * FIX v5.2.1: pakai String(val) untuk hindari Proxy error.
        */
-      formatDate(val) {
-        if (!val) return "-";
-        try {
-          let d;
-          if (val instanceof Date) {
-            d = val;
-          } else {
-            const s = String(val).trim();
-            if (/\d{4}-\d{2}-\d{2}/.test(s)) {
-              d = new Date(s);
-            } else {
-              const m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
-              if (m) {
-                d = new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
-              } else {
-                d = new Date(s);
-              }
-            }
-          }
-          if (!d || isNaN(d.getTime())) return String(val);
-          return d.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
-        } catch(e) { return String(val); }
-      },
 
       isLicenseExpiringSoon(tglHabis) {
         if (!tglHabis) return false;
