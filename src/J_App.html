@@ -164,12 +164,7 @@
      * background chart (`#f1f5f9`) berubah → perlu re-render.
      */
     onDarkToggle(vm) {
-      // Re-render chart di halaman yang punya chart
-      if (vm.currentPage === 'dashboard' || vm.currentPage === 'analisa') {
-        vm.$nextTick(() => {
-          setTimeout(() => vm.renderDashboardCharts(), 100);
-        });
-      }
+      // v2.7.1: chart kit mendengar event 'appcore:dark' sendiri — tanpa re-render manual.
     },
 
     /**
@@ -196,10 +191,7 @@
       // (get_jadwal_list source of truth untuk jadwalList).
       await vm.loadJadwal(true);
 
-      // Fase 3: Render chart setelah DOM siap
-      vm.$nextTick(() => {
-        setTimeout(() => vm.renderDashboardCharts(), 200);
-      });
+      // v2.7.1: Fase 3 tidak diperlukan — chart kit render reaktif saat data masuk.
     },
 
     mixins: [SIKompetensiMixin]
