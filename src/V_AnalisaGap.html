@@ -114,52 +114,13 @@
     </div>
 
     <!-- Card 2: Total Gap -->
-    <div class="card p-5 bg-gradient-to-br from-amber-500/10 via-white to-white dark:from-amber-950/30 dark:via-slate-900 dark:to-slate-900 rounded-2xl border border-amber-200/80 dark:border-amber-800/60 shadow-xs flex flex-col justify-between">
-      <div class="flex items-center justify-between">
-        <span class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Kesenjangan</span>
-        <span class="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center text-sm font-bold">
-          <i class="fa-solid fa-triangle-exclamation"></i>
-        </span>
-      </div>
-      <div class="my-2">
-        <div class="text-2xl font-black text-amber-600 dark:text-amber-400">
-          {{ analisaData.gap_count || 0 }} <span class="text-xs font-normal text-slate-500">Kesenjangan</span>
-        </div>
-      </div>
-      <p class="text-[11px] text-slate-500 dark:text-slate-400">Kebutuhan diklat kompetensi yang belum bersertifikat</p>
-    </div>
+    <app-stat-card title="Total Kesenjangan" :value="analisaData.gap_count || 0" icon="fa-solid fa-triangle-exclamation" color="amber" subtext="Kebutuhan diklat kompetensi yang belum bersertifikat"></app-stat-card>
 
     <!-- Card 3: Gap Wajib -->
-    <div class="card p-5 bg-gradient-to-br from-rose-500/10 via-white to-white dark:from-rose-950/30 dark:via-slate-900 dark:to-slate-900 rounded-2xl border border-rose-200/80 dark:border-rose-800/60 shadow-xs flex flex-col justify-between">
-      <div class="flex items-center justify-between">
-        <span class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Diklat Wajib Belum Diikuti</span>
-        <span class="w-8 h-8 rounded-xl bg-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center justify-center text-sm font-bold">
-          <i class="fa-solid fa-circle-exclamation"></i>
-        </span>
-      </div>
-      <div class="my-2">
-        <div class="text-2xl font-black text-rose-600 dark:text-rose-400">
-          {{ analisaData.total_wajib_gap || 0 }} <span class="text-xs font-normal text-slate-500">Prioritas 1</span>
-        </div>
-      </div>
-      <p class="text-[11px] text-slate-500 dark:text-slate-400">Syarat mutlak penugasan operasional Satpol &amp; Damkar</p>
-    </div>
+    <app-stat-card title="Diklat Wajib Belum Diikuti" :value="analisaData.total_wajib_gap || 0" icon="fa-solid fa-circle-exclamation" color="rose" subtext="Syarat mutlak penugasan operasional Satpol &amp; Damkar"></app-stat-card>
 
     <!-- Card 4: Personel Terdampak -->
-    <div class="card p-5 bg-gradient-to-br from-sky-500/10 via-white to-white dark:from-sky-950/30 dark:via-slate-900 dark:to-slate-900 rounded-2xl border border-sky-200/80 dark:border-sky-800/60 shadow-xs flex flex-col justify-between">
-      <div class="flex items-center justify-between">
-        <span class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Personel Perlu Diklat</span>
-        <span class="w-8 h-8 rounded-xl bg-sky-500/20 text-sky-600 dark:text-sky-400 flex items-center justify-center text-sm font-bold">
-          <i class="fa-solid fa-users-viewfinder"></i>
-        </span>
-      </div>
-      <div class="my-2">
-        <div class="text-2xl font-black text-sky-600 dark:text-sky-400">
-          {{ analisaData.total_pegawai_terdampak || 0 }} <span class="text-xs font-normal text-slate-500">Personel</span>
-        </div>
-      </div>
-      <p class="text-[11px] text-slate-500 dark:text-slate-400">ASN yang perlu diikutsertakan program pengembangan</p>
-    </div>
+    <app-stat-card title="Personel Perlu Diklat" :value="analisaData.total_pegawai_terdampak || 0" icon="fa-solid fa-users-viewfinder" color="sky" subtext="ASN yang perlu diikutsertakan program pengembangan"></app-stat-card>
   </div>
 
   <!-- ============================================================
@@ -292,7 +253,7 @@
               <div class="text-[9px] text-slate-400 truncate">{{ m.nip }}</div>
             </td>
             <td class="py-2 px-2 text-center">
-              <span class="badge text-[9px]" :class="m.status_pegawai === 'PPPK' ? 'badge-purple' : 'badge-info'">{{ m.status_pegawai }}</span>
+              <app-badge :status="m.status_pegawai === 'PPPK' ? 'purple' : 'info'" :label="m.status_pegawai"></app-badge>
             </td>
             <td v-for="(jp, bIdx) in m.bulan" :key="bIdx" class="py-2 px-1 text-center font-medium text-[11px]"
                 :class="jp > 0 ? 'text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50/50 dark:bg-emerald-950/20' : 'text-slate-300 dark:text-slate-700'">
@@ -302,8 +263,8 @@
               {{ m.total_jp }}
             </td>
             <td class="py-2 px-2 text-center">
-              <span v-if="m.total_jp >= m.target_jp" class="badge badge-success text-[9px]">Tuntas</span>
-              <span v-else class="badge badge-warning text-[9px]">Proses</span>
+              <app-badge v-if="m.total_jp >= m.target_jp" status="success" label="Tuntas"></app-badge>
+              <app-badge v-else status="warning" label="Proses"></app-badge>
             </td>
           </template>
         </app-crud-table>
@@ -322,7 +283,7 @@
           <i class="fa-solid fa-table-list text-emerald-500"></i>
           <span>Rincian Matriks Kesenjangan Kompetensi Personel</span>
         </h3>
-        <span class="badge badge-warning text-xs font-bold">{{ filteredAnalisaGap.length }} Item</span>
+        <app-badge status="warning" :label="(filteredAnalisaGap.length) + ' Item'" size="md"></app-badge>
       </div>
       <button v-if="analisaSearch || analisaFilterUnit || analisaFilterKebutuhan || analisaFilterStatus"
               @click="analisaSearch = ''; analisaFilterUnit = ''; analisaFilterKebutuhan = ''; analisaFilterStatus = ''; onFilterAnalisaChange();"
@@ -435,10 +396,7 @@
 
               <td class="py-3.5 px-3 text-center">
                 <div>
-                  <span :class="g.tingkat_kebutuhan === 'WAJIB' ? 'badge badge-danger' : 'badge badge-warning'"
-                        class="text-[10px] font-bold px-2 py-0.5">
-                    {{ g.tingkat_kebutuhan }}
-                  </span>
+                  <app-badge :status="g.tingkat_kebutuhan === 'WAJIB' ? 'danger' : 'warning'" :label="g.tingkat_kebutuhan"></app-badge>
                 </div>
                 <div class="text-[10px] text-slate-500 dark:text-slate-400 font-medium mt-1">
                   {{ g.status_gap }}
