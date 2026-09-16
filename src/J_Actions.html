@@ -283,6 +283,11 @@
       },
 
       async saveKualifikasi() {
+        // B1 lanjutan: validasi eksplisit (pengganti 'required' native select)
+        if (!this.kualifikasiForm.pegawai_id) {
+          this.showToast('Pilih pegawai pemilik lisensi terlebih dahulu.', 'error');
+          return;
+        }
         this.kualifikasiSaving = true;
         try {
           const res = await this.callServer('save_kualifikasi', { record: this.kualifikasiForm });
