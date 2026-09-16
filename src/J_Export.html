@@ -20,119 +20,13 @@
   // Changelog v5.2.0 (2026-09-14):
   // - 🆕 ADD: exportLisensiH90Excel, exportPortofolioPerUnitExcel.
   // Changelog v5.1.0 (2026-09-13):
-  // - 🎨 FIX: renderDashboardCharts warna CSS variables.
+  // - v2.7.1: renderDashboardCharts dihapus — chart dashboard kini via <app-chart-*> (bare).
   // - 🔴 FIX: exportAnalisaExcel CSV → XLSX.
   // - 🟠 FIX: cetakAnalisaPDF try/catch.
   // ============================================================
 
   window.SIKompetensiExport = {
     methods: {
-      // ================= CHART RENDERING =================
-      // v5.2.1 (2026-09-14):
-      // - 🔴 FIX: Cannot read properties of null (reading 'getContext')
-      //   Penyebab: renderDashboardCharts dipanggil overlap.
-      // - Solusi: lock flag `_chartRendering` + destroy-safe + delay
-      //   microtask + animation duration pendek (400ms).
-      async renderDashboardCharts() {
-        if (!(await this.loadLib('chart'))) return;
-
-        // Guard: skip jika render sedang berjalan
-        if (this._chartRendering) return;
-        this._chartRendering = true;
-
-        try {
-          const css = getComputedStyle(document.documentElement);
-          const primary       = (css.getPropertyValue('--primary').trim())       || '#059669';
-          const primaryAccent = (css.getPropertyValue('--primary-accent').trim()) || '#34d399';
-
-          // ============ CHART 1: DONUT TARGET JP ============
-          const el20Jp = document.getElementById('chart20JpCanvas');
-          if (el20Jp && el20Jp.tagName === 'CANVAS' && document.body.contains(el20Jp)) {
-            if (this.chart20JpInstance) {
-              try { this.chart20JpInstance.destroy(); }
-              catch (e) { console.warn('Destroy chart donut error:', e); }
-              this.chart20JpInstance = null;
-            }
-
-            const lulus = this.dashboardData.pegawai_lulus_20jp || 0;
-            const total = this.dashboardData.total_pegawai || 10;
-            const sisa = Math.max(0, total - lulus);
-
-            const el20JpFresh = document.getElementById('chart20JpCanvas');
-            if (el20JpFresh && el20JpFresh.tagName === 'CANVAS' && document.body.contains(el20JpFresh)) {
-              this.chart20JpInstance = new Chart(el20JpFresh, {
-                type: 'doughnut',
-                data: {
-                  labels: ['Tuntas Target', 'Dalam Proses'],
-                  datasets: [{
-                    data: [lulus, sisa],
-                    backgroundColor: [primary, '#cbd5e1'],
-                    borderWidth: 0,
-                    hoverOffset: 4
-                  }]
-                },
-                options: {
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  plugins: { legend: { display: false } },
-                  cutout: '72%',
-                  animation: { duration: 400 }
-                }
-              });
-            }
-          }
-
-          // ============ CHART 2: BAR RUMPUN ============
-          const elRumpun = document.getElementById('chartRumpunCanvas');
-          if (elRumpun && elRumpun.tagName === 'CANVAS' && document.body.contains(elRumpun)) {
-            if (this.chartRumpunInstance) {
-              try { this.chartRumpunInstance.destroy(); }
-              catch (e) { console.warn('Destroy chart rumpun error:', e); }
-              this.chartRumpunInstance = null;
-            }
-
-            const jc = this.dashboardData.jenis_count || {};
-            const labels = ['Manajerial', 'Teknis Gakda', 'Teknis Damkar', 'Fungsional', 'Bimtek'];
-            const dataCounts = [
-              jc['Manajerial & Kepemimpinan'] || 0,
-              jc['Teknis Penegakan Perda (PPNS)'] || 0,
-              jc['Teknis Pemadam & Rescue'] || 0,
-              jc['Jabatan Fungsional Pol PP & Damkar'] || 0,
-              jc['Bimbingan Teknis & Workshop'] || 0
-            ];
-
-            const elRumpunFresh = document.getElementById('chartRumpunCanvas');
-            if (elRumpunFresh && elRumpunFresh.tagName === 'CANVAS' && document.body.contains(elRumpunFresh)) {
-              this.chartRumpunInstance = new Chart(elRumpunFresh, {
-                type: 'bar',
-                data: {
-                  labels: labels,
-                  datasets: [{
-                    label: 'Jumlah Pelatihan',
-                    data: dataCounts,
-                    backgroundColor: [primary, primaryAccent, '#f59e0b', '#6366f1', '#f43f5e'],
-                    borderRadius: 8
-                  }]
-                },
-                options: {
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  plugins: { legend: { display: false } },
-                  scales: {
-                    y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
-                    x: { grid: { display: false } }
-                  },
-                  animation: { duration: 400 }
-                }
-              });
-            }
-          }
-        } catch (e) {
-          console.error('Gagal render chart:', e);
-        } finally {
-          setTimeout(() => { this._chartRendering = false; }, 800);
-        }
-      },
 
       // ================= EXPORT EXCEL (.XLSX) =================
       // ===== v5.5.0: helper bersama export Excel =====
