@@ -364,6 +364,12 @@
       },
 
       async saveKompetensi() {
+        // B1 (v2.7.3): validasi eksplisit — picker tidak punya 'required' native,
+        // dan tombol confirm modal memang selalu melewati validasi form browser.
+        if (!this.kompetensiForm.pegawai_id) {
+          this.showToast('Pilih pegawai pemilik sertifikat terlebih dahulu.', 'error');
+          return;
+        }
         this.kompetensiSaving = true;
         try {
           if (!this.kompetensiForm.diklat_id && this.kompetensiForm.jadwal_id) {
