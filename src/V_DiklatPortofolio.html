@@ -164,15 +164,15 @@
                 <div class="text-[11px] text-slate-500 mt-0.5"><i class="fa-solid fa-building-columns text-[10px]"></i> {{ j.penyelenggara }}</div>
               </td>
               <td class="py-3 px-3">
-                <span class="badge badge-emerald text-[10px] font-bold">{{ j.jumlah_jp || 20 }} JP</span>
+                <app-badge status="emerald" :label="(j.jumlah_jp || 20) + ' JP'"></app-badge>
                 <div class="text-[10px] text-slate-400 mt-0.5">{{ j.rumpun }}</div>
               </td>
               <td class="py-3 px-3">
                 <div class="font-semibold text-slate-800 dark:text-slate-200">{{ formatDate(j.tgl_mulai) }}</div>
                 <div class="text-[10px] text-slate-400">s/d {{ formatDate(j.tgl_selesai) }}</div>
               </td>
-              <td class="py-3 px-3"><span class="badge badge-info text-[10px] font-semibold">{{ j.status_jadwal || 'Terjadwal' }}</span></td>
-              <td class="py-3 px-3"><span class="badge badge-emerald text-[10px] font-semibold">{{ j.metode || 'Klasikal' }}</span></td>
+              <td class="py-3 px-3"><app-badge status="info" :label="j.status_jadwal || 'Terjadwal'"></app-badge></td>
+              <td class="py-3 px-3"><app-badge status="emerald" :label="j.metode || 'Klasikal'"></app-badge></td>
               <td class="py-3 px-4 text-center">
                 <div class="flex items-center justify-center gap-1.5">
                   <button @click="openClaimJadwalForm(j)" class="btn bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 text-xs px-2.5 py-1.5 rounded-lg flex items-center gap-1 font-bold" title="Input Sertifikat">
@@ -260,7 +260,7 @@
                 <div v-if="k.no_sertifikat" class="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono mt-0.5">No: {{ k.no_sertifikat }}</div>
               </td>
               <td class="py-3 px-3">
-                <span class="badge badge-emerald text-xs font-black">{{ k.jumlah_jp }} JP</span>
+                <app-badge status="emerald" :label="(k.jumlah_jp) + ' JP'" size="md"></app-badge>
                 <div class="text-[10px] text-slate-400 mt-0.5">{{ k.rumpun }}</div>
               </td>
               <td class="py-3 px-3">
@@ -275,9 +275,7 @@
                 <span v-else class="text-slate-400 text-xs italic">-</span>
               </td>
               <td class="py-3 px-3">
-                <span class="badge" :class="k.status_verifikasi === 'disetujui' ? 'badge-success' : (k.status_verifikasi === 'ditolak' ? 'badge-danger' : (k.status_verifikasi === 'revisi' ? 'badge-info' : 'badge-warning'))">
-                  {{ k.status_verifikasi === 'disetujui' ? 'Disetujui' : (k.status_verifikasi === 'ditolak' ? 'Ditolak' : (k.status_verifikasi === 'revisi' ? 'Perlu Revisi' : 'Menunggu')) }}
-                </span>
+                <app-badge :status="k.status_verifikasi === 'disetujui' ? 'success' : (k.status_verifikasi === 'ditolak' ? 'danger' : (k.status_verifikasi === 'revisi' ? 'info' : 'warning'))" :label="k.status_verifikasi === 'disetujui' ? 'Disetujui' : (k.status_verifikasi === 'ditolak' ? 'Ditolak' : (k.status_verifikasi === 'revisi' ? 'Perlu Revisi' : 'Menunggu'))"></app-badge>
               </td>
               <td class="py-3 px-4 text-center">
                 <div class="flex items-center justify-center gap-1.5">
@@ -378,10 +376,8 @@
                 <span v-else class="text-slate-400 text-xs italic">-</span>
               </td>
               <td class="py-3 px-3">
-                <span v-if="isLicenseExpiringSoon(k.tgl_habis_berlaku)" class="badge badge-warning text-[10px] font-bold animate-pulse">
-                  <i class="fa-solid fa-triangle-exclamation"></i> H-90 Expired
-                </span>
-                <span v-else class="badge badge-success text-[10px] font-bold">Aktif Valid</span>
+                <app-badge v-if="isLicenseExpiringSoon(k.tgl_habis_berlaku)" status="warning" label="H-90 Expired" icon="fa-solid fa-triangle-exclamation" class="animate-pulse"></app-badge>
+                <app-badge v-else status="success" label="Aktif Valid"></app-badge>
               </td>
               <td class="py-3 px-4 text-center">
                 <div class="flex items-center justify-center gap-1.5">
