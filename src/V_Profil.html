@@ -272,20 +272,13 @@
         </app-crud-table>
       </div>
 
-      <!-- Empty State Transkrip -->
-      <div v-else class="py-10 text-center space-y-3">
-        <div class="w-14 h-14 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center text-xl mx-auto">
-          <i class="fa-solid fa-certificate"></i>
-        </div>
-        <h4 class="text-sm font-bold text-slate-800 dark:text-white">Belum Ada Sertifikat Tercatat</h4>
-        <p class="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
-          Pegawai ini belum memiliki riwayat sertifikat yang diunggah ke dalam sistem. Silakan laporkan sertifikat pertama Anda.
-        </p>
-        <button @click="laporSertifikatPribadi()" class="btn btn-primary text-xs px-4 py-2 rounded-xl bg-emerald-600 text-white">
-          <i class="fa-solid fa-cloud-arrow-up mr-1.5"></i>
-          <span>Upload Sertifikat Sekarang</span>
-        </button>
-      </div>
+      <!-- Empty State Transkrip (v2.7.2/B6: via <app-empty-state>) -->
+      <app-empty-state v-else
+                       icon="fa-solid fa-certificate"
+                       title="Belum Ada Sertifikat Tercatat"
+                       subtitle="Pegawai ini belum memiliki riwayat sertifikat yang diunggah ke dalam sistem. Silakan laporkan sertifikat pertama Anda."
+                       action-label="Upload Sertifikat Sekarang"
+                       @action="laporSertifikatPribadi()"></app-empty-state>
     </div>
 
     <!-- ============================================================
