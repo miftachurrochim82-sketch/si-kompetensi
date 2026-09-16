@@ -182,7 +182,7 @@
         <span>Rasio Pemenuhan Target JP</span>
       </h3>
       <div class="relative w-48 h-48 my-2">
-        <app-chart-doughnut v-if="!_dashboardLoading" bare :labels="jpDonut.labels" :datasets="jpDonut.datasets" :colors="jpDonut.colors" :legend="false" :height="192"></app-chart-doughnut>
+        <app-chart-doughnut v-if="dashboardReady" bare :labels="jpDonut.labels" :datasets="jpDonut.datasets" :colors="jpDonut.colors" :legend="false" :height="192"></app-chart-doughnut>
         <app-skeleton v-else type="lines" :count="3"></app-skeleton>
         <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
           <span class="text-2xl font-black text-slate-900 dark:text-white">{{ dashboardData.persen_capaian_20jp || 0 }}%</span>
@@ -211,7 +211,7 @@
         <span class="text-xs text-slate-400">Tahun Anggaran {{ (dashboardData.bulan_aktif || '').split(' ').pop() || new Date().getFullYear() }}</span>
       </div>
       <div class="relative h-48 w-full">
-        <app-chart-bar v-if="!_dashboardLoading" bare :labels="rumpunBar.labels" :datasets="rumpunBar.datasets" :colors="rumpunBar.colors" :legend="false" :height="192"></app-chart-bar>
+        <app-chart-bar v-if="dashboardReady" bare :labels="rumpunBar.labels" :datasets="rumpunBar.datasets" :colors="rumpunBar.colors" :legend="false" :height="192"></app-chart-bar>
         <app-skeleton v-else type="table" :count="4"></app-skeleton>
       </div>
       <div class="text-[11px] text-slate-400 text-center mt-3">
