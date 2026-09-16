@@ -57,11 +57,11 @@
         </div>
 
         <div>
-          <label class="block font-bold text-sm text-slate-800 dark:text-slate-200 mb-2.5">Pegawai Pemilik Sertifikat *</label>
-          <select v-model="kompetensiForm.pegawai_id" required class="input text-sm w-full py-3.5 px-4 rounded-2xl font-medium">
-            <option value="" disabled>-- Pilih Pegawai --</option>
-            <option v-for="p in sortedPegawaiList" :key="p.id" :value="p.id">{{ p.nama_lengkap }}</option>
-          </select>
+          <!-- B1 pilot (CDN v2.7.3): picker searchable; :source = daftar yg sama dgn select lama -->
+          <app-pegawai-picker v-model="kompetensiForm.pegawai_id"
+                              :source="sortedPegawaiList"
+                              label="Pegawai Pemilik Sertifikat *"
+                              placeholder="Ketik nama / NIP, lalu klik hasilnya…"></app-pegawai-picker>
         </div>
 
         <div class="space-y-2.5">
