@@ -302,6 +302,34 @@ window.SIKompetensiState = {
 
   computed: {
     // ============================================================
+    // CHART DATA (v2.7.1: memasok <app-chart-*> di V_Dashboard)
+    // ============================================================
+    jpDonut() {
+      const lulus = (this.dashboardData && this.dashboardData.pegawai_lulus_20jp) || 0;
+      const total = (this.dashboardData && this.dashboardData.total_pegawai) || 0;
+      const sisa = Math.max(0, total - lulus);
+      return {
+        labels: ['Tuntas Target', 'Dalam Proses'],
+        datasets: [{ label: 'Target JP', data: [lulus, sisa] }],
+        colors: ['#059669', '#cbd5e1']
+      };
+    },
+    rumpunBar() {
+      const jc = (this.dashboardData && this.dashboardData.jenis_count) || {};
+      return {
+        labels: ['Manajerial', 'Teknis Gakda', 'Teknis Damkar', 'Fungsional', 'Bimtek'],
+        datasets: [{ label: 'Jumlah Pelatihan', data: [
+          jc['Manajerial & Kepemimpinan'] || 0,
+          jc['Teknis Penegakan Perda (PPNS)'] || 0,
+          jc['Teknis Pemadam & Rescue'] || 0,
+          jc['Jabatan Fungsional Pol PP & Damkar'] || 0,
+          jc['Bimbingan Teknis & Workshop'] || 0
+        ] }],
+        colors: ['#059669', '#34d399', '#f59e0b', '#6366f1', '#f43f5e']
+      };
+    },
+
+    // ============================================================
     // ROLE COMPUTED
     // ============================================================
     isAdmin() {
