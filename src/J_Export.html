@@ -163,11 +163,11 @@
           'Penyelenggara': k.penyelenggara || '',
           'No. Sertifikat': k.no_sertifikat || '',
           'Jumlah JP': k.jumlah_jp || 0,
-          'Tgl Mulai': this.formatDate(k.tgl_mulai),
-          'Tgl Selesai': this.formatDate(k.tgl_selesai),
+          'Tgl Mulai': this.formatDateDisplay(k.tgl_mulai),
+          'Tgl Selesai': this.formatDateDisplay(k.tgl_selesai),
           'Status': k.status_verifikasi || 'disetujui'
         }));
-        await this._exportXlsx(`SI-KOMPETENSI_Portofolio_${new Date().getFullYear()}.xlsx`, [{ name: 'Data_Kompetensi', rows: dataToExport }], 'Data Portofolio Diklat berhasil diekspor ke Excel.');
+        await this.exportExcel(dataToExport, `SI-KOMPETENSI_Portofolio_${new Date().getFullYear()}.xlsx`, 'Data_Kompetensi');
       },
 
       async exportMatriksExcel() {
@@ -185,7 +185,7 @@
           'Target Standar': m.target_jp + ' JP',
           'Status Capaian': m.total_jp >= m.target_jp ? 'TUNTAS' : 'DALAM PROSES'
         }));
-        await this._exportXlsx(`SI-KOMPETENSI_Matriks_JP_${new Date().getFullYear()}.xlsx`, [{ name: 'Matriks_12_Bulan_JP', rows: rows }], 'Matriks Akumulasi JP berhasil diekspor ke Excel.');
+        await this.exportExcel(rows, `SI-KOMPETENSI_Matriks_JP_${new Date().getFullYear()}.xlsx`, 'Matriks_12_Bulan_JP');
       },
 
       async exportRencanaExcel() {
@@ -210,7 +210,7 @@
             "Alasan / Justifikasi": u.alasan_justifikasi || u.alasan_usulan || ""
           };
         });
-        await this._exportXlsx(`SI-KOMPETENSI_Rencana_Diklat_${new Date().getFullYear()}.xlsx`, [{ name: "Rencana_Diklat_Tahunan", rows: dataToExport }], "Rekap Rencana Diklat Tahunan berhasil diekspor ke Excel.");
+        await this.exportExcel(dataToExport, `SI-KOMPETENSI_Rencana_Diklat_${new Date().getFullYear()}.xlsx`, 'Rencana_Diklat_Tahunan');
       },
 
       // ============================================================
@@ -252,8 +252,8 @@
             'No. SK': k.nomor_sk_lisensi || '',
             'No. Registrasi': k.no_registrasi_nasional || '',
             'Lembaga Penerbit': k.lembaga_penerbit || '',
-            'Tanggal Terbit': this.formatDate(k.tgl_sk_terbit),
-            'Tanggal Expired': this.formatDate(k.tgl_habis_berlaku),
+            'Tanggal Terbit': this.formatDateDisplay(k.tgl_sk_terbit),
+            'Tanggal Expired': this.formatDateDisplay(k.tgl_habis_berlaku),
             'Sisa Hari': sisaHari !== null ? sisaHari : '-',
             'Status': status,
             'Tindakan Diperlukan': status === 'EXPIRED' ? 'SEGERA PERPANJANG'
@@ -272,7 +272,7 @@
         const rowsFinal = rows.map((r, i) => Object.assign({ 'No': i + 1 }, r));
 
         const tgl = new Date().toISOString().slice(0, 10);
-        await this._exportXlsx(`SIKOMPETENSI_Monitoring_Lisensi_${tgl}.xlsx`, [{ name: 'Monitoring_Lisensi', rows: rowsFinal }], 'Monitoring Lisensi berhasil diekspor (termasuk H-90 Alert).');
+        await this.exportExcel(rowsFinal, `SIKOMPETENSI_Monitoring_Lisensi_${tgl}.xlsx`, 'Monitoring_Lisensi');
       },
 
       // ============================================================
@@ -737,7 +737,7 @@
               k.jenis_kualifikasi || '-',
               k.nomor_sk_lisensi || '-',
               k.lembaga_penerbit || '-',
-              this.formatDate(k.tgl_habis_berlaku),
+              this.formatDateDisplay(k.tgl_habis_berlaku),
               this.isLicenseExpiringSoon(k.tgl_habis_berlaku) ? 'H-90 ALERT' : (k.status_kualifikasi || 'AKTIF')
             ]);
             doc.autoTable({
@@ -926,7 +926,7 @@
             'Rekomendasi Tindak Lanjut': g.rekomendasi_tindak_lanjut || ''
           }));
 
-          await this._exportXlsx(`SI-KOMPETENSI_Analisis_SKJ_${this.analisaTahun}.xlsx`, [{ name: 'Analisis_Kesenjangan_SKJ', rows: rows }], 'Data Analisis Kesenjangan berhasil diekspor ke Excel.');
+          await this.exportExcel(rows, `SI-KOMPETENSI_Analisis_SKJ_${this.analisaTahun}.xlsx`, 'Analisis_Kesenjangan_SKJ');
         } catch (e) {
           console.error('Gagal export Excel analisa:', e);
           this.showToast('Gagal mengekspor Excel: ' + (e.message || 'Error tidak dikenal'), 'error');
