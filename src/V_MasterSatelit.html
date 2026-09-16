@@ -230,10 +230,7 @@
                 {{ s.level_kompetensi || '-' }}
               </td>
               <td class="py-3 px-3 text-center">
-                <span :class="s.tingkat_kebutuhan === 'WAJIB' ? 'badge badge-danger' : 'badge badge-warning'"
-                      class="text-[10px] font-black uppercase px-2 py-0.5">
-                  {{ s.tingkat_kebutuhan }}
-                </span>
+                <app-badge :status="s.tingkat_kebutuhan === 'WAJIB' ? 'danger' : 'warning'" :label="s.tingkat_kebutuhan"></app-badge>
               </td>
               <td class="py-3 px-3 font-black text-emerald-600 dark:text-emerald-400 text-center whitespace-nowrap">
                 {{ s.minimal_jp }} JP
