@@ -304,6 +304,11 @@ window.SIKompetensiState = {
     // ============================================================
     // CHART DATA (v2.7.1: memasok <app-chart-*> di V_Dashboard)
     // ============================================================
+    // Jembatan template: properti data berawalan "_" TIDAK bisa diakses
+    // dari template Vue (dicadangkan internal) — harus lewat computed.
+    dashboardReady() {
+      return !this._dashboardLoading;
+    },
     jpDonut() {
       const lulus = (this.dashboardData && this.dashboardData.pegawai_lulus_20jp) || 0;
       const total = (this.dashboardData && this.dashboardData.total_pegawai) || 0;
