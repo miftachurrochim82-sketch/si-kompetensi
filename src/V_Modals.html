@@ -69,7 +69,7 @@
           <select v-model="kompetensiForm.jadwal_id" @change="onJadwalPelatihanChanged" required class="input text-sm w-full py-3.5 px-4 rounded-2xl font-semibold text-emerald-700 dark:text-emerald-300">
             <option value="" disabled>-- Pilih Agenda Pelatihan (Tahun {{ new Date().getFullYear() }}) --</option>
             <option v-for="j in currentYearJadwalList" :key="j.id" :value="j.id">
-              {{ j.tgl_mulai ? formatDate(j.tgl_mulai) + " - " : "" }}{{ j.nama_kegiatan || j.nama_diklat }}
+              {{ j.tgl_mulai ? formatDateDisplay(j.tgl_mulai) + " - " : "" }}{{ j.nama_kegiatan || j.nama_diklat }}
             </option>
           </select>
 
