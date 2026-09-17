@@ -56,35 +56,9 @@
     <app-stat-card title="Estimasi Anggaran" :value="'Rp ' + ((filteredRencanaList.reduce((acc, u) => acc + (Number(u.estimasi_biaya) || 0), 0) / 1000000).toFixed(1)) + ' Jt'" icon="fa-solid fa-money-bill-wave" color="amber"></app-stat-card>
   </div>
 
-  <!-- Filter & Kontrol Pencarian — v5.3.0: search lebih lebar (2/5 kolom) -->
-  <div class="card p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
-    <div class="relative md:col-span-2 lg:col-span-2">
-      <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-      <input type="text" v-model="filterRencanaSearch" @input="rencanaPagination.page = 1"
-             placeholder="Cari program, jabatan sasaran, pegawai..."
-             class="input pl-9 text-xs w-full py-2.5 rounded-xl">
-    </div>
-
-    <select v-model.number="filterRencanaTahun" @change="rencanaPagination.page = 1" class="input text-xs py-2.5 rounded-xl">
-      <option v-for="y in optionsTahun" :key="'rt-' + y" :value="y">Tahun: {{ y }}</option>
-    </select>
-
-    <select v-model="filterRencanaTw" @change="rencanaPagination.page = 1" class="input text-xs py-2.5 rounded-xl">
-      <option value="">Semua Triwulan</option>
-      <option value="TW I">TW I (Jan - Mar)</option>
-      <option value="TW II">TW II (Apr - Jun)</option>
-      <option value="TW III">TW III (Jul - Sep)</option>
-      <option value="TW IV">TW IV (Okt - Des)</option>
-    </select>
-
-    <select v-model="filterRencanaStatus" @change="rencanaPagination.page = 1" class="input text-xs py-2.5 rounded-xl">
-      <option value="">Semua Status</option>
-      <option value="Terealisasi">Terealisasi (Tuntas)</option>
-      <option value="Disetujui">Disetujui</option>
-      <option value="Diajukan">Diajukan</option>
-      <option value="Direncanakan">Direncanakan</option>
-      <option value="Ditolak">Ditolak</option>
-    </select>
+  <!-- Filter & Kontrol Pencarian (B4: via <app-filter-bar>; defs = computed rencanaFilterDefs di J_State) -->
+  <div class="card p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+    <app-filter-bar :filters="rencanaFilterDefs" v-model="rencanaFilters" @change="rencanaPagination.page = 1"></app-filter-bar>
   </div>
 
   <!-- Tabel Rencana -->
