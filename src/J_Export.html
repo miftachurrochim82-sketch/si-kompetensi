@@ -289,7 +289,7 @@
           return;
         }
 
-        const tahun = this.filterRencanaTahun || new Date().getFullYear();
+        const tahun = (this.rencanaFilters && this.rencanaFilters.tahun) || new Date().getFullYear();
 
         const listTahun = list.filter(u => {
           const y = Number(u.tahun_anggaran || u.tahun_anggaran_target || 0);
