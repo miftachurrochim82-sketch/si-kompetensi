@@ -15,7 +15,7 @@
 // - 🟠 FIX: activePegawaiSkjList — perbandingan konsisten.
 // - 🟠 FIX: optionsUnitFilter — refactor O(n²) → O(n).
 // - 🟡 ADD: state masterSatelitLoading.
-// - 🟡 ADD: analisaFilterStatus (filter PNS/PPPK).
+// - 🟡 ADD: analisaFilterStatus (filter PNS/PPPK). [B4: kini bagian objek analisaFilters]
 // - 🟡 ADD: profileYearOptions (dinamis tahun ini ±2).
 // ============================================================
 
@@ -178,10 +178,8 @@ window.SIKompetensiState = {
       // ============================================================
       analisaTahun: new Date().getFullYear(),
       analisaLoading: false,
-      analisaSearch: "",
-      analisaFilterUnit: "",
-      analisaFilterKebutuhan: "",
-      analisaFilterStatus: "",
+      // B4: state filter unified utk <app-filter-bar> Analisa Gap
+      analisaFilters: {},
       analisaPagination: { page: 1, limit: 10 },
       analisaData: {
         total_evaluasi: 0,
@@ -545,12 +543,28 @@ window.SIKompetensiState = {
       return Boolean(this.analisaData && this.analisaData.temuan && this.analisaData.temuan.length > 0);
     },
 
+    // B4: definisi filter <app-filter-bar> Analisa Gap
+    analisaFilterDefs() {
+      return [
+        { key: 'search', label: 'Pencarian', type: 'text', placeholder: 'Cari Pegawai, NIP, Jabatan...' },
+        { key: 'unit', label: 'Unit Kerja / Bidang', type: 'select', options: (this.optionsUnitFilter || []).map(u => ({ value: String(u.id || u.unit_id), label: u.nama_unit || u.nama })) },
+        { key: 'kebutuhan', label: 'Kategori Kebutuhan', type: 'select', options: [
+          { value: 'WAJIB', label: 'Hanya WAJIB (Prioritas 1)' },
+          { value: 'DISARANKAN', label: 'Hanya DISARANKAN' }
+        ] },
+        { key: 'status', label: 'Status Pegawai', type: 'select', options: [
+          { value: 'PNS', label: 'PNS' },
+          { value: 'PPPK', label: 'PPPK' }
+        ] }
+      ];
+    },
     // v5.4.1: single definition (duplikat dihapus)
     filteredAnalisaGap() {
-      const q = String(this.analisaSearch || "").toLowerCase().trim();
-      const unit = String(this.analisaFilterUnit || "").trim();
-      const keb = String(this.analisaFilterKebutuhan || "").trim().toUpperCase();
-      const stat = String(this.analisaFilterStatus || "").trim().toUpperCase();
+      const f = this.analisaFilters || {};
+      const q = String(f.search || "").toLowerCase().trim();
+      const unit = String(f.unit || "").trim();
+      const keb = String(f.kebutuhan || "").trim().toUpperCase();
+      const stat = String(f.status || "").trim().toUpperCase();
       const self = this;
 
       const allowedUnitIds = unit ? self._unitIdsInSubtree(unit) : null;
@@ -580,13 +594,10 @@ window.SIKompetensiState = {
     },
 
     paginatedAnalisaGap() {
-      const p = this.analisaPagination.page;
-      const l = this.analisaPagination.limit;
-      return this.filteredAnalisaGap.slice((p - 1) * l, p * l);
+      return AppCore.paginate(this.filteredAnalisaGap, this.analisaPagination.page, this.analisaPagination.limit);
     },
     analisaTotalPages() {
-      const l = this.analisaPagination.limit;
-      return Math.max(1, Math.ceil(this.filteredAnalisaGap.length / l));
+      return AppCore.pageCount(this.filteredAnalisaGap, this.analisaPagination.limit);
     },
 
     // ============ TAB 1: KATALOG DIKLAT ============
