@@ -122,31 +122,29 @@ var MASTER_SPREADSHEET_ID = getEnvProperty_('MASTER_SPREADSHEET_ID') || DEFAULT_
 var PLATFORM_SPREADSHEET_ID = getEnvProperty_('PLATFORM_SPREADSHEET_ID') || DEFAULT_PLATFORM_SPREADSHEET_ID;
 var PLATFORM_API_URL = getEnvProperty_('PLATFORM_API_URL') || DEFAULT_PLATFORM_URL;
 
+// C2: delegasi CoreLib.getDb — satu mekanisme pembuka DB di seluruh ekosistem.
+// Perilaku fallback dipertahankan: id kosong/gagal → active → null.
 function getLocalSpreadsheet_() {
-  var ssId = getSpreadsheetId_();
-  if (ssId) {
-    try {
-      return SpreadsheetApp.openById(ssId);
-    } catch (e) {
-      Logger.log('[WARN] Tidak dapat membuka SPREADSHEET_ID (' + ssId + '): ' + e.message);
-    }
+  try {
+    return CoreLib.getDb(getSpreadsheetId_());
+  } catch (e) {
+    Logger.log('[WARN] Tidak dapat membuka spreadsheet lokal: ' + e.message);
   }
   try {
     return SpreadsheetApp.getActiveSpreadsheet();
-  } catch (e) {
-    Logger.log('[WARN] Tidak ada getActiveSpreadsheet: ' + e.message);
+  } catch (e2) {
+    Logger.log('[WARN] Tidak ada getActiveSpreadsheet: ' + e2.message);
   }
   return null;
 }
 
 // v5.0: hanya dipakai untuk operasi direct (jarang). CoreLib handle sendiri.
+// C2: delegasi CoreLib.masterDbFor_ + getDb; gagal → fallback lokal (semantik lama).
 function getMasterSpreadsheet_() {
-  if (MASTER_SPREADSHEET_ID && MASTER_SPREADSHEET_ID !== getSpreadsheetId_()) {
-    try {
-      return SpreadsheetApp.openById(MASTER_SPREADSHEET_ID);
-    } catch (e) {
-      Logger.log('[WARN] Gagal membuka MASTER_SPREADSHEET_ID: ' + e.message);
-    }
+  try {
+    return CoreLib.getDb(CoreLib.masterDbFor_(getSpreadsheetId_(), MASTER_SPREADSHEET_ID));
+  } catch (e) {
+    Logger.log('[WARN] Gagal membuka MASTER_SPREADSHEET_ID: ' + e.message);
   }
   return getLocalSpreadsheet_();
 }
