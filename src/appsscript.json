@@ -7,8 +7,8 @@
       {
         "userSymbol": "CoreLib",
         "libraryId": "1GmeYflfMpRa1iTVgFHRD6K1DMoxc9OoKqpuucPJXgNZ9XBK06O7wgDkO",
-        "version": "12",
-        "developmentMode": true
+        "version": "14",
+        "developmentMode": false
       }
     ]
   },
