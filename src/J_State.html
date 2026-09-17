@@ -617,13 +617,10 @@ window.SIKompetensiState = {
       });
     },
     paginatedKatalogDiklat() {
-      const p = this.katalogPagination.page;
-      const l = this.katalogPagination.limit;
-      return this.filteredKatalogDiklat.slice((p - 1) * l, p * l);
+      return AppCore.paginate(this.filteredKatalogDiklat, this.katalogPagination.page, this.katalogPagination.limit);
     },
     katalogTotalPages() {
-      const l = this.katalogPagination.limit;
-      return Math.max(1, Math.ceil(this.filteredKatalogDiklat.length / l));
+      return AppCore.pageCount(this.filteredKatalogDiklat, this.katalogPagination.limit);
     },
 
     // ============ TAB 2: STANDAR JABATAN ============
@@ -652,13 +649,10 @@ window.SIKompetensiState = {
       });
     },
     paginatedStandarList() {
-      const p = this.standarPagination.page;
-      const l = this.standarPagination.limit;
-      return this.filteredStandarList.slice((p - 1) * l, p * l);
+      return AppCore.paginate(this.filteredStandarList, this.standarPagination.page, this.standarPagination.limit);
     },
     standarTotalPages() {
-      const l = this.standarPagination.limit;
-      return Math.max(1, Math.ceil(this.filteredStandarList.length / l));
+      return AppCore.pageCount(this.filteredStandarList, this.standarPagination.limit);
     },
 
     // ============ TAB 3: REFERENSI ============
@@ -677,13 +671,10 @@ window.SIKompetensiState = {
       });
     },
     paginatedReferensiList() {
-      const p = this.referensiPagination.page;
-      const l = this.referensiPagination.limit;
-      return this.filteredReferensiList.slice((p - 1) * l, p * l);
+      return AppCore.paginate(this.filteredReferensiList, this.referensiPagination.page, this.referensiPagination.limit);
     },
     referensiTotalPages() {
-      const l = this.referensiPagination.limit;
-      return Math.max(1, Math.ceil(this.filteredReferensiList.length / l));
+      return AppCore.pageCount(this.filteredReferensiList, this.referensiPagination.limit);
     },
 
     // Opsi jabatan untuk filter Standar
@@ -810,13 +801,10 @@ window.SIKompetensiState = {
       });
     },
     paginatedJadwalList() {
-      const p = this.jadwalPagination.page;
-      const l = this.jadwalPagination.limit;
-      return this.filteredJadwalList.slice((p - 1) * l, p * l);
+      return AppCore.paginate(this.filteredJadwalList, this.jadwalPagination.page, this.jadwalPagination.limit);
     },
     jadwalTotalPages() {
-      const l = this.jadwalPagination.limit;
-      return Math.max(1, Math.ceil(this.filteredJadwalList.length / l));
+      return AppCore.pageCount(this.filteredJadwalList, this.jadwalPagination.limit);
     },
 
     // v5.4.0 FIX: search Portofolio match namaPegawai() + nipPegawai().
@@ -850,13 +838,10 @@ window.SIKompetensiState = {
       });
     },
     paginatedKompetensiList() {
-      const p = this.kompetensiPagination.page;
-      const l = this.kompetensiPagination.limit;
-      return this.filteredKompetensiList.slice((p - 1) * l, p * l);
+      return AppCore.paginate(this.filteredKompetensiList, this.kompetensiPagination.page, this.kompetensiPagination.limit);
     },
     kompetensiTotalPages() {
-      const l = this.kompetensiPagination.limit;
-      return Math.max(1, Math.ceil(this.filteredKompetensiList.length / l));
+      return AppCore.pageCount(this.filteredKompetensiList, this.kompetensiPagination.limit);
     },
 
     // v5.4.0 FIX: search Lisensi match namaPegawai() + nipPegawai().
@@ -884,13 +869,10 @@ window.SIKompetensiState = {
       });
     },
     paginatedLisensiList() {
-      const p = this.lisensiPagination.page;
-      const l = this.lisensiPagination.limit;
-      return this.filteredLisensiList.slice((p - 1) * l, p * l);
+      return AppCore.paginate(this.filteredLisensiList, this.lisensiPagination.page, this.lisensiPagination.limit);
     },
     lisensiTotalPages() {
-      const l = this.lisensiPagination.limit;
-      return Math.max(1, Math.ceil(this.filteredLisensiList.length / l));
+      return AppCore.pageCount(this.filteredLisensiList, this.lisensiPagination.limit);
     },
 
     // ============================================================
