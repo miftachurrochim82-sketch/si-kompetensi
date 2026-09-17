@@ -285,50 +285,10 @@
         </h3>
         <app-badge status="warning" :label="(filteredAnalisaGap.length) + ' Item'" size="md"></app-badge>
       </div>
-      <button v-if="analisaSearch || analisaFilterUnit || analisaFilterKebutuhan || analisaFilterStatus"
-              @click="analisaSearch = ''; analisaFilterUnit = ''; analisaFilterKebutuhan = ''; analisaFilterStatus = ''; onFilterAnalisaChange();"
-              class="btn btn-secondary text-xs px-2.5 py-1.5 text-slate-500 hover:text-slate-800 dark:hover:text-white rounded-xl"
-              title="Reset semua filter">
-        <i class="fa-solid fa-xmark mr-1"></i>
-        <span>Reset</span>
-      </button>
     </div>
 
-    <!-- Baris 2: Filter — Grid 4 kolom @25% -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-      <!-- Kolom 1: Search -->
-      <div class="relative">
-        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-        <input v-model="analisaSearch" @input="onFilterAnalisaChange" type="text"
-               placeholder="Cari Pegawai, NIP, Jabatan..."
-               class="input text-xs pl-8 pr-3 py-2.5 w-full rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
-      </div>
-
-      <!-- Kolom 2: Unit Kerja -->
-      <select v-model="analisaFilterUnit" @change="onFilterAnalisaChange"
-              class="input text-xs py-2.5 px-3 rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
-        <option value="">Semua Unit Kerja / Bidang</option>
-        <option v-for="u in optionsUnitFilter" :key="u.id || u.unit_id" :value="u.id || u.unit_id">
-          {{ u.nama_unit || u.nama }}
-        </option>
-      </select>
-
-      <!-- Kolom 3: Kategori Kebutuhan -->
-      <select v-model="analisaFilterKebutuhan" @change="onFilterAnalisaChange"
-              class="input text-xs py-2.5 px-3 rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
-        <option value="">Semua Kategori</option>
-        <option value="WAJIB">Hanya WAJIB (Prioritas 1)</option>
-        <option value="DISARANKAN">Hanya DISARANKAN</option>
-      </select>
-
-      <!-- Kolom 4: Status Pegawai (BARU v5.4.0) -->
-      <select v-model="analisaFilterStatus" @change="onFilterAnalisaChange"
-              class="input text-xs py-2.5 px-3 rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
-        <option value="">Semua Status Pegawai</option>
-        <option value="PNS">PNS</option>
-        <option value="PPPK">PPPK</option>
-      </select>
-    </div>
+    <!-- Baris 2: Filter (B4: via <app-filter-bar>; defs = analisaFilterDefs di J_State; Reset sudah bawaan kit) -->
+    <app-filter-bar :filters="analisaFilterDefs" v-model="analisaFilters" @change="onFilterAnalisaChange"></app-filter-bar>
 
     <!-- Loading -->
     <div v-if="analisaLoading" class="py-12 flex flex-col items-center justify-center gap-3 text-slate-400">
@@ -436,7 +396,7 @@
                        title="Tidak ada data kesenjangan yang cocok"
                        subtitle="Kriteria pencarian atau filter tidak menemukan baris data gap."
                        action-label="Reset Filter Pencarian"
-                       @action="analisaSearch = ''; analisaFilterUnit = ''; analisaFilterKebutuhan = ''; analisaFilterStatus = ''; onFilterAnalisaChange();"></app-empty-state>
+                       @action="analisaFilters = {}; onFilterAnalisaChange();"></app-empty-state>
     </template>
   </div>
 
