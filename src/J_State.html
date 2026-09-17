@@ -142,10 +142,8 @@ window.SIKompetensiState = {
       usulanLoading: false,
       showUsulanForm: false,
       usulanSaving: false,
-      filterRencanaSearch: "",
-      filterRencanaTahun: new Date().getFullYear(),
-      filterRencanaTw: "",
-      filterRencanaStatus: "",
+      // B4: state filter unified utk <app-filter-bar> (default tahun = tahun berjalan)
+      rencanaFilters: { tahun: String(new Date().getFullYear()) },
       rencanaPagination: { page: 1, limit: 10 },
       usulanForm: {
         id: "",
@@ -467,11 +465,32 @@ window.SIKompetensiState = {
     // ============================================================
     // RENCANA DIKLAT — Filter + Pagination
     // ============================================================
+    // B4: definisi filter <app-filter-bar> halaman Rencana Diklat
+    rencanaFilterDefs() {
+      return [
+        { key: 'search', label: 'Pencarian', type: 'text', placeholder: 'Cari program, jabatan sasaran, pegawai...' },
+        { key: 'tahun', label: 'Tahun Anggaran', type: 'select', options: (this.optionsTahun || []).map(y => ({ value: String(y), label: 'Tahun: ' + y })) },
+        { key: 'tw', label: 'Triwulan', type: 'select', options: [
+          { value: 'TW I', label: 'TW I (Jan - Mar)' },
+          { value: 'TW II', label: 'TW II (Apr - Jun)' },
+          { value: 'TW III', label: 'TW III (Jul - Sep)' },
+          { value: 'TW IV', label: 'TW IV (Okt - Des)' }
+        ] },
+        { key: 'status', label: 'Status', type: 'select', options: [
+          { value: 'Terealisasi', label: 'Terealisasi (Tuntas)' },
+          { value: 'Disetujui', label: 'Disetujui' },
+          { value: 'Diajukan', label: 'Diajukan' },
+          { value: 'Direncanakan', label: 'Direncanakan' },
+          { value: 'Ditolak', label: 'Ditolak' }
+        ] }
+      ];
+    },
     filteredRencanaList() {
-      const q = String(this.filterRencanaSearch || "").toLowerCase().trim();
-      const tw = String(this.filterRencanaTw || "").trim();
-      const st = String(this.filterRencanaStatus || "").trim();
-      const th = this.filterRencanaTahun;
+      const f = this.rencanaFilters || {};
+      const q = String(f.search || "").toLowerCase().trim();
+      const tw = String(f.tw || "").trim();
+      const st = String(f.status || "").trim();
+      const th = f.tahun;
 
       return (this.usulanList || []).filter(u => {
         if (th) {
@@ -495,13 +514,11 @@ window.SIKompetensiState = {
       });
     },
     paginatedRencanaList() {
-      const p = this.rencanaPagination.page;
-      const l = this.rencanaPagination.limit;
-      return this.filteredRencanaList.slice((p - 1) * l, p * l);
+      // B4: paginasi via helper AppCore (server-side tetap opsional)
+      return AppCore.paginate(this.filteredRencanaList, this.rencanaPagination.page, this.rencanaPagination.limit);
     },
     rencanaTotalPages() {
-      const l = this.rencanaPagination.limit;
-      return Math.max(1, Math.ceil(this.filteredRencanaList.length / l));
+      return AppCore.pageCount(this.filteredRencanaList, this.rencanaPagination.limit);
     },
 
     showAuthSplash() {
