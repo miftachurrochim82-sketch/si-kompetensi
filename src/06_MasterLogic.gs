@@ -443,49 +443,29 @@ function initDatabase(actor) {
     var created = [];
     var updated = [];
 
+    // C1 (CoreLib v2.2.4): mekanisme buat/sinkron-hias header didelegasikan ke
+    // CoreLib.ensureSheet. Orkestrasi TETAP di app: subset 8 sheet lokal (BUKAN
+    // CoreLib.initDatabase penuh — itu akan menambah AUDIT_LOGS/KONFIGURASI/
+    // MAIN_DATA yang tidak dipakai app ini), bersih-bersih Sheet1, audit.
+    var ssId = getSpreadsheetId_();
+    var hiasHeader_ = { bg: '#059669', font: '#ffffff', bold: true, frozen: 1 };
+    var bukanRef_ = function() { return false; };
     Object.keys(LOCAL_SHEETS).forEach(function(key) {
       var sheetName = LOCAL_SHEETS[key];
-      var headers = ALL_SHEET_HEADERS[sheetName];
-      if (!headers) return;
+      if (!ALL_SHEET_HEADERS[sheetName]) return;
 
-      var sheet = ss.getSheetByName(sheetName);
-      if (!sheet) {
-        sheet = ss.insertSheet(sheetName);
-        created.push(sheetName);
-      }
+      var sebelum = ss.getSheetByName(sheetName);
+      var kolomSebelum = sebelum ? sebelum.getLastColumn() : 0;
 
-      if (sheet.getLastRow() === 0) {
-        // Sheet baru — set header lengkap
-        sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
-        try {
-          sheet.getRange(1, 1, 1, headers.length)
-            .setBackground('#059669')
-            .setFontColor('#ffffff')
-            .setFontWeight('bold');
-          sheet.setFrozenRows(1);
-        } catch (e) {
-          // FIX-M13: log warning
-          Logger.log('[WARN] Format header ' + sheetName + ': ' + e.message);
-        }
-      } else {
-        // Sheet sudah ada — sinkronisasi kolom baru
-        var lastCol = sheet.getLastColumn();
-        var existingHeaders = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(function(h) {
-          return String(h).trim();
-        });
-        var missing = headers.filter(function(h) { return existingHeaders.indexOf(h) === -1; });
-        if (missing.length > 0) {
-          sheet.getRange(1, lastCol + 1, 1, missing.length).setValues([missing]);
-          try {
-            sheet.getRange(1, lastCol + 1, 1, missing.length)
-              .setBackground('#059669')
-              .setFontColor('#ffffff')
-              .setFontWeight('bold');
-          } catch (e) {
-            Logger.log('[WARN] Format header baru ' + sheetName + ': ' + e.message);
-          }
-          updated.push(sheetName + ' (+' + missing.length + ' kolom)');
-        }
+      CoreLib.ensureSheet(ssId, sheetName, ALL_SHEET_HEADERS, {
+        isRefFunc: bukanRef_,
+        decorate: hiasHeader_
+      });
+
+      if (!sebelum) { created.push(sheetName); return; }
+      var sesudah = ss.getSheetByName(sheetName);
+      if (sesudah && sesudah.getLastColumn() > kolomSebelum) {
+        updated.push(sheetName + ' (+' + (sesudah.getLastColumn() - kolomSebelum) + ' kolom)');
       }
     });
 
