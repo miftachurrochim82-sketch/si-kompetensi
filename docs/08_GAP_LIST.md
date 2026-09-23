@@ -6,9 +6,9 @@
 >
 > **Riwayat**:
 > - pra-2026 — daftar gap awal (K1–K10) dari baseline v4.x.
-> - 2026-09-13 — K11–K15 (CoreLib v2.2.1 adopsi + adapter Utils).
+> - 2026-09-13 — K11–K15 (CoreLib v2.4.0.1 adopsi + adapter Utils).
 > - 2026-09-14 — K16–K20 (polish frontend, insight cards, filter grid).
-> - **2026-09-19 — K21–K40**: migrasi total CoreLib-First + CDN v2.8.1 (sesi refactor).
+> - **2026-09-19 — K21–K40**: migrasi total CoreLib-First + CDN v2.9.1 (sesi refactor).
 
 ---
 
@@ -31,7 +31,7 @@
 
 ### K1 — DB engine lokal di app (bukan library) → TUTUP ✅
 - **Sebelum**: getSheetData_/saveRecord_/softDeleteRecord_ full impl lokal.
-- **Sesudah (v5.0.0, 2026-09-13)**: DB engine dipindah ke CoreLib v2.2.1.
+- **Sesudah (v5.0.0, 2026-09-13)**: DB engine dipindah ke CoreLib v2.4.0.1.
   `CoreLib.getSheetDataCached`, `CoreLib.apiSave`, `CoreLib.apiDelete`.
 - **Bukti**: `01_ConfigAndBridge.gs` v5.0+ hanya wrapper tipis di atas CoreLib.
 
@@ -195,15 +195,15 @@
 - **Sesudah**: lengkapi `actionLevels` (K31) — tidak lagi bergantung pada fail-open.
 - **Bukti**: test `TC-R2` + `TC-R3` PASS.
 
-### K36 — CDN `@v2.6.5` → `@v2.8.1` → TUTUP ✅
+### K36 — CDN `@v2.6.5` → `@v2.9.1` → TUTUP ✅
 - **Sebelum**: 4 URL CDN di Index pakai `@v2.6.5`.
-- **Sesudah**: `@v2.8.1` (internal `2.8.0`).
+- **Sesudah**: `@v2.9.1` (internal `2.8.0`).
 - **Bukti**: `Index.html` v6.0.1 — 4 aset CDN.
 - **Verifikasi**: `AppCore.version` = `AppComponents.version` = `AppModules.version` = `"2.8.0"`.
 
 ### K37 — Vue `3.4.21` → `3.5.42` → TUTUP ✅
-- **Sebelum**: `vue@3.4.21`.
-- **Sesudah**: `vue@3.5.42` (sinkron dengan standar CDN v2.8.1 & si-lahar).
+- **Sebelum**: `vue@3.5.42`.
+- **Sesudah**: `vue@3.5.42` (sinkron dengan standar CDN v2.9.1 & si-lahar).
 - **Efek**: tidak ada breaking (tidak pakai fitur 3.5-only / reactive-props-destructure).
 - **Bukti**: `Index.html` v6.0.1.
 
@@ -220,7 +220,7 @@
 
 ### K40 — Pin CoreLib tidak terkunci (devMode) → TUTUP ✅
 - **Sebelum**: pin `12` + `developmentMode: true` (selalu HEAD).
-- **Sesudah**: pin **15** (v2.3.0) — terkunci, produksi stabil.
+- **Sesudah**: pin **15** (v2.4.0) — terkunci, produksi stabil.
 - **Bukti**: `appsscript.json` — `"version": "15"` tanpa devMode.
 
 ---
@@ -237,7 +237,7 @@
 | 6 | Migrasi dispatcher ke `CoreLib.dispatchAction`? | **Ya** — full migrasi | ✅ K21 |
 | 7 | Hapus 10 wrapper delegasi tipis? | **Ya** — CoreLib-First | ✅ K22 |
 | 8 | Struktur file — pola si-lahar? | **Ya** — modular V_* / J_* | ✅ (sudah dari v5.x) |
-| 9 | Frontend — naikkan CDN & Vue? | **Ya** — `@v2.8.1` + Vue 3.5.42 | ✅ K36, K37 |
+| 9 | Frontend — naikkan CDN & Vue? | **Ya** — `@v2.9.1` + Vue 3.5.42 | ✅ K36, K37 |
 | 10 | Tombol icon manual → kit? | **Ya** — `.btn-icon`/`.btn-icon-danger` | ✅ K38 |
 
 ---
@@ -257,7 +257,7 @@
 
 ### Kesehatan keseluruhan
 - **Backend**: 100% CoreLib-First (dispatcher, hook, soft-delete filter, fail-closed).
-- **Frontend**: 100% CDN kit `@v2.8.1` (badge, modal, tabel, filter, chart, picker).
+- **Frontend**: 100% CDN kit `@v2.9.1` (badge, modal, tabel, filter, chart, picker).
 - **Dokumen**: seluruh 9 dokumen `docs/` sinkron (dalam proses migrasi tulis-ulang).
 - **Test**: `runLibraryTests` 42/0/1 + `testAdopsiG18d` 13/13 + `testDispatcherRouting` 16/16 + `runDomainTestsSI` 14/14 = **85 asersi**.
 
@@ -266,7 +266,7 @@
 |---|---|---|
 | Backend pola | CoreLib-First (dispatcher + hook + soft-delete) | ✅ sama |
 | Test suite | 42 + 13 + 13 | 42 + 13 + 16 + 14 |
-| CDN | `@v2.8.1` | ✅ sama |
+| CDN | `@v2.9.1` | ✅ sama |
 | Vue | `3.5.42` | ✅ sama |
 | Urutan JS CDN | components → core → modules | ✅ byte-identik |
 | Tombol aksi | `.btn-icon` kit | ✅ sama |

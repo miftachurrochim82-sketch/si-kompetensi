@@ -6,7 +6,7 @@
 >
 > **Perubahan v6.0.1 (2026-09-19)**: adopsi CoreLib-First penuh (dispatcher
 > `CoreLib.dispatchAction`, `localPreSaveHook_` P1/P2, filter soft-delete otomatis);
-> bump pin CoreLib ke **15** + CDN `@v2.8.1` + Vue `3.5.42`; tombol aksi tabel
+> bump pin CoreLib ke **15** + CDN `@v2.9.1` + Vue `3.5.42`; tombol aksi tabel
 > pakai `.btn-icon`/`.btn-icon-danger` kit CDN.
 
 ## P1 — Dashboard & Standar JP
@@ -116,4 +116,4 @@
   - P2 = kunci field verifikasi `T_RIWAYAT_KOMPETENSI` — non-verifikator selalu `menunggu`.
 - **Filter soft-delete otomatis** di `getSheetData_` (parameter `{ includeDeleted: true }` untuk audit).
 - **Tombol aksi tabel** pakai `.btn-icon`/`.btn-icon-danger` (kit CDN v2.8.0/F2) di 7 tempat.
-- **Vue 3.5.42** + **CDN `@v2.8.1`** (internal `2.8.0`) + **CoreLib pin 15**.
+- **Vue 3.5.42** + **CDN `@v2.9.1`** (internal `2.8.0`) + **CoreLib pin 17**.

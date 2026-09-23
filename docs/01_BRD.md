@@ -8,14 +8,14 @@
 >
 > **Riwayat versi app si-kompetensi**:
 > - v4.x (pra-2026) — Skema 8 sheet satelit + fungsi lokal + CoreLib adapter awal.
-> - v5.0.0 (2026-09-13) — BREAKING: DB engine dipindah ke CoreLib v2.2.1.
+> - v5.0.0 (2026-09-13) — BREAKING: DB engine dipindah ke CoreLib v2.4.0.1.
 >   Semua `FALLBACK_*` dihapus, cache key custom dihilangkan, adapter ke CoreLib.
 > - v5.3.0 (2026-09-13) — Frontend modular: V_* per halaman + J_* per modul,
 >   adopsi `<app-filter-bar>`, `<app-empty-state>`, `<app-skeleton>`, `<app-chart-*>`.
 > - v5.4.0 (2026-09-14) — UI/UX polish; insight cards terang; filter grid 4 kolom.
 > - **v6.0.1 (2026-09-19)** — CoreLib-First penuh: dispatcher `CoreLib.dispatchAction`,
 >   `localPreSaveHook_` (P1/P2), filter soft-delete otomatis, tombol `.btn-icon` kit
->   CDN; bump pin CoreLib ke **15** + CDN **`@v2.8.1`** + Vue `3.5.42`.
+>   CDN; bump pin CoreLib ke **15** + CDN **`@v2.9.1`** + Vue `3.5.42`.
 
 | Butir | Isi |
 |---|---|
@@ -26,7 +26,7 @@
 | Ukuran sukses (**DIKUNCI pemilik 2026-09-19**) | (a) ≥90% ASN memiliki portofolio terverifikasi dalam 3 bulan; (b) 0 lisensi kadaluwarsa tanpa peringatan H-90; (c) Laporan Analisis SKJ ter-generate 100% tepat waktu tahunan; (d) 0 sertifikat tanpa nomor/kegiatan terdata; (e) Rencana Diklat Tahunan terisi 100% sebelum DPA |
 | BATAS | Tidak mengelola kepegawaian (SIMPEG), user/role (SI-PLATFORM), absensi, penggajian; **e-Kinerja Harian ASN = app TERPISAH (`si-lahar`)**; upload file biner ke Drive = fase lanjut (v1 = URL/link); notifikasi email/Telegram = fase lanjut |
 | Wali data | Pemilik aplikasi (user) — perubahan skema wajib amendemen docs dulu (Gate 0) |
-| App ekosistem | `si-platform` (SSO), SIMPEG (3 referensi otomatis: PEGAWAI, UNIT_KERJA, JABATAN), **CoreLib v2.3.0 pin 15**, **CDN kit v2.8.1**, `si-lahar` (tetangga — e-Kinerja Harian) |
+| App ekosistem | `si-platform` (SSO), SIMPEG (3 referensi otomatis: PEGAWAI, UNIT_KERJA, JABATAN), **CoreLib v2.4.0 pin 17**, **CDN kit v2.9.1**, `si-lahar` (tetangga — e-Kinerja Harian) |
 
 ## Nilai bisnis
 1. **Pemenuhan kewajiban ASN terukur**: setiap ASN tahu posisi JP-nya terhadap target tahunan.
@@ -51,10 +51,10 @@ Sheet uji: `ZZ_TEST_CRUD` (auto dibersihkan, dipakai CoreLib test suite).
 
 ## Kepatuhan platform (ekosistem)
 - **CoreLib First**: seluruh util generik (tanggal, paginasi, pencarian, whitelist, role,
-  genUniqueCode, dispatcher) memakai CoreLib v2.3.0 pin 15. Tidak ada wrapper delegasi tipis
+  genUniqueCode, dispatcher) memakai CoreLib v2.4.0 pin 17. Tidak ada wrapper delegasi tipis
   di app (dihapus saat migrasi v6.0.0). `todayIsoLocal()`/`dateKey10()` untuk tanggal
   sadar-WIB; `todayIso()` (UTC) hanya untuk keperluan server-side.
-- **CDN kit v2.8.1**: seluruh UI (`<app-badge>`, `<app-modal>`, `<app-crud-table>`,
+- **CDN kit v2.9.1**: seluruh UI (`<app-badge>`, `<app-modal>`, `<app-crud-table>`,
   `<app-filter-bar>`, `<app-chart-*>`, `<app-pegawai-picker>`, `<app-stat-card>`,
   `<app-empty-state>`, `<app-skeleton>`, `<app-profile>`, `<app-settings>`) memakai
   kit `frontend-cdn`. Tombol aksi tabel pakai `.btn-icon`/`.btn-icon-danger` (kit v2.8.0).

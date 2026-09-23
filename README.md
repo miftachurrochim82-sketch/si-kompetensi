@@ -1,7 +1,7 @@
 # SI-KOMPETENSI — Satpol PP & Damkar Trenggalek
-### Sistem Informasi Manajemen Portofolio, Jadwal & Lisensi Khusus ASN (v6.0.1 — CoreLib-First + CDN v2.8.1)
+### Sistem Informasi Manajemen Portofolio, Jadwal & Lisensi Khusus ASN (v6.0.1 — CoreLib-First + CDN v2.9.1)
 
-Aplikasi web modern berbasis **Google Apps Script (GAS)**, **Vue 3**, **Tailwind CSS**, **Chart.js**, dan library bersama **CoreLib v2.3.0 (pin 15)** untuk pengelolaan portofolio pengembangan kompetensi pegawai, pemenuhan kewajiban minimal **20 JP (PNS)** / **24 JP (PPPK)** per tahun (PP No. 17/2020 & Perka BKN), manajemen kualifikasi personel **PPNS Penegak Perda** & **Fire Rescue Operator**, pelacakan masa berlaku sertifikasi kadaluwarsa (**Early Warning Alert H-90**), penyusunan agenda kalender diklat terpadu, serta analisis kesenjangan kompetensi jabatan (**Competency Gap Analysis / SKJ**).
+Aplikasi web modern berbasis **Google Apps Script (GAS)**, **Vue 3**, **Tailwind CSS**, **Chart.js**, dan library bersama **CoreLib v2.4.0 (pin 17)** untuk pengelolaan portofolio pengembangan kompetensi pegawai, pemenuhan kewajiban minimal **20 JP (PNS)** / **24 JP (PPPK)** per tahun (PP No. 17/2020 & Perka BKN), manajemen kualifikasi personel **PPNS Penegak Perda** & **Fire Rescue Operator**, pelacakan masa berlaku sertifikasi kadaluwarsa (**Early Warning Alert H-90**), penyusunan agenda kalender diklat terpadu, serta analisis kesenjangan kompetensi jabatan (**Competency Gap Analysis / SKJ**).
 
 ---
 
@@ -9,8 +9,8 @@ Aplikasi web modern berbasis **Google Apps Script (GAS)**, **Vue 3**, **Tailwind
 
 | Komponen | Versi / ID | Peran |
 |---|---|---|
-| **CoreLib** (GAS library) | pin **`15`** (v2.3.0) — terkunci, **tanpa** developmentMode | Auth SSO, role guard, dispatcher, CRUD generik, cache, tanggal sadar-WIB |
-| **frontend-cdn** (jsDelivr) | **`@v2.8.1`** (internal `2.8.0`) | Komponen `<app-*>`, AppCore, design tokens |
+| **CoreLib** (GAS library) | pin **`17`** (v2.4.0) — terkunci, **tanpa** developmentMode | Auth SSO, role guard, dispatcher, CRUD generik, cache, tanggal sadar-WIB |
+| **frontend-cdn** (jsDelivr) | **`@v2.9.1`** (internal `2.8.0`) | Komponen `<app-*>`, AppCore, design tokens |
 | **Vue** | `3.5.42` (pinned) | Runtime reactive UI |
 | **Font Awesome** | `6.5.2` | Ikon |
 | **1. SI-PLATFORM (Pusat SSO)** | `1EeJrOo6-75uf8SWCX4P5XPSMoUGXp8p1a098vKBRJys` | SSO Login, Global Settings, Central Audit Logging |
@@ -68,7 +68,7 @@ si-kompetensi/
 ├── tools/                        # compile-check.js (verifikasi sintaks Vue/HTML lokal)
 ├── README.md
 └── src/
-    ├── appsscript.json           # Manifest V8 + dependensi library CoreLib (pin 15)
+    ├── appsscript.json           # Manifest V8 + dependensi library CoreLib (pin 17)
     │
     │── Lapisan backend (GAS) — CoreLib-First
     ├── 00_Utils.gs               # Util domain-spesifik (audit_ → SI-PLATFORM); wrapper delegasi dihapus
@@ -83,7 +83,7 @@ si-kompetensi/
     ├── 99_TestSuite.gs           # v3.0.1 — library test + adopsi + routing + domain
     │
     │── Lapisan frontend (modular: shell + include satu tingkat)
-    ├── Index.html                # Shell SPA: CDN v2.8.1, tema, boot dark-mode, include V_* & J_* (v6.0.1)
+    ├── Index.html                # Shell SPA: CDN v2.9.1, tema, boot dark-mode, include V_* & J_* (v6.0.1)
     ├── J_State.html              # State + computed (filter, paginasi, profil, chart data)
     ├── J_Helpers.html            # Helper domain: formatNamaPegawai, nipPegawai, namaDiklat, dll.
     ├── J_Api.html                # Loader data per modul (callServer + silent error handling)
@@ -116,7 +116,7 @@ si-kompetensi/
 | `initDatabase()` | `06_MasterLogic.gs` | Membuat/menyelaraskan 8 sheet + ZZ_TEST_CRUD (delegasi `CoreLib.initDatabase`) |
 | `setupApp()` | `06_MasterLogic.gs` | Setup properti + folder Drive + seed config (delegasi `CoreLib.executeAppSetup`) |
 | `runLibraryTests()` | `99_TestSuite.gs` | Regression CoreLib — target **PASS 42 / FAIL 0 / SKIP 1** |
-| `testAdopsiG18d()` | `99_TestSuite.gs` | Verifikasi adopsi util CoreLib v2.3.0 — target **13/13** |
+| `testAdopsiG18d()` | `99_TestSuite.gs` | Verifikasi adopsi util CoreLib v2.4.0 — target **13/13** |
 | `testDispatcherRouting()` | `99_TestSuite.gs` | Registry handler + fail-closed — target **16/16** |
 | `runDomainTestsSI()` | `99_TestSuite.gs` | Test FIX domain (L16/M16/R17/SIMPEG RO/hook) — target **14/14** |
 | `runAllTestsSikompetensi()` | `99_TestSuite.gs` | Satu pintu — jalankan semua di atas |
@@ -150,7 +150,7 @@ SKIP 1 = `testCacheIsolation` (normal — butuh `TEST_SPREADSHEET_ID_B` di Scrip
 ### Verifikasi cepat di browser (F12 Console)
 
 ```js
-AppCore.version          // "2.8.0"  (tag CDN: v2.8.1)
+AppCore.version          // "2.8.0"  (tag CDN: v2.9.1)
 AppComponents.version    // "2.8.0"
 AppModules.version       // "2.8.0"
 Object.keys(AppCore.libs) // ['chart','xlsx','jspdf','autotable','pdflib','pdf']
@@ -162,8 +162,8 @@ Object.keys(AppCore.libs) // ['chart','xlsx','jspdf','autotable','pdflib','pdf']
 
 - **Workspace Arena = sumber kebenaran**. Semua edit diverifikasi di workspace (jumlah penggantian persis + `node --check`/compile-check) sebelum disalin ke GAS & GitHub.
 - **Unggah ke GitHub lewat *Add file → Upload files***, jangan paste di web editor (paste menyisipkan CF challenge script ±938 byte).
-- CDN wajib memakai **tag versi** (`@v2.8.1`), bukan `@main` (cache jsDelivr 12 jam).
-- CoreLib **pin 15 terkunci** (v2.3.0, produksi stabil). Untuk pengembangan library, gunakan app terpisah dengan `developmentMode: true` — jangan di produksi.
+- CDN wajib memakai **tag versi** (`@v2.9.1`), bukan `@main` (cache jsDelivr 12 jam).
+- CoreLib **pin 17 terkunci** (v2.4.0, produksi stabil). Untuk pengembangan library, gunakan app terpisah dengan `developmentMode: true` — jangan di produksi.
 - **Tanggal "hari ini"**: WAJIB pakai `CoreLib.todayIsoLocal()` / `CoreLib.dateKey10(val)`. JANGAN `todayIso()` (UTC — mundur 1 hari untuk user WIB sebelum 07:00).
 
 ---
@@ -176,8 +176,8 @@ Object.keys(AppCore.libs) // ['chart','xlsx','jspdf','autotable','pdflib','pdf']
 | Dispatcher | `switch/case` manual | **`CoreLib.dispatchAction`** + `actionLevels` fail-closed |
 | Guard verifikasi | Cek substantif manual di handler | **`localPreSaveHook_` (P2)** — kunci terpusat |
 | Soft delete | Tampil di list | **Filter `deleted_at`** otomatis di `getSheetData_` |
-| CoreLib pin | `12` + devMode | **`15`** (v2.3.0, tanpa devMode) |
-| CDN frontend | `@v2.6.5` | **`@v2.8.1`** |
+| CoreLib pin | `12` + devMode | **`17`** (v2.4.0, tanpa devMode) |
+| CDN frontend | `@v2.6.5` | **`@v2.9.1`** |
 | Vue | `3.4.21` | **`3.5.42`** |
 | Splash footer | `v5.3.0` | **`v6.0.1`** |
 | Test suite | Custom (4 self-check) | **Pola si-lahar** — `runLibraryTests` (42) + adopsi (13) + routing (16) + domain (14) |

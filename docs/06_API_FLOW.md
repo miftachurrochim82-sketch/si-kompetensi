@@ -10,7 +10,7 @@
 > penuh tanpa app perlu mendeklarasikan ketiganya.
 >
 > **Riwayat revisi**:
-> - 2026-09-13 — API FLOW v5.0 initial (Gate 0, migrasi CoreLib v2.2.1).
+> - 2026-09-13 — API FLOW v5.0 initial (Gate 0, migrasi CoreLib v2.4.0.1).
 > - 2026-09-14 — v5.4 polish.
 > - **2026-09-19 — v6.0.1**: CoreLib-First penuh (dispatcher `CoreLib.dispatchAction`);
 >   10 wrapper delegasi dihapus; `localPreSaveHook_` (P1/P2); filter soft-delete otomatis.
@@ -183,7 +183,7 @@ dideklarasikan terpisah di `01_ConfigAndBridge.gs` (`getAppConfig_().actionLevel
 | `exchange_sso_ticket` | publik | alias | | |
 | `logout` | publik | `CoreLib.logoutUser` | — | cleanup session |
 
-## Kontrak respons (CoreLib v2.2+)
+## Kontrak respons (CoreLib v2.4.0+)
 
 Standar CoreLib `dispatchAction`:
 
@@ -222,7 +222,7 @@ Standar CoreLib `dispatchAction`:
 > generik (`save`/`delete`/`save_config_item`) tidak perlu didaftarkan — CoreLib
 > sudah punya default `admin`.
 
-## Adopsi CoreLib v2.3.0 (v6.0.1)
+## Adopsi CoreLib v2.4.0 (v6.0.1)
 
 Tidak ada aksi API baru. Yang berubah hanya **implementasi internal**:
 
@@ -247,7 +247,7 @@ Tidak ada aksi API baru. Yang berubah hanya **implementasi internal**:
 **Efek di alur API**: seluruh handler yang memakai util (tanggal, whitelist, paginasi,
 pencarian) sekarang **sadar zona waktu Script** dan **sadar whitelist kanonik**.
 Handler yang mengembalikan error kini **selalu menyertakan `code`** (bukan hanya
-`error` string) — konsisten dengan kontrak CoreLib v2.2+.
+`error` string) — konsisten dengan kontrak CoreLib v2.4.0+.
 
 ## Alur detail per fitur
 

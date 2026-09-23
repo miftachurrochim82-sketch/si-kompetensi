@@ -6,7 +6,7 @@
 >
 > **Riwayat skema**:
 > - v4.x (pra-2026) — 8 sheet satelit murni + 3 referensi SIMPEG.
-> - v5.0.0 (2026-09-13) — DB engine dipindah ke CoreLib v2.2.1; `FALLBACK_*` dihapus; cache key diserahkan ke CoreLib (`sheetData_<dbId>_<sheet>`).
+> - v5.0.0 (2026-09-13) — DB engine dipindah ke CoreLib v2.4.0.1; `FALLBACK_*` dihapus; cache key diserahkan ke CoreLib (`sheetData_<dbId>_<sheet>`).
 > - v5.4.0 (2026-09-14) — polish UI; tidak ada perubahan skema.
 > - **v6.0.1 (2026-09-19)** — tidak ada perubahan skema. Filter soft-delete otomatis di `getSheetData_` (kolom `deleted_at` otomatis tidak tampil di list). `localPreSaveHook_` (P1) menegaskan prefix id per-sheet.
 

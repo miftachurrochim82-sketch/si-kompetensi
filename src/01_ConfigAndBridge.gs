@@ -4,7 +4,7 @@
 // Satpol PP & Damkar Kab. Trenggalek
 // ============================================================
 // Changelog v5.0 (2026-09-13):
-// - BREAKING: DB engine dipindah ke CoreLib v2.2.1.
+// - BREAKING: DB engine dipindah ke CoreLib v2.4.0.
 //   * getSheetData_      → CoreLib.getSheetDataCached
 //   * saveRecord_        → CoreLib.apiSave
 //   * softDeleteRecord_  → CoreLib.apiDelete

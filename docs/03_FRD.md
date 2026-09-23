@@ -4,7 +4,7 @@
 > Build tidak boleh mendahului baris di dokumen ini.
 >
 > **Riwayat revisi**:
-> - 2026-09-13 — FRD v5.0 (Gate 0, migrasi DB engine ke CoreLib v2.2.1).
+> - 2026-09-13 — FRD v5.0 (Gate 0, migrasi DB engine ke CoreLib v2.4.0.1).
 > - 2026-09-14 — v5.4 (UI/UX polish, insight cards terang).
 > - **2026-09-19 — v6.0.1**: CoreLib-First penuh (FR-40); kunci verifikasi lewat
 >   `localPreSaveHook_` (FR-41); filter soft-delete otomatis (FR-42); tombol aksi
@@ -130,7 +130,7 @@
   - Backend: `getConfigList_`, `saveConfigItem_`, `deleteConfigItem_` (`02_AppLogic.gs`).
 
 ## UI & Frontend (v6.0.1 — CDN First)
-- **FR-51** Seluruh UI memakai kit CDN `@v2.8.1`: `<app-badge>`, `<app-modal>`, `<app-crud-table>`, `<app-filter-bar>`, `<app-stat-card>`, `<app-chart-bar>` / `<app-chart-doughnut>`, `<app-pegawai-picker>`, `<app-empty-state>`, `<app-skeleton>`, `<app-profile>`, `<app-settings>`, `<app-login>`, `<app-sidebar>`, `<app-header>`.
+- **FR-51** Seluruh UI memakai kit CDN `@v2.9.1`: `<app-badge>`, `<app-modal>`, `<app-crud-table>`, `<app-filter-bar>`, `<app-stat-card>`, `<app-chart-bar>` / `<app-chart-doughnut>`, `<app-pegawai-picker>`, `<app-empty-state>`, `<app-skeleton>`, `<app-profile>`, `<app-settings>`, `<app-login>`, `<app-sidebar>`, `<app-header>`.
 - **FR-52** Tombol aksi tabel pakai `.btn-icon` / `.btn-icon-danger` kit CDN (7 tempat di `V_MasterSatelit`, `V_DiklatPortofolio`, `V_UsulanDiklat`).
 - **FR-53** Filter multi-kolom pakai `<app-filter-bar>` (4 halaman: Analisa, Master×3 tab, Diklat×3 tab).
 - **FR-54** Paginasi client-side pakai `AppCore.paginate` + `AppCore.pageCount` (bukan helper lokal).
@@ -140,9 +140,9 @@
 - **FR-58** Include wajib satu tingkat dari `Index.html`: `V_Modals` → `V_Dashboard` → `V_Profil` → `V_DiklatPortofolio` → `V_UsulanDiklat` → `V_AnalisaGap` → `V_MasterSatelit` → `V_Pengaturan`; `J_State` → `J_Helpers` → `J_Api` → `J_Actions` → `J_Export` → `J_App`.
 
 ## Test & Verifikasi (v3.0.1)
-- **FR-59** `runLibraryTests()` — regression CoreLib pin 15 (target PASS 42 / FAIL 0 / SKIP 1).
+- **FR-59** `runLibraryTests()` — regression CoreLib pin 17 (target PASS 42 / FAIL 0 / SKIP 1).
   - Backend: `99_TestSuite.gs`.
-- **FR-60** `testAdopsiG18d()` — verifikasi util CoreLib v2.3.0 (target 13/13).
+- **FR-60** `testAdopsiG18d()` — verifikasi util CoreLib v2.4.0 (target 13/13).
   - Backend: `99_TestSuite.gs`.
 - **FR-61** `testDispatcherRouting()` — registry handler + fail-closed (target 16/16).
   - Backend: `99_TestSuite.gs`.

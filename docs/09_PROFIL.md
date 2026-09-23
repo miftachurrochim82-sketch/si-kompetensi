@@ -11,7 +11,7 @@ pengelolaan portofolio pengembangan kompetensi ASN.
 > **Riwayat**:
 > - 2026-09-13 — v5.3.0: implementasi awal `V_Profil.html` + computed di `J_State.html`.
 > - 2026-09-14 — v5.4 polish (perbaikan kolom "Tahun/TW", pemilih tahun dinamis, min-w mobile).
-> - **2026-09-19 — v6.0.1**: migrasi ke CoreLib-First + CDN `@v2.8.1`; layout & logika
+> - **2026-09-19 — v6.0.1**: migrasi ke CoreLib-First + CDN `@v2.9.1`; layout & logika
 >   tetap (tidak ada perubahan perilaku); tombol aksi ke `.btn-icon` kit.
 
 ## 1. Tujuan
@@ -207,7 +207,7 @@ Halaman ini **bukan sekadar halaman utilitas** (identitas + kontak). Ia adalah
 
 ## 10. Adendum v6.0.1 (2026-09-19)
 
-Adopsi CoreLib-First + CDN v2.8.1 **tidak mengubah** struktur Paspor Kompetensi.
+Adopsi CoreLib-First + CDN v2.9.1 **tidak mengubah** struktur Paspor Kompetensi.
 Yang berubah:
 
 - **Wrapper delegasi tipis dihapus** — `formatNamaPegawai`, `nipPegawai`, `namaJabatan`,

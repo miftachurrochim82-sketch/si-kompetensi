@@ -5,13 +5,13 @@
 > TC = satu assert kelompok.
 >
 > **Target per 2026-09-19**:
-> - `runLibraryTests()` — **PASS 42 / FAIL 0 / SKIP 1** (CoreLib v2.3.0, pin 15).
+> - `runLibraryTests()` — **PASS 42 / FAIL 0 / SKIP 1** (CoreLib v2.4.0, pin 17).
 > - `testAdopsiG18d()` — **13 asersi PASS** (verifikasi delegasi util CoreLib).
 > - `testDispatcherRouting()` — **16 asersi PASS** (registry handler + fail-closed).
 > - `runDomainTestsSI()` — **14 asersi PASS** (FIX domain + SIMPEG read-only + hook).
 >
 > **Riwayat revisi**:
-> - 2026-09-13 — TESTCASE v5.0 initial (Gate 0, migrasi CoreLib v2.2.1).
+> - 2026-09-13 — TESTCASE v5.0 initial (Gate 0, migrasi CoreLib v2.4.0.1).
 > - 2026-09-14 — v5.4 polish.
 > - **2026-09-19 — v6.0.1**: CoreLib-First penuh; test suite pola si-lahar
 >   (`runLibraryTests` + `testAdopsiG18d` + `testDispatcherRouting` + `runDomainTestsSI`).
@@ -117,12 +117,12 @@
 - **TC-P2.2** verifikator update riwayat dengan `status_verifikasi = 'disetujui'` → hook **tidak intervensi**.
 
 ## Regresi CoreLib (FR-59)
-- **TC-58** `runLibraryTests()` target: **PASS 42 / FAIL 0 / SKIP 1** (CoreLib v2.3.0, pin 15).
+- **TC-58** `runLibraryTests()` target: **PASS 42 / FAIL 0 / SKIP 1** (CoreLib v2.4.0, pin 17).
   - 38 test lama (Foundation + Gateway + v2.1 + v2.2 + v2.2.2) — tetap PASS.
-  - 4 test baru v2.3.0: `testTodayIsoLocalV230`, `testDateKey10V230`, `testPaginateV230`, `testMatchSearchV230`.
+  - 4 test baru v2.4.0: `testTodayIsoLocalV230`, `testDateKey10V230`, `testPaginateV230`, `testMatchSearchV230`.
   - SKIP wajar: `testCacheIsolation` (butuh `TEST_SPREADSHEET_ID_B` di Script Properties).
 
-## Adopsi CoreLib v2.3.0 (FR-60) — `testAdopsiG18d()`
+## Adopsi CoreLib v2.4.0 (FR-60) — `testAdopsiG18d()`
 Dijalankan sebagai `testAdopsiG18d()` di `99_TestSuite.gs` — **murni in-memory**.
 
 | ID | Asersi | Target |

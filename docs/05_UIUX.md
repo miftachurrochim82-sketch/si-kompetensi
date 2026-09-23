@@ -6,9 +6,9 @@
 > di `V_Modals.html`.
 >
 > **Riwayat revisi**:
-> - 2026-09-13 — UIUX v5.0 initial (Gate 0, migrasi CoreLib v2.2.1).
+> - 2026-09-13 — UIUX v5.0 initial (Gate 0, migrasi CoreLib v2.4.0.1).
 > - 2026-09-14 — v5.4 (polish insight cards, filter grid 4 kolom, min-w tablet).
-> - **2026-09-19 — v6.0.1**: CDN `@v2.8.1`; tombol aksi tabel pakai `.btn-icon`/
+> - **2026-09-19 — v6.0.1**: CDN `@v2.9.1`; tombol aksi tabel pakai `.btn-icon`/
 >   `.btn-icon-danger` kit; urutan JS CDN byte-identik si-lahar.
 
 ## Peta halaman (menu sidebar v6.0.1 final)
@@ -48,7 +48,7 @@ Migrasi v6.0 (2026-09-15): 10 modal tulisan tangan dikonversi ke komponen kit `<
 ## Shell & arsitektur file
 
 `Index.html` = **shell tipis**:
-- Pin CDN `@v2.8.1` (4 aset: `app-common.min.css`, `app-components.min.js`, `app-core.min.js`, `app-modules.min.js` — urutan byte-identik si-lahar).
+- Pin CDN `@v2.9.1` (4 aset: `app-common.min.css`, `app-components.min.js`, `app-core.min.js`, `app-modules.min.js` — urutan byte-identik si-lahar).
 - Vue `3.5.42` (pinned) + Font Awesome `6.5.2` + Tailwind Play CDN.
 - Identitas tema `:root` (`--primary-*` — Emerald).
 - Blok `<style>` kustom **inline**:
@@ -80,7 +80,7 @@ Migrasi v6.0 (2026-09-15): 10 modal tulisan tangan dikonversi ke komponen kit `<
 - **min-w mobile**: kolom penting `<app-crud-table>` wajib `thClass min-w-[...]` agar scroll horizontal mulus di HP (Transkrip 1000px, SKJ 1100px, Rencana 900px, Analisa 1100px, Matriks JP 900px).
 - **Opsi waktu dinamis**: pemilih tahun/bulan SELALU computed (kini ±N), **tidak pernah hardcode**.
 
-## Komponen kit yang dipakai (v2.8.1)
+## Komponen kit yang dipakai (v2.9.1)
 
 | Komponen | Dipakai di |
 |---|---|
@@ -98,7 +98,7 @@ Migrasi v6.0 (2026-09-15): 10 modal tulisan tangan dikonversi ke komponen kit `<
 | `<app-profile>` (modul kit) | `V_Profil.html` (tidak dipakai — V_Profil punya desain sendiri "Paspor") |
 | `<app-settings>` (modul kit) | `V_Pengaturan.html` |
 
-**Kelas CSS kit yang dipakai**: `.card`, `.btn*`, `.btn-icon`, `.btn-icon-danger`, `.btn-lg`, `.btn-aksi`, `.input`, `.form-label`, `.badge*`, `.toast-*`, `.modal-backdrop`, `.modal-content`, `.table-scroll`, `.animate-fade-in`, `.line-clamp-1/2` — semua dari `app-common.css` v2.8.1.
+**Kelas CSS kit yang dipakai**: `.card`, `.btn*`, `.btn-icon`, `.btn-icon-danger`, `.btn-lg`, `.btn-aksi`, `.input`, `.form-label`, `.badge*`, `.toast-*`, `.modal-backdrop`, `.modal-content`, `.table-scroll`, `.animate-fade-in`, `.line-clamp-1/2` — semua dari `app-common.css` v2.9.1.
 
 ## Custom UI yang dipertahankan (diizinkan)
 
