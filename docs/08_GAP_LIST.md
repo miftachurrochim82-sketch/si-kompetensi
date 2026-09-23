@@ -187,7 +187,7 @@
 
 ### K34 — Test suite custom (4 self-check) → TUTUP ✅
 - **Sebelum**: `testAppLogicSelfCheck`, `testDashboardSelfCheck`, `testDiklatSelfCheck`, `testKualifikasiSelfCheck`, `testMasterSelfCheck`, `testRencanaSelfCheck`, `testRiwayatSelfCheck`, `testSaveKatalogV5`, `runAllTestsSikompetensi` (custom).
-- **Sesudah (v3.0.1)**: pola si-lahar — `runLibraryTests` (42) + `testAdopsiG18d` (13) + `testDispatcherRouting` (16) + `runDomainTestsSI` (14). Satu pintu `runAllTestsSikompetensi`.
+- **Sesudah (v3.0.1)**: pola si-kinerja-harian — `runLibraryTests` (42) + `testAdopsiG18d` (13) + `testDispatcherRouting` (16) + `runDomainTestsSI` (14). Satu pintu `runAllTestsSikompetensi`.
 - **Bukti**: output 42/13/16/14 PASS (2026-09-19).
 
 ### K35 — `checkRole_` fail-open (CoreLib) → DIDOKUMENTASIKAN ✅
@@ -203,24 +203,24 @@
 
 ### K37 — Vue `3.4.21` → `3.5.42` → TUTUP ✅
 - **Sebelum**: `vue@3.5.42`.
-- **Sesudah**: `vue@3.5.42` (sinkron dengan standar CDN v2.9.1 & si-lahar).
+- **Sesudah**: `vue@3.5.42` (sinkron dengan standar CDN v2.9.1 & si-kinerja-harian).
 - **Efek**: tidak ada breaking (tidak pakai fitur 3.5-only / reactive-props-destructure).
 - **Bukti**: `Index.html` v6.0.1.
 
 ### K38 — Tombol aksi tabel manual (padding custom) → TUTUP ✅
 - **Sebelum**: `btn btn-secondary text-xs px-2.5 py-1.5 rounded-lg` (7 tempat).
-- **Sesudah**: `.btn-icon` / `.btn-icon-danger` (kit CDN v2.8.0/F2). 32×32 seragam, light+dark identik sumbernya.
+- **Sesudah**: `.btn-icon` / `.btn-icon-danger` (kit CDN v2.9.1/F2). 32×32 seragam, light+dark identik sumbernya.
 - **Bukti**: 7 tempat di `V_MasterSatelit` (3), `V_DiklatPortofolio` (3), `V_UsulanDiklat` (1).
 
-### K39 — Urutan JS CDN tidak identik si-lahar → TUTUP ✅
+### K39 — Urutan JS CDN tidak identik si-kinerja-harian → TUTUP ✅
 - **Sebelum (v6.0.0)**: `components → modules → core`.
-- **Sesudah (v6.0.1)**: `components → core → modules` (byte-identik si-lahar).
+- **Sesudah (v6.0.1)**: `components → core → modules` (byte-identik si-kinerja-harian).
 - **Efek**: fungsional sama; byte-identik memudahkan diff antar-app.
 - **Bukti**: `Index.html` v6.0.1.
 
 ### K40 — Pin CoreLib tidak terkunci (devMode) → TUTUP ✅
 - **Sebelum**: pin `12` + `developmentMode: true` (selalu HEAD).
-- **Sesudah**: pin **15** (v2.4.0) — terkunci, produksi stabil.
+- **Sesudah**: pin **17** (v2.4.0) — terkunci, produksi stabil.
 - **Bukti**: `appsscript.json` — `"version": "15"` tanpa devMode.
 
 ---
@@ -236,7 +236,7 @@
 | 5 | `status_jadwal` non-owner: boleh ubah? | **Biarkan** (perilaku saat ini = keputusan) | ⏸ K41 |
 | 6 | Migrasi dispatcher ke `CoreLib.dispatchAction`? | **Ya** — full migrasi | ✅ K21 |
 | 7 | Hapus 10 wrapper delegasi tipis? | **Ya** — CoreLib-First | ✅ K22 |
-| 8 | Struktur file — pola si-lahar? | **Ya** — modular V_* / J_* | ✅ (sudah dari v5.x) |
+| 8 | Struktur file — pola si-kinerja-harian? | **Ya** — modular V_* / J_* | ✅ (sudah dari v5.x) |
 | 9 | Frontend — naikkan CDN & Vue? | **Ya** — `@v2.9.1` + Vue 3.5.42 | ✅ K36, K37 |
 | 10 | Tombol icon manual → kit? | **Ya** — `.btn-icon`/`.btn-icon-danger` | ✅ K38 |
 
@@ -261,7 +261,7 @@
 - **Dokumen**: seluruh 9 dokumen `docs/` sinkron (dalam proses migrasi tulis-ulang).
 - **Test**: `runLibraryTests` 42/0/1 + `testAdopsiG18d` 13/13 + `testDispatcherRouting` 16/16 + `runDomainTestsSI` 14/14 = **85 asersi**.
 
-### Perbandingan dengan si-lahar
+### Perbandingan dengan si-kinerja-harian
 | Aspek | Si-lahar | Si-kompetensi |
 |---|---|---|
 | Backend pola | CoreLib-First (dispatcher + hook + soft-delete) | ✅ sama |

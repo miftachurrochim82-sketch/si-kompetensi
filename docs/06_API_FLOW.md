@@ -196,7 +196,7 @@ Standar CoreLib `dispatchAction`:
 { success: false, code: 'BAD_REQUEST'|'UNAUTHORIZED'|'FORBIDDEN'|'NOT_FOUND'|'BUSY', error: 'pesan' }
 ```
 
-**Frontend auto-handling** (app-core v2.8.0):
+**Frontend auto-handling** (app-core v2.9.1):
 - `code: 'UNAUTHORIZED'` → `handleSessionExpired()` (clear token + redirect init).
 - `code: 'BUSY'` → toast "Server sibuk, coba lagi".
 - `code: 'FORBIDDEN'` → toast pesan error dari backend.

@@ -2,14 +2,14 @@
 
 > Shell & komponen kit dipertahankan (v5.0+): `<app-login>`/`<app-sidebar>`/`<app-header>`,
 > `<app-crud-table>`, `<app-filter-bar>`, `<app-badge>`, `<app-modal>`, toast, dark mode.
-> Halaman bisnis = view `V_*` (pola modular si-kompetensi & si-lahar). Modal dipusatkan
+> Halaman bisnis = view `V_*` (pola modular si-kompetensi & si-kinerja-harian). Modal dipusatkan
 > di `V_Modals.html`.
 >
 > **Riwayat revisi**:
 > - 2026-09-13 — UIUX v5.0 initial (Gate 0, migrasi CoreLib v2.4.0.1).
 > - 2026-09-14 — v5.4 (polish insight cards, filter grid 4 kolom, min-w tablet).
 > - **2026-09-19 — v6.0.1**: CDN `@v2.9.1`; tombol aksi tabel pakai `.btn-icon`/
->   `.btn-icon-danger` kit; urutan JS CDN byte-identik si-lahar.
+>   `.btn-icon-danger` kit; urutan JS CDN byte-identik si-kinerja-harian.
 
 ## Peta halaman (menu sidebar v6.0.1 final)
 
@@ -48,7 +48,7 @@ Migrasi v6.0 (2026-09-15): 10 modal tulisan tangan dikonversi ke komponen kit `<
 ## Shell & arsitektur file
 
 `Index.html` = **shell tipis**:
-- Pin CDN `@v2.9.1` (4 aset: `app-common.min.css`, `app-components.min.js`, `app-core.min.js`, `app-modules.min.js` — urutan byte-identik si-lahar).
+- Pin CDN `@v2.9.1` (10 aset (1 CSS+9 JS): `app-common.min.css` + 9 JS (`app-core`, `app-components`, `app-modules`, `app-layout`, `app-ui`, `app-forms`, `app-data`, `app-charts`, `app-workflow`) — urutan byte-identik si-kinerja-harian).
 - Vue `3.5.42` (pinned) + Font Awesome `6.5.2` + Tailwind Play CDN.
 - Identitas tema `:root` (`--primary-*` — Emerald).
 - Blok `<style>` kustom **inline**:
@@ -68,7 +68,7 @@ Migrasi v6.0 (2026-09-15): 10 modal tulisan tangan dikonversi ke komponen kit `<
 
 ## Aturan desain (konsisten lintas app)
 
-- **Segmented tabs**: lebar grid 3 kolom equal, aktif solid emerald + ring emerald; `<app-badge>` count di kanan label (konsisten V_DiklatPortofolio / V_MasterSatelit). Disamakan dengan si-lahar V_Master.
+- **Segmented tabs**: lebar grid 3 kolom equal, aktif solid emerald + ring emerald; `<app-badge>` count di kanan label (konsisten V_DiklatPortofolio / V_MasterSatelit). Disamakan dengan si-kinerja-harian V_Master.
 - **Filter bar per tab**: grid 4 kolom @25% (Tahun/Bulan/Rumpun + [🔄 Refresh] [＋ Tambah]); grid 5 kolom @20% khusus Tab Portofolio (Search/Tahun/Bulan/Unit + [🔄 Refresh] [⬆ Upload]); kolom terakhir selalu aksi gabungan.
 - **Modal**: seluruh modal via kit `<app-modal>` (size 2xl–4xl); section divider bergaris + ikon kecil untuk form panjang (>3 field set).
 - **Badge**: `<app-badge size="sm|md">`; status dinamis dari state (verifikasi, kebutuhan, kualifikasi, lisensi).
@@ -110,7 +110,7 @@ Migrasi v6.0 (2026-09-15): 10 modal tulisan tangan dikonversi ke komponen kit `<
 - **Kartu antrian verifikasi** (jika nanti ditambah) — pola kaya info.
 - **Kartu KPI "Kepatuhan SKJ"** di V_AnalisaGap — warna dinamis (merah/kuning/hijau) berdasarkan nilai.
 
-## Praktik baik yang diadopsi (dari si-lahar)
+## Praktik baik yang diadopsi (dari si-kinerja-harian)
 
 | # | Adopsi | Item kode |
 |---|---|---|
@@ -123,7 +123,7 @@ Migrasi v6.0 (2026-09-15): 10 modal tulisan tangan dikonversi ke komponen kit `<
 | 7 | **`initApp` silent mode** (tidak spam 7 toast saat startup gagal) | `J_App.html` |
 | 8 | Filter bar per tab (bukan global) — hemat ruang, konteks jelas | `V_DiklatPortofolio`, `V_MasterSatelit` |
 | 9 | Segmented tabs lebar dengan `<app-badge>` count | `V_DiklatPortofolio`, `V_MasterSatelit` |
-| 10 | Insight cards **terang** (dari gelap di v5.3) — konsisten si-lahar | `V_AnalisaGap` |
+| 10 | Insight cards **terang** (dari gelap di v5.3) — konsisten si-kinerja-harian | `V_AnalisaGap` |
 | 11 | **Tombol aksi tabel 32×32** (`.btn-icon`/`.btn-icon-danger` kit) | `V_MasterSatelit` (3 tab), `V_DiklatPortofolio` (3 tab), `V_UsulanDiklat` — 7 tempat |
 
 ## Anomali data yang sudah dibersihkan
@@ -137,7 +137,7 @@ Ditemukan 2026-09-19 (hasil `runAllTestsSikompetensi()` + cleanup manual):
 
 ## Backlog polesan (dari review owner)
 
-- Modal RHK — **tidak ada di si-kompetensi**; analog di si-lahar. Si-kompetensi modal SKJ (Standar Jabatan) sudah pakai select jabatan & diklat.
+- Modal RHK — **tidak ada di si-kompetensi**; analog di si-kinerja-harian. Si-kompetensi modal SKJ (Standar Jabatan) sudah pakai select jabatan & diklat.
 - Kandidat gerbong **CDN v2.8.x berikutnya**: 
   - ✅ Adopsi `span` per filter di `<app-filter-bar>` (belum dipakai di si-kompetensi).
   - ✅ Standarisasi `.btn-icon`/`.btn-icon-danger`/`.btn-lg` (sudah diadopsi 7 tempat).

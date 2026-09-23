@@ -5,7 +5,7 @@ terverifikasi di lingkungan produksi. Rujukan konsep: **Paspor ASN** — praktik
 pengelolaan portofolio pengembangan kompetensi ASN.
 
 > **Pemicu**: keputusan pemilik — *"profil itu bukan hanya menampilkan identitas pegawai,
-> tapi portofolio kompetensi pegawai"*. Rujukan: pengalaman si-lahar Paspor Kinerja v1.1
+> tapi portofolio kompetensi pegawai"*. Rujukan: pengalaman si-kinerja-harian Paspor Kinerja v1.1
 > + regulasi pengembangan kompetensi ASN (PP 17/2020, Perka BKN).
 >
 > **Riwayat**:
@@ -33,7 +33,7 @@ Halaman ini **bukan sekadar halaman utilitas** (identitas + kontak). Ia adalah
 - **P1** NOL backend baru — semua data dari API yang sudah hidup:
   `get_my_profile`, `get_riwayat_list`, `get_rekap_list`, `get_rhk_list`, `get_master_satelit`.
 - **P2** Reuse state root (mixin `J_State` + `J_Kinerja`) — loader baru hanya menambah.
-- **P3** Pola seragam dengan kit: struktur meniru Paspor Kinerja si-lahar (hero → kartu
+- **P3** Pola seragam dengan kit: struktur meniru Paspor Kinerja si-kinerja-harian (hero → kartu
   identitas + speedometer → sub-tab ber-count), memakai `<app-crud-table>`,
   `<app-badge>`, `<app-empty-state>`, `<app-skeleton>` + konvensi 05_UIUX
   (min-w mobile, tombol-fitur-belum-ada `disabled`+`title`).
@@ -192,7 +192,7 @@ Halaman ini **bukan sekadar halaman utilitas** (identitas + kontak). Ia adalah
 **Kelas CSS kit**: `.card`, `.btn`, `.btn-primary`, `.btn-secondary`, `.input`,
 `badgeVerif_` (helper internal) + konvensi `min-w-[...]` mobile.
 
-## 9. Praktik baik yang diadopsi (dari si-lahar Paspor Kinerja)
+## 9. Praktik baik yang diadopsi (dari si-kinerja-harian Paspor Kinerja)
 
 | # | Adopsi | Item kode |
 |---|---|---|

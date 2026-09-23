@@ -15,7 +15,7 @@
 > - v5.4.0 (2026-09-14) — UI/UX polish; insight cards terang; filter grid 4 kolom.
 > - **v6.0.1 (2026-09-19)** — CoreLib-First penuh: dispatcher `CoreLib.dispatchAction`,
 >   `localPreSaveHook_` (P1/P2), filter soft-delete otomatis, tombol `.btn-icon` kit
->   CDN; bump pin CoreLib ke **15** + CDN **`@v2.9.1`** + Vue `3.5.42`.
+>   CDN; bump pin CoreLib ke **17** + CDN **`@v2.9.1`** + Vue `3.5.42`.
 
 | Butir | Isi |
 |---|---|
@@ -24,9 +24,9 @@
 | Rujukan konsep | **PP No. 17/2020** (PNS: min. 20 JP/tahun); **Perpres No. 49/2018** (PPPK: min. 24 JP/tahun); **Perka BKN** (pengembangan kompetensi ASN); **Permendagri No. 16/2020** (sertifikasi PPNS & penegakan Perda); **PermenPANRB 6/2022** (predikat kinerja) |
 | Pengguna | **viewer** = ASN (lihat portofolio sendiri, upload sertifikat milik sendiri, usul rencana diklat); **verifikator** = pengelola master + verifikasi sertifikat; **admin** = pengelola penuh + keputusan pimpinan; **super** = admin platform. Identitas/role dari SI-Platform (SSO) |
 | Ukuran sukses (**DIKUNCI pemilik 2026-09-19**) | (a) ≥90% ASN memiliki portofolio terverifikasi dalam 3 bulan; (b) 0 lisensi kadaluwarsa tanpa peringatan H-90; (c) Laporan Analisis SKJ ter-generate 100% tepat waktu tahunan; (d) 0 sertifikat tanpa nomor/kegiatan terdata; (e) Rencana Diklat Tahunan terisi 100% sebelum DPA |
-| BATAS | Tidak mengelola kepegawaian (SIMPEG), user/role (SI-PLATFORM), absensi, penggajian; **e-Kinerja Harian ASN = app TERPISAH (`si-lahar`)**; upload file biner ke Drive = fase lanjut (v1 = URL/link); notifikasi email/Telegram = fase lanjut |
+| BATAS | Tidak mengelola kepegawaian (SIMPEG), user/role (SI-PLATFORM), absensi, penggajian; **e-Kinerja Harian ASN = app TERPISAH (`si-kinerja-harian`)**; upload file biner ke Drive = fase lanjut (v1 = URL/link); notifikasi email/Telegram = fase lanjut |
 | Wali data | Pemilik aplikasi (user) — perubahan skema wajib amendemen docs dulu (Gate 0) |
-| App ekosistem | `si-platform` (SSO), SIMPEG (3 referensi otomatis: PEGAWAI, UNIT_KERJA, JABATAN), **CoreLib v2.4.0 pin 17**, **CDN kit v2.9.1**, `si-lahar` (tetangga — e-Kinerja Harian) |
+| App ekosistem | `si-platform` (SSO), SIMPEG (3 referensi otomatis: PEGAWAI, UNIT_KERJA, JABATAN), **CoreLib v2.4.0 pin 17**, **CDN kit v2.9.1**, `si-kinerja-harian` (tetangga — e-Kinerja Harian) |
 
 ## Nilai bisnis
 1. **Pemenuhan kewajiban ASN terukur**: setiap ASN tahu posisi JP-nya terhadap target tahunan.
@@ -57,9 +57,9 @@ Sheet uji: `ZZ_TEST_CRUD` (auto dibersihkan, dipakai CoreLib test suite).
 - **CDN kit v2.9.1**: seluruh UI (`<app-badge>`, `<app-modal>`, `<app-crud-table>`,
   `<app-filter-bar>`, `<app-chart-*>`, `<app-pegawai-picker>`, `<app-stat-card>`,
   `<app-empty-state>`, `<app-skeleton>`, `<app-profile>`, `<app-settings>`) memakai
-  kit `frontend-cdn`. Tombol aksi tabel pakai `.btn-icon`/`.btn-icon-danger` (kit v2.8.0).
+  kit `frontend-cdn`. Tombol aksi tabel pakai `.btn-icon`/`.btn-icon-danger` (kit v2.9.1).
 - **Struktur file modular**: `V_*.html` per halaman + `J_*.html` per modul logika
-  (standar si-lahar & si-kompetensi; bukan pola 2-berkas warisan si-pelaporan).
+  (standar si-kinerja-harian & si-kompetensi; bukan pola 2-berkas warisan si-pelaporan).
 - **Fail-closed dispatcher**: `CoreLib.dispatchAction` + `actionLevels` lengkap —
   aksi tak dikenal ditolak di gerbang auth.
 

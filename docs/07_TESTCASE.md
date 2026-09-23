@@ -1,6 +1,6 @@
 # 07 — TESTCASE [SI-KOMPETENSI: Portofolio, Jadwal & Lisensi Khusus ASN — 2026-09-19]
 
-> Setiap TC dijalankan sebagai fungsi uji di `99_TestSuite.gs` (pola si-lahar):
+> Setiap TC dijalankan sebagai fungsi uji di `99_TestSuite.gs` (pola si-kinerja-harian):
 > actor `viewer`/`verifikator`/`admin`/`super`, assert `success`/`code`. Satu baris
 > TC = satu assert kelompok.
 >
@@ -13,7 +13,7 @@
 > **Riwayat revisi**:
 > - 2026-09-13 — TESTCASE v5.0 initial (Gate 0, migrasi CoreLib v2.4.0.1).
 > - 2026-09-14 — v5.4 polish.
-> - **2026-09-19 — v6.0.1**: CoreLib-First penuh; test suite pola si-lahar
+> - **2026-09-19 — v6.0.1**: CoreLib-First penuh; test suite pola si-kinerja-harian
 >   (`runLibraryTests` + `testAdopsiG18d` + `testDispatcherRouting` + `runDomainTestsSI`).
 
 ## Master Katalog Diklat (FR-01..03)
