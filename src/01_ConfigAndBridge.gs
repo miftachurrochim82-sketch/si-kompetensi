@@ -39,6 +39,77 @@ var DATA_CACHE_TTL = 300;              // 5 menit
 // Sinkron dengan CoreLib MASTER_ROLE_LEVELS v2.2
 var ROLE_LEVELS = { viewer: 0, user: 1, verifikator: 2, admin: 3, super: 4 };
 
+// ==================== §1b TEMA PER-APP (CoreLib v2.4.0 C8) ====================
+// THEME_JSON disimpan di Script Properties sebagai JSON string:
+//   {"primary":"#059669","preset":"emerald"}  (6 preset: emerald/sky/amber/violet/rose/teal)
+// Frontend inject via <?!= getThemeCss() ?> di Index.html + <app-theme-picker>.
+// Default: emerald (#059669) bila properti kosong.
+var DEFAULT_THEME = { primary: '#059669', preset: 'emerald' };
+
+function getThemeConfig_() {
+  try { return CoreLib.getThemeConfig(appProps_(), DEFAULT_THEME); }
+  catch (e) { return DEFAULT_THEME; }
+}
+
+// Dipanggil oleh Index.html template: <?!= getThemeCss() ?>
+function getThemeCss() {
+  try { return CoreLib.getThemeCss(appProps_(), DEFAULT_THEME); }
+  catch (e) { return ':root{--primary:#059669}'; }
+}
+
+// Dipanggil oleh handler save_theme (admin) untuk simpan THEME_JSON
+function saveThemeConfig_(obj) {
+  if (!obj || !obj.primary) throw new Error('Tema tidak valid.');
+  return CoreLib.buildThemeCss ? CoreLib.buildThemeCss(obj) : getThemeCss();
+}
+
+// ==================== §1c SCOPE "SAYA" (RLS ownerField) ====================
+// Helper untuk filter Saya/Semua di handler utama.
+// Di frontend: AppCore.getMyScope() → 'mine' | 'all' (disimpan localStorage)
+// Di backend: filter rows where row.pegawai_id === session.pegawai_id
+var SCOPE_OWNER_FIELD = 'pegawai_id'; // kolom pemilik di T_JADWAL_DIKLAT/T_RIWAYAT_KOMPETENSI
+
+function filterByScope_(rows, scope, session) {
+  if (scope === 'mine' && session && session.pegawai_id) {
+    return rows.filter(function(r){ return String(r[SCOPE_OWNER_FIELD]||'') === String(session.pegawai_id); });
+  }
+  return rows;
+}
+
+// ==================== §1d WORKFLOW & PERIODE (CoreLib v2.4.0 A+B) ====================
+// STATUS_MAP untuk validateTransition (C4) — transisi legal per resource
+var STATUS_MAP = {
+  'T_JADWAL_DIKLAT': {
+    'draft':    ['diajukan', 'disetujui', 'batal'],
+    'diajukan': ['disetujui', 'ditolak', 'batal'],
+    'disetujui':['selesai', 'batal'],
+    'ditolak':  ['diajukan', 'batal'],
+    'selesai':  [],
+    'batal':    []
+  },
+  'T_USULAN_DIKLAT': {
+    'baru':     ['diproses', 'batal'],
+    'diproses': ['disetujui', 'ditolak', 'batal'],
+    'disetujui':['selesai'],
+    'ditolak':  ['baru', 'batal'],
+    'selesai':  [],
+    'batal':    []
+  },
+  'T_KUALIFIKASI_KHUSUS': {
+    'aktif':    ['nonaktif', 'arsip'],
+    'nonaktif': ['aktif', 'arsip'],
+    'arsip':    []
+  }
+};
+
+// Wrapper tipis — biar app bisa panggil tanpa import CoreLib langsung
+function periodeBulan_(tanggalStr){ try{ return CoreLib.periodeBulan(tanggalStr); }catch(e){ return ''; } }
+function dalamPeriode_(tgl, start, end){ try{ return CoreLib.dalamPeriode(tgl, start, end); }catch(e){ return false; } }
+function hitungHariKerja_(start, end){ try{ return CoreLib.hitungHariKerja(start, end); }catch(e){ return 0; } }
+function findUnique_(sheet, field, value){ try{ return CoreLib.findUnique(getSpreadsheetId_(), sheet, field, value, ALL_SHEET_HEADERS || {}); }catch(e){ return null; } }
+
+
+
 // ==================== §1b 8 SHEET DATABASE LOKAL ====================
 var LOCAL_SHEETS = {
   M_REFERENSI: 'M_REFERENSI',
@@ -523,7 +594,18 @@ function getAppConfig_() {
     sessionPrefix: SESSION_PREFIX,
     sessionTtlSeconds: SESSION_TTL_SECONDS,
     sheetNames: LOCAL_SHEETS,
-    sheetHeaders: ALL_SHEET_HEADERS
+    sheetHeaders: ALL_SHEET_HEADERS,
+    // Tahap 3 — deklaratif scope & workflow (CoreLib v2.4.0)
+    resources: {
+      T_JADWAL_DIKLAT: { ownerField: SCOPE_OWNER_FIELD },
+      T_RIWAYAT_KOMPETENSI: { ownerField: SCOPE_OWNER_FIELD },
+      T_USULAN_DIKLAT: { ownerField: SCOPE_OWNER_FIELD }
+    },
+    statusMap: (typeof STATUS_MAP !== 'undefined' ? STATUS_MAP : {}),
+    localHandlers: {
+      get_theme: function(data, user){ return { success:true, data: getThemeConfig_() }; },
+      save_theme: function(data, user){ var css = saveThemeConfig_(data); appProps_().setProperty('THEME_JSON', JSON.stringify(data)); return { success:true, data: getThemeConfig_(), css: css }; }
+    }
   };
 }
 

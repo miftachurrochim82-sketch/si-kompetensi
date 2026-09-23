@@ -41,7 +41,10 @@
   ];
 
   // Inisialisasi Aplikasi Terpadu SI-KOMPETENSI
-  const app = AppCore.create({
+  window.getMyScope = function(){ try{ return window.AppCore ? AppCore.getMyScope() : 'all'; }catch(e){ return 'all'; } };
+window.setMyScope = function(v){ try{ if(window.AppCore) AppCore.setMyScope(v); else localStorage.setItem('sikomp_scope', v); }catch(e){} };
+
+const app = AppCore.create({
     appCode: 'SIKOMPETENSI',
     appTitle: 'SI-KOMPETENSI',
     initialPage: 'dashboard',
